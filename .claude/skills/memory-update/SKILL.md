@@ -9,108 +9,169 @@ Update AI memory with: $ARGUMENTS
 
 This skill explicitly updates the **Digital Twin** - the comprehensive model of the user's life.
 
-## Memory Files Overview
+## Memory Structure
 
-| File | Purpose |
-|------|---------|
-| `People.md` | Everyone in user's life - deep profiles with relationships, context, history |
-| `Projects.md` | All initiatives - personal & professional, with full context and timeline |
-| `Work.md` | Professional context - company, role, team, goals, career |
-| `Personal.md` | Personal life - family, interests, health, values, goals |
-| `Preferences.md` | Behavioral patterns - communication, scheduling, decision-making |
-| `Insights.md` | Observations - patterns, connections, predictions |
-| `Timeline.md` | Life events - milestones, important dates, anniversaries |
+```
+AI/Memory/
+├── People.md           # Index of all people (brief list with links)
+├── People/             # Individual person files (detailed profiles)
+│   ├── _TEMPLATE.md    # Template for new person files
+│   └── Jan-Kowalski.md
+├── Projects.md         # Index of all projects (brief list with links)
+├── Projects/           # Individual project files (detailed profiles)
+│   ├── _TEMPLATE.md    # Template for new project files
+│   └── Project-Alpha.md
+├── Work.md             # Professional context
+├── Personal.md         # Personal life context
+├── Preferences.md      # Behavioral patterns
+├── Insights.md         # Observations and patterns
+└── Timeline.md         # Life events and milestones
+```
 
 ## Process
 
 1. **Analyze the Information**
    - What category does this fit?
-     - Person info → `AI/Memory/People.md`
-     - Project context → `AI/Memory/Projects.md`
-     - Work context → `AI/Memory/Work.md`
-     - Personal context → `AI/Memory/Personal.md`
-     - User preference → `AI/Memory/Preferences.md`
-     - Pattern/observation → `AI/Memory/Insights.md`
-     - Important date → `AI/Memory/Timeline.md`
+     - Person info → `People.md` (index) + `People/Imie-Nazwisko.md` (details)
+     - Project context → `Projects.md` (index) + `Projects/Nazwa-Projektu.md` (details)
+     - Work context → `Work.md`
+     - Personal context → `Personal.md`
+     - User preference → `Preferences.md`
+     - Pattern/observation → `Insights.md`
+     - Important date → `Timeline.md`
    - Is this new or an update to existing?
    - Does this connect to other information? (cross-reference!)
 
-2. **Read Current Memory File**
-   - Use `read_note` to get current content
-   - Find the right section for the update
-   - Check if entry already exists
+2. **For People or Projects**
 
-3. **Format the Update**
-   - Follow the template format for that file
-   - Include date of update
-   - Be specific and concise
-   - Link to related entries if applicable
+   **If new person/project:**
+   - Create individual file in `People/` or `Projects/` using template
+   - Add entry to index file (`People.md` or `Projects.md`)
+   - Use kebab-case for filenames: `Jan-Kowalski.md`, `Project-Alpha.md`
 
-4. **Write the Update**
-   - Use `update_ai_note` to save changes
-   - Preserve existing content
-   - Add new entry or update existing
+   **If updating existing:**
+   - Find and update the individual file
+   - Update index if status changed
+
+3. **For Other Memory Files**
+   - Read current file
+   - Find the right section
+   - Add or update entry
+
+4. **Cross-Reference**
+   - Link people to projects they're involved in
+   - Link projects to people on the team
+   - Use Obsidian wiki-links: `[[People/Jan-Kowalski|Jan Kowalski]]`
 
 5. **Confirm to User**
    - What was stored
    - Where it was stored
    - How it will be used
 
-## Memory File Formats
+## File Templates
 
-### People.md
+### Person Index Entry (in `People.md`)
 ```markdown
-## [Person Name]
-- **Relationship**: [type]
-- **Context**: [how user knows them]
-- **Key Details**: [relevant info]
-- **Communication Preferences**: [if known]
-- **Last Mentioned**: [date]
+- [[People/Jan-Kowalski|Jan Kowalski]] - Tech Lead, zespół backend
 ```
 
-### Projects.md
+### Person Detail File (`People/Jan-Kowalski.md`)
 ```markdown
-## [Project Name]
-- **Status**: [active/paused/completed]
-- **Type**: [work/personal/side-project]
-- **Description**: [brief description]
-- **Key Context**: [important details]
-- **Related People**: [[links]]
-- **Last Updated**: [date]
+# Jan Kowalski
+
+- **Relacja**: Kolega z pracy, zespół backend
+- **Skąd się znamy**: Pracujemy razem od 2022
+- **Kontekst**: Prowadzi projekt X, ekspert od Kubernetes
+
+## Komunikacja
+- **Preferowany kanał**: Email, Slack
+- **Styl**: Krótkie maile, odpowiada szybko rano
+
+## Projekty wspólne
+- [[Projects/Project-Alpha|Project Alpha]] - Tech Lead
+
+## Powiązania
+- [[People/Anna-Nowak|Anna Nowak]] - jego manager
+
+## Ważne
+- Ma córkę (Zuzia, ~5 lat)
+- Interesuje się bieganiem
+
+## Historia
+- 2024-01: Rozpoczęliśmy współpracę przy Project Alpha
+- 2024-06: Awansował na tech leada
+
+## Notatki
+- **Ostatni kontakt**: 2025-01-28 (email o deadline)
+
+---
+*Ostatnia aktualizacja: 2025-01-28*
 ```
 
-### Preferences.md
+### Project Index Entry (in `Projects.md`)
 ```markdown
-## [Preference Category]
-- [Specific preference observed]
-- [Another preference]
+- [[Projects/Project-Alpha|Project Alpha]] - Migracja legacy, deadline 2025-03-15
 ```
 
-### Insights.md
+### Project Detail File (`Projects/Project-Alpha.md`)
 ```markdown
-## [Insight Title]
-**Observed**: [date]
-**Context**: [what led to this]
-**Pattern**: [the insight]
-**Implications**: [how to use this]
+# Project Alpha
+
+- **Typ**: Praca / kluczowy projekt
+- **Status**: Aktywny, faza 2
+- **Priorytet**: Wysoki
+
+## Kontekst
+Migracja systemu legacy do nowej architektury, budżet 500k.
+
+## Zespół
+- [[People/Jan-Kowalski|Jan Kowalski]] - Tech Lead
+- [[People/Anna-Nowak|Anna Nowak]] - PM
+- Ja - Backend developer
+
+## Timeline
+- **Start**: 2024-01
+- **Deadline**: 2025-03-15
+
+## Ryzyka
+- Zależność od zewnętrznego API
+
+## Historia decyzji
+- 2024-11: Wybrano technologię X (powód: lepsza wydajność)
+- 2025-01: Przesunięto deadline z lutego (powód: scope creep)
+
+## Postęp
+- 2025-01-28: Zakończono fazę 1
+
+---
+*Ostatnia aktualizacja: 2025-01-28*
 ```
 
 ## Output Format
 
 ### Memory Updated
 
-**Category**: [People/Projects/Preferences/Insights]
-**File**: `AI/Memory/[filename].md`
-**Action**: [Added new entry / Updated existing entry]
+**Category**: [People/Projects/Work/Personal/Preferences/Insights/Timeline]
+**Files updated**:
+- `AI/Memory/[path]`
+
+**Action**: [Created new / Updated existing]
 
 **What was saved**:
 > [Summary of the information stored]
+
+**Cross-references added**:
+- [Links to related entries if applicable]
 
 **How this helps**:
 [Brief explanation of how this memory will be used]
 
 ## Important Rules
 
+- **People & Projects**: Always use index + individual files
+- **Naming**: Use kebab-case for filenames (e.g., `Jan-Kowalski.md`)
+- **Cross-reference**: Link between people and projects
+- **Templates**: Use `_TEMPLATE.md` files as starting point
 - Always read the file first before updating
 - Preserve existing content
 - Use consistent formatting

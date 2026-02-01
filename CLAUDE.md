@@ -76,39 +76,93 @@ When reviewing emails or calendar, always indicate which account/calendar you're
 
 You have persistent memory in `AI/Memory/` within the Obsidian vault. These files form your **digital twin** - treat them as the foundation of your understanding.
 
-| File | Purpose | What to Capture |
-|------|---------|-----------------|
-| `People.md` | Everyone in my life | Name, relationship, context, communication history, their projects, preferences, important dates, how we met, connection to other people |
-| `Projects.md` | All initiatives | Personal & professional, status, stakeholders, deadlines, dependencies, progress, history of decisions |
-| `Work.md` | Professional context | Company, role, team structure, goals, challenges, key relationships, career trajectory |
-| `Personal.md` | Personal life context | Family, interests, health goals, values, important relationships, life goals |
-| `Preferences.md` | Behavioral patterns | Communication style, scheduling habits, decision patterns, likes/dislikes, how I work |
-| `Insights.md` | Observations | Patterns noticed, connections discovered, predictions, learnings about me |
-| `Timeline.md` | Life events | Important dates, milestones, anniversaries, recurring events, history |
+### Structure
+
+```
+AI/Memory/
+├── People.md           # Index of all people (brief list with links)
+├── People/             # Individual person files (detailed profiles)
+│   ├── Jan-Kowalski.md
+│   └── Anna-Nowak.md
+├── Projects.md         # Index of all projects (brief list with links)
+├── Projects/           # Individual project files (detailed profiles)
+│   ├── Project-Alpha.md
+│   └── Migration-Q3.md
+├── Work.md             # Professional context
+├── Personal.md         # Personal life context
+├── Preferences.md      # Behavioral patterns
+├── Insights.md         # Observations and patterns
+└── Timeline.md         # Life events and milestones
+```
+
+### File Purposes
+
+| File/Folder | Purpose | What to Capture |
+|-------------|---------|-----------------|
+| `People.md` | **Index** of everyone | Brief list with links to individual files |
+| `People/*.md` | **Detailed profiles** | Deep info about each person |
+| `Projects.md` | **Index** of all projects | Brief list with links to individual files |
+| `Projects/*.md` | **Detailed profiles** | Full project context and history |
+| `Work.md` | Professional context | Company, role, team, goals, career |
+| `Personal.md` | Personal life | Family, interests, values, goals |
+| `Preferences.md` | Behavioral patterns | Communication, scheduling, decisions |
+| `Insights.md` | Observations | Patterns, connections, predictions |
+| `Timeline.md` | Life events | Important dates, milestones, history |
 
 ### Memory Update Guidelines
 
-**People profiles should be deep:**
+**People index (`People.md`) - brief list:**
 ```markdown
-## Jan Kowalski
+# Ludzie
+
+## Praca
+- [[People/Jan-Kowalski|Jan Kowalski]] - Tech Lead, zespół backend
+- [[People/Anna-Nowak|Anna Nowak]] - Manager
+
+## Rodzina
+- [[People/Marta-Kowalska|Marta]] - żona
+
+## Przyjaciele
+- [[People/Tomek-Wisniewski|Tomek Wiśniewski]] - znajomy z studiów
+```
+
+**Individual person file (`People/Jan-Kowalski.md`) - detailed:**
+```markdown
+# Jan Kowalski
+
 - **Relacja**: Kolega z pracy, zespół backend
 - **Kontekst**: Pracujemy razem od 2022, prowadzi projekt X
 - **Komunikacja**: Preferuje krótkie maile, odpowiada szybko rano
-- **Projekty wspólne**: [[Project Alpha]], [[Migration Q3]]
+- **Projekty wspólne**: [[Projects/Project-Alpha|Project Alpha]], [[Projects/Migration-Q3|Migration Q3]]
 - **Ważne**: Ma córkę (Zuzia, ~5 lat), interesuje się bieganiem
-- **Powiązania**: Raportuje do [[Anna Nowak]], pracuje z [[Tomek Wiśniewski]]
+- **Powiązania**: Raportuje do [[People/Anna-Nowak|Anna Nowak]]
 - **Historia**:
   - 2024-01: Rozpoczęliśmy współpracę przy Project Alpha
   - 2024-06: Awansował na tech leada
 - **Ostatni kontakt**: 2025-01-28 (email o deadline)
 ```
 
-**Project profiles should track evolution:**
+**Project index (`Projects.md`) - brief list:**
 ```markdown
-## Project Alpha
+# Projekty
+
+## Aktywne - Praca
+- [[Projects/Project-Alpha|Project Alpha]] - Migracja legacy, deadline 2025-03-15
+
+## Aktywne - Osobiste
+- [[Projects/Remont-Lazienki|Remont łazienki]] - w trakcie
+
+## Zakończone
+- [[Projects/Migration-Q3|Migration Q3]] - zakończony 2024-12
+```
+
+**Individual project file (`Projects/Project-Alpha.md`) - detailed:**
+```markdown
+# Project Alpha
+
 - **Typ**: Praca / kluczowy projekt
 - **Status**: Aktywny, faza 2
-- **Zespół**: [[Jan Kowalski]] (lead), [[Anna Nowak]], ja
+- **Zespół**: [[People/Jan-Kowalski|Jan Kowalski]] (lead), [[People/Anna-Nowak|Anna Nowak]], ja
 - **Deadline**: 2025-03-15
 - **Kontekst**: Migracja systemu legacy, budżet 500k
 - **Ryzyka**: Zależność od zewnętrznego API
@@ -118,6 +172,8 @@ You have persistent memory in `AI/Memory/` within the Obsidian vault. These file
 - **Moje zadania**: aktualne zadania w Todoist
 - **Powiązane emaile**: kluczowe wątki
 ```
+
+**Naming convention for files:** Use kebab-case (e.g., `Jan-Kowalski.md`, `Project-Alpha.md`)
 
 **Update these files proactively** - don't wait to be asked. **Check them** at the start of relevant tasks to leverage existing knowledge.
 

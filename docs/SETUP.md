@@ -1,6 +1,44 @@
 # Caracas - Przewodnik Instalacji
 
-Krok po kroku jak skonfigurować osobistego asystenta AI.
+Krok po kroku jak skonfigurować osobistego asystenta AI z funkcją **Digital Twin**.
+
+---
+
+## Koncepcja: Digital Twin
+
+Caracas to nie tylko manager zadań - to **cyfrowy bliźniak**, kompleksowy model Twojego życia.
+
+### Czym jest Digital Twin?
+
+Asystent aktywnie buduje pełny obraz Twojego życia zawodowego i osobistego:
+
+- **Ludzie** - głębokie profile wszystkich kontaktów, relacje między nimi, historia komunikacji
+- **Projekty** - wszystkie inicjatywy zawodowe i osobiste, z pełnym kontekstem i timeline'em
+- **Praca** - kontekst zawodowy: firma, zespół, cele, wyzwania, kariera
+- **Życie osobiste** - rodzina, zainteresowania, wartości, cele życiowe
+- **Wzorce** - jak pracujesz, komunikujesz się, podejmujesz decyzje
+- **Spostrzeżenia** - połączone kropki, zauważone zależności
+- **Historia** - ważne daty, kamienie milowe, timeline życia
+
+### Jak to działa?
+
+Asystent **aktywnie wyciąga informacje** z każdej interakcji:
+
+1. Gdy przeglądasz email - uczy się o ludziach i projektach
+2. Gdy sprawdzasz kalendarz - buduje mapę relacji i wzorców
+3. Gdy omawiasz zadania - aktualizuje status projektów
+
+**To nie jest pasywne notatki** - asystent proaktywnie łączy informacje i buduje coraz głębsze zrozumienie Twojego świata.
+
+### Po co?
+
+Dzięki Digital Twin asystent może:
+
+- Przypomnieć Ci o urodzinach kolegi wspomnianego w emailu
+- Zauważyć że projekt wymaga uwagi bo deadline się zbliża
+- Połączyć emaila od osoby A z projektem prowadzonym przez osobę B
+- Zaproponować fokus na podstawie Twoich wzorców produktywności
+- Być prawdziwie pomocnym partnerem, nie tylko narzędziem
 
 ---
 
@@ -247,20 +285,37 @@ Vault Obsidian:
 ```
 kedrzu/
 ├── AI/                       # Folder asystenta (pełny dostęp)
-│   ├── Memory/               # Pamięć
-│   │   ├── People.md
-│   │   ├── Projects.md
-│   │   ├── Preferences.md
-│   │   └── Insights.md
+│   ├── Memory/               # DIGITAL TWIN - model Twojego życia
+│   │   ├── People.md         # INDEKS ludzi (linki do szczegółów)
+│   │   ├── People/           # Szczegółowe profile osób
+│   │   │   ├── _TEMPLATE.md  # Szablon dla nowych osób
+│   │   │   └── Jan-Kowalski.md
+│   │   ├── Projects.md       # INDEKS projektów (linki do szczegółów)
+│   │   ├── Projects/         # Szczegółowe profile projektów
+│   │   │   ├── _TEMPLATE.md  # Szablon dla nowych projektów
+│   │   │   └── Project-Alpha.md
+│   │   ├── Work.md           # Kontekst zawodowy
+│   │   ├── Personal.md       # Kontekst osobisty
+│   │   ├── Preferences.md    # Wzorce zachowań i preferencje
+│   │   ├── Insights.md       # Spostrzeżenia i połączone kropki
+│   │   └── Timeline.md       # Ważne daty i kamienie milowe
 │   ├── Drafts/
 │   ├── Research/
 │   └── SessionLogs/
-├── Inbox/                    # Twoje notatki (append-only)
+├── Inbox/                    # Twoje notatki (append-only dla AI)
 ├── Projekty/
 ├── Obszary/
 ├── Zasoby/
-└── Archiwum/                 # (read-only)
+└── Archiwum/                 # (read-only dla AI)
 ```
+
+**Dlaczego indeks + osobne pliki?**
+
+Ludzie i projekty mogą rosnąć do setek wpisów. Struktura indeks + szczegóły:
+- Pozwala szybko przeskanować listę
+- Umożliwia głębokie profile bez zaśmiecania
+- Lepiej działa z wyszukiwaniem Obsidian
+- Ułatwia cross-referencje między plikami
 
 ---
 
