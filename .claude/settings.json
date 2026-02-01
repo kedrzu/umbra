@@ -1,0 +1,74 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__gmail__list_accounts",
+      "mcp__gmail__search_threads",
+      "mcp__gmail__get_thread",
+      "mcp__gmail__get_message",
+      "mcp__gmail__create_draft",
+      "mcp__gmail__list_labels",
+      "mcp__gmail__apply_label",
+      "mcp__gmail__remove_label",
+      "mcp__gmail__mark_important",
+      "mcp__gmail__mark_read",
+      "mcp__gmail__mark_unread",
+      "mcp__gmail__get_unsubscribe_link",
+      "mcp__gmail__extract_attachment*",
+      "mcp__gmail__get_personal_email_style_guide",
+
+      "mcp__calendar__list-calendars",
+      "mcp__calendar__list-events",
+      "mcp__calendar__get-event",
+      "mcp__calendar__search-events",
+      "mcp__calendar__list-colors",
+      "mcp__calendar__get-freebusy",
+      "mcp__calendar__get-current-time",
+      "mcp__calendar__manage-accounts",
+
+      "mcp__todoist__get_tasks",
+      "mcp__todoist__get_task",
+      "mcp__todoist__get_projects",
+      "mcp__todoist__get_project",
+      "mcp__todoist__get_sections",
+      "mcp__todoist__get_labels",
+      "mcp__todoist__get_comments",
+      "mcp__todoist__search_tasks",
+      "mcp__todoist__create_task",
+      "mcp__todoist__add_task",
+
+      "mcp__qmd__*",
+      "mcp__obsidian-search__*",
+
+      "mcp__obsidian-vault__read_note",
+      "mcp__obsidian-vault__list_notes",
+      "mcp__obsidian-vault__search_notes",
+      "mcp__obsidian-vault__create_ai_note",
+      "mcp__obsidian-vault__update_ai_note",
+      "mcp__obsidian-vault__append_to_user_note"
+    ],
+    "ask": [
+      "mcp__calendar__create-event",
+      "mcp__gmail__unsubscribe"
+    ],
+    "deny": [
+      "mcp__gmail__send*",
+      "mcp__gmail__delete*",
+      "mcp__gmail__trash*",
+
+      "mcp__calendar__update-event",
+      "mcp__calendar__delete-event",
+      "mcp__calendar__respond-to-event",
+
+      "mcp__todoist__update*",
+      "mcp__todoist__delete*",
+      "mcp__todoist__complete*",
+      "mcp__todoist__close*",
+      "mcp__todoist__reopen*",
+      "mcp__todoist__move*",
+
+      "mcp__obsidian-vault__delete*",
+      "mcp__obsidian-vault__move*",
+      "mcp__obsidian-vault__rename*"
+    ]
+  }
+}
