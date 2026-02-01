@@ -2,6 +2,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -9,10 +10,13 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import * as fs from "fs/promises";
 import * as path from "path";
+import express, { Request, Response } from "express";
 
 // Configuration from environment
 const VAULT_PATH = process.env.VAULT_PATH || "";
 const AI_NOTES_PREFIX = process.env.AI_NOTES_PREFIX || "AI/";
+const MCP_TRANSPORT = process.env.MCP_TRANSPORT || "stdio";
+const MCP_PORT = parseInt(process.env.MCP_PORT || "3001");
 
 if (!VAULT_PATH) {
   console.error("Error: VAULT_PATH environment variable is required");
@@ -394,11 +398,65 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start server
+// Start server with appropriate transport
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  console.error("Obsidian Vault MCP server running");
+  if (MCP_TRANSPORT === "http") {
+    // HTTP/SSE transport for Docker
+    const app = express();
+
+    // Health check endpoint
+    app.get("/health", (_req: Request, res: Response) => {
+      res.json({ status: "ok", server: "obsidian-vault-mcp", version: "1.0.0" });
+    });
+
+    // Store active transports by session ID
+    const transports = new Map<string, SSEServerTransport>();
+
+    // SSE endpoint for MCP
+    app.get("/sse", async (req: Request, res: Response) => {
+      console.error("New SSE connection");
+
+      const transport = new SSEServerTransport("/messages", res);
+      const sessionId = crypto.randomUUID();
+      transports.set(sessionId, transport);
+
+      res.on("close", () => {
+        console.error(`SSE connection closed: ${sessionId}`);
+        transports.delete(sessionId);
+      });
+
+      await server.connect(transport);
+    });
+
+    // Messages endpoint for client-to-server communication
+    app.post("/messages", express.json(), async (req: Request, res: Response) => {
+      const sessionId = req.query.sessionId as string;
+      const transport = transports.get(sessionId);
+
+      if (!transport) {
+        res.status(400).json({ error: "No active session" });
+        return;
+      }
+
+      try {
+        await transport.handlePostMessage(req, res);
+      } catch (error) {
+        console.error("Error handling message:", error);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+
+    app.listen(MCP_PORT, "0.0.0.0", () => {
+      console.error(`Obsidian Vault MCP server running on http://0.0.0.0:${MCP_PORT}`);
+      console.error("Transport: HTTP/SSE");
+      console.error(`Vault path: ${VAULT_PATH}`);
+    });
+  } else {
+    // stdio transport for local/CLI usage
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    console.error("Obsidian Vault MCP server running (stdio transport)");
+  }
 }
 
 main().catch((error) => {

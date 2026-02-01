@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "obsidian-vault": {
+      "type": "sse",
+      "url": "http://obsidian-vault:3001/sse"
+    },
+    "gmail": {
+      "type": "sse",
+      "url": "http://gmail:3002/sse"
+    },
+    "calendar": {
+      "type": "sse",
+      "url": "http://calendar:3003/sse"
+    },
+    "todoist": {
+      "type": "http",
+      "url": "https://ai.todoist.net/mcp"
+    },
+    "qmd": {
+      "command": "qmd",
+      "args": ["mcp"],
+      "env": {
+        "QMD_VAULT_PATH": "/vault"
+      }
+    }
+  }
+}
