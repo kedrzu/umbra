@@ -2,15 +2,15 @@
   "mcpServers": {
     "obsidian-vault": {
       "type": "sse",
-      "url": "http://obsidian-vault:3001/sse"
+      "url": "http://obsidian-vault:4001/sse"
     },
     "gmail": {
       "type": "sse",
-      "url": "http://gmail:3002/sse"
+      "url": "http://gmail:4002/sse"
     },
     "calendar": {
       "type": "sse",
-      "url": "http://calendar:3003/sse"
+      "url": "http://calendar:4003/sse"
     },
     "todoist": {
       "type": "http",

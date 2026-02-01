@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Caracas Personal Assistant - Docker Setup Script
+# Umbra Personal Assistant - Docker Setup Script
 # This script helps set up the Docker environment and OAuth authentication
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║     Caracas Personal Assistant - Docker Setup              ║${NC}"
+echo -e "${BLUE}║     Umbra Personal Assistant - Docker Setup              ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo
 
@@ -119,12 +119,12 @@ read -p "Set up OAuth now? (y/n): " setup_oauth_now
 if [ "$setup_oauth_now" = "y" ] || [ "$setup_oauth_now" = "Y" ]; then
     # Start Gmail for OAuth
     if [ -f "$GMAIL_CREDENTIALS_PATH" ]; then
-        setup_oauth "gmail" "3002" "Gmail"
+        setup_oauth "gmail" "4002" "Gmail"
     fi
 
     # Start Calendar for OAuth
     if [ -f "$CALENDAR_CREDENTIALS_PATH" ]; then
-        setup_oauth "calendar" "3003" "Calendar"
+        setup_oauth "calendar" "4003" "Calendar"
     fi
 
     # Stop OAuth containers

@@ -23,14 +23,14 @@ RUN mkdir -p /config/tokens && chown -R mcp:mcp /config /app
 USER mcp
 
 ENV NODE_ENV=production
-ENV MCP_PORT=3003
+ENV MCP_PORT=4003
 ENV MODE=http
 ENV GOOGLE_OAUTH_CREDENTIALS=/config/gcp-oauth.keys.json
 ENV GOOGLE_TOKEN_PATH=/config/tokens
 
-EXPOSE 3003
+EXPOSE 4003
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget -q --spider http://localhost:3003/health || exit 1
+    CMD wget -q --spider http://localhost:4003/health || exit 1
 
 CMD ["node", "dist/index.js"]

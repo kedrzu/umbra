@@ -4,8 +4,8 @@
       "command": "node",
       "args": ["${PROJECT_ROOT}/mcp-servers/gmail/dist/index.js"],
       "env": {
-        "GMAIL_CREDENTIALS_PATH": "${HOME}/.config/caracas/gmail-credentials.json",
-        "GMAIL_TOKENS_PATH": "${HOME}/.config/caracas/gmail-tokens.json"
+        "GMAIL_CREDENTIALS_PATH": "${HOME}/.config/umbra/gmail-credentials.json",
+        "GMAIL_TOKENS_PATH": "${HOME}/.config/umbra/gmail-tokens.json"
       }
     },
     "calendar": {

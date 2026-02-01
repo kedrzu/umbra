@@ -1,6 +1,6 @@
 # Docker Setup Guide
 
-This guide explains how to run the Caracas Personal Assistant in Docker containers.
+This guide explains how to run the Umbra Personal Assistant in Docker containers.
 
 ## Architecture
 
@@ -13,6 +13,7 @@ This guide explains how to run the Caracas Personal Assistant in Docker containe
 │  │  - Claude Code CLI (sandboxed)                                      │ │
 │  │  - qmd (semantic search)                                            │ │
 │  │  - Read-only vault access                                           │ │
+│  │  - Read-write assistant/ folder (self-modifying)                    │ │
 │  │  - Connects to MCPs via HTTP/SSE                                    │ │
 │  └──────────────────────────────────────────────────────────────────┬─┘ │
 │                                                                      │   │
@@ -20,7 +21,7 @@ This guide explains how to run the Caracas Personal Assistant in Docker containe
 │         ▼                    ▼                   ▼                       │
 │  ┌─────────────┐      ┌─────────────┐     ┌─────────────┐              │
 │  │ obsidian    │      │   gmail     │     │  calendar   │              │
-│  │   :3001     │      │   :3002     │     │   :3003     │              │
+│  │   :4001     │      │   :4002     │     │   :4003     │              │
 │  └─────────────┘      └─────────────┘     └─────────────┘              │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -38,7 +39,7 @@ This guide explains how to run the Caracas Personal Assistant in Docker containe
 ### 1. Clone and Configure
 
 ```bash
-cd caracas
+cd umbra
 
 # Copy environment template
 cp .env.example .env
@@ -68,6 +69,7 @@ Your credentials are saved to `~/.claude/` and will be mounted into the containe
 ```
 
 This will:
+
 - Validate your configuration
 - Build Docker images
 - Guide you through OAuth setup for Gmail and Calendar
@@ -98,13 +100,13 @@ CLAUDE_CONFIG_PATH=${HOME}/.claude
 OBSIDIAN_VAULT_PATH=/path/to/your/obsidian/vault
 
 # OAuth Credentials (from Google Cloud Console)
-GMAIL_CREDENTIALS_PATH=${HOME}/.config/caracas/gmail-credentials.json
-CALENDAR_CREDENTIALS_PATH=${HOME}/.config/caracas/calendar-credentials.json
+GMAIL_CREDENTIALS_PATH=${HOME}/.config/umbra/gmail-credentials.json
+CALENDAR_CREDENTIALS_PATH=${HOME}/.config/umbra/calendar-credentials.json
 
 # Ports (optional, for debugging)
-MCP_OBSIDIAN_PORT=3001
-MCP_GMAIL_PORT=3002
-MCP_CALENDAR_PORT=3003
+MCP_OBSIDIAN_PORT=4001
+MCP_GMAIL_PORT=4002
+MCP_CALENDAR_PORT=4003
 ```
 
 ### Google Cloud Setup
@@ -115,8 +117,8 @@ MCP_CALENDAR_PORT=3003
 4. Create OAuth 2.0 credentials (Desktop app type)
 5. Download credentials JSON files
 6. Save as:
-   - `~/.config/caracas/gmail-credentials.json`
-   - `~/.config/caracas/calendar-credentials.json`
+   - `~/.config/umbra/gmail-credentials.json`
+   - `~/.config/umbra/calendar-credentials.json`
 
 ## Usage
 
@@ -155,9 +157,9 @@ docker compose logs -f gmail
 docker compose ps
 
 # Individual health endpoints
-curl http://localhost:3001/health  # obsidian-vault
-curl http://localhost:3002/health  # gmail
-curl http://localhost:3003/health  # calendar
+curl http://localhost:4001/health  # obsidian-vault
+curl http://localhost:4002/health  # gmail
+curl http://localhost:4003/health  # calendar
 ```
 
 ## OAuth Management
@@ -165,20 +167,54 @@ curl http://localhost:3003/health  # calendar
 ### Adding Gmail Accounts
 
 1. Start the Gmail service: `docker compose up -d gmail`
-2. Visit http://localhost:3002/auth
+2. Visit http://localhost:4002/auth
 3. Complete OAuth flow
 4. Repeat for additional accounts
 
 ### Adding Calendar Accounts
 
 1. Start the Calendar service: `docker compose up -d calendar`
-2. Visit http://localhost:3003/auth
+2. Visit http://localhost:4003/auth
 3. Complete OAuth flow
 
 ### Viewing Authenticated Accounts
 
-- Gmail: http://localhost:3002/accounts
-- Calendar: http://localhost:3003/accounts
+- Gmail: http://localhost:4002/accounts
+- Calendar: http://localhost:4003/accounts
+
+## Multi-Account Setup
+
+Both Gmail and Calendar support multiple Google accounts. Each service stores one token file per authenticated account.
+
+### How Multi-Account Works
+
+1. **Single OAuth App**: You create ONE OAuth app in Google Cloud Console
+2. **Multiple Authentications**: Each account is authenticated separately via `/auth` endpoint
+3. **Token Storage**: Tokens are stored in a Docker volume (one file per account)
+
+### Adding Gmail Accounts
+
+1. Start the Gmail service: `docker compose up -d gmail`
+2. Visit http://localhost:4002/auth
+3. Sign in with a Google account and authorize
+4. Repeat steps 2-3 for each additional account
+5. View all accounts: http://localhost:4002/accounts
+
+### Adding Calendar Accounts
+
+1. Start the Calendar service: `docker compose up -d calendar`
+2. Visit http://localhost:4003/auth
+3. Sign in with a Google account and authorize
+4. Repeat for additional accounts
+
+### Using Multiple Accounts
+
+When using Gmail tools, specify which account:
+
+- `list_accounts` - shows all authenticated accounts
+- All other tools accept an `account` parameter (email address)
+
+Calendar automatically aggregates events from all authenticated accounts.
 
 ## Production Deployment
 
@@ -189,6 +225,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 This:
+
 - Removes exposed ports (internal network only)
 - Adds resource limits
 - Enables restart policies
@@ -204,13 +241,27 @@ This:
 
 ### Volume Permissions
 
-| Volume | Container | Access |
-|--------|-----------|--------|
-| Obsidian vault | claude | read-only |
-| Obsidian vault | obsidian-vault | read-write (AI/ folder only) |
-| qmd-index | claude | read-write |
-| OAuth tokens | gmail, calendar | read-write |
-| Claude config | claude | read-only |
+| Volume         | Container       | Access         | Purpose                      |
+| -------------- | --------------- | -------------- | ---------------------------- |
+| Obsidian vault | claude          | read-only      | qmd search                   |
+| Obsidian vault | obsidian-vault  | read-write     | Note operations (AI/ folder) |
+| `assistant/`   | claude          | **read-write** | Self-modifying instructions  |
+| qmd-index      | claude          | read-write     | Search index                 |
+| OAuth tokens   | gmail, calendar | read-write     | Auth tokens                  |
+| ~/.claude      | claude          | read-only      | Auth credentials only        |
+
+### Self-Modifying Assistant
+
+The `assistant/` folder is mounted **read-write**, allowing Claude to update its own:
+
+- `CLAUDE.md` - Core instructions
+- `.claude/skills/` - Skill definitions
+- `.claude/settings.json` - Permissions
+- `.mcp.json` - MCP configuration
+
+This enables the assistant to learn and improve its workflows. Changes are persisted to your local filesystem and can be committed to version control.
+
+**Security note**: The `.env` file and secrets are NOT exposed to the assistant.
 
 ### Secrets
 
@@ -243,7 +294,7 @@ docker compose build --no-cache
 docker compose ps
 
 # Test health endpoint
-curl http://localhost:3001/health
+curl http://localhost:4001/health
 ```
 
 ### qmd not working

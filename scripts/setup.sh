@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Caracas AI Assistant Setup ==="
+echo "=== Umbra AI Assistant Setup ==="
 echo ""
 
 # Colors for output
@@ -12,7 +12,7 @@ NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-CONFIG_DIR="$HOME/.config/caracas"
+CONFIG_DIR="$HOME/.config/umbra"
 VAULT_PATH="/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu"
 
 # Create config directory

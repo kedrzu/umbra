@@ -18,7 +18,7 @@ import * as path from "path";
 const CREDENTIALS_PATH = process.env.GMAIL_CREDENTIALS_PATH || "";
 const TOKENS_PATH = process.env.GMAIL_TOKENS_PATH || "";
 const MCP_TRANSPORT = process.env.MCP_TRANSPORT || "stdio";
-const MCP_PORT = parseInt(process.env.MCP_PORT || "3002");
+const MCP_PORT = parseInt(process.env.MCP_PORT || "4002");
 
 // OAuth scopes - intentionally excludes send permission for safety
 const SCOPES = [
@@ -38,7 +38,11 @@ interface AccountInfo {
 const accounts = new Map<string, AccountInfo>();
 
 // Load credentials
-async function loadCredentials(): Promise<{ client_id: string; client_secret: string; redirect_uris: string[] }> {
+async function loadCredentials(): Promise<{
+  client_id: string;
+  client_secret: string;
+  redirect_uris: string[];
+}> {
   if (!CREDENTIALS_PATH) {
     throw new Error("GMAIL_CREDENTIALS_PATH environment variable is required");
   }
@@ -62,7 +66,10 @@ async function loadTokens(): Promise<Map<string, unknown>> {
       if (file.endsWith(".json")) {
         const content = await fs.readFile(path.join(tokensDir, file), "utf-8");
         const token = JSON.parse(content);
-        const email = file.replace(".json", "").replace(/_/g, "@").replace(/-/g, ".");
+        const email = file
+          .replace(".json", "")
+          .replace(/_/g, "@")
+          .replace(/-/g, ".");
         tokens.set(email, token);
       }
     }
@@ -117,7 +124,11 @@ async function initializeAccounts(): Promise<void> {
 function getGmailClient(email: string): gmail_v1.Gmail {
   const account = accounts.get(email);
   if (!account) {
-    throw new Error(`Account not found: ${email}. Available: ${[...accounts.keys()].join(", ")}`);
+    throw new Error(
+      `Account not found: ${email}. Available: ${[...accounts.keys()].join(
+        ", "
+      )}`
+    );
   }
   return account.gmail;
 }
@@ -145,7 +156,8 @@ const tools: Tool[] = [
         },
         query: {
           type: "string",
-          description: "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com', 'subject:meeting')",
+          description:
+            "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com', 'subject:meeting')",
         },
         maxResults: {
           type: "number",
@@ -354,11 +366,15 @@ function decodeBase64Url(data: string): string {
 }
 
 // Helper to encode message for sending
-function encodeMessage(to: string, subject: string, body: string, cc?: string, bcc?: string, inReplyTo?: string): string {
-  const lines = [
-    `To: ${to}`,
-    `Subject: ${subject}`,
-  ];
+function encodeMessage(
+  to: string,
+  subject: string,
+  body: string,
+  cc?: string,
+  bcc?: string,
+  inReplyTo?: string
+): string {
+  const lines = [`To: ${to}`, `Subject: ${subject}`];
 
   if (cc) lines.push(`Cc: ${cc}`);
   if (bcc) lines.push(`Bcc: ${bcc}`);
@@ -403,8 +419,14 @@ function extractMessageBody(payload: gmail_v1.Schema$MessagePart): string {
 }
 
 // Get header value
-function getHeader(headers: gmail_v1.Schema$MessagePartHeader[] | undefined, name: string): string {
-  return headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value || "";
+function getHeader(
+  headers: gmail_v1.Schema$MessagePartHeader[] | undefined,
+  name: string
+): string {
+  return (
+    headers?.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ||
+    ""
+  );
 }
 
 // Create server
@@ -744,7 +766,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 // OAuth routes for authentication
-function setupOAuthRoutes(app: express.Application, credentials: { client_id: string; client_secret: string; redirect_uris: string[] }): void {
+function setupOAuthRoutes(
+  app: express.Application,
+  credentials: {
+    client_id: string;
+    client_secret: string;
+    redirect_uris: string[];
+  }
+): void {
   // Start OAuth flow
   app.get("/auth", (req: Request, res: Response) => {
     const oauth2Client = new google.auth.OAuth2(
@@ -810,7 +839,9 @@ function setupOAuthRoutes(app: express.Application, credentials: { client_id: st
       `);
     } catch (error) {
       console.error("OAuth error:", error);
-      res.status(500).send("Authentication failed: " + (error as Error).message);
+      res
+        .status(500)
+        .send("Authentication failed: " + (error as Error).message);
     }
   });
 
@@ -823,7 +854,11 @@ function setupOAuthRoutes(app: express.Application, credentials: { client_id: st
           <h1>Gmail MCP - Accounts</h1>
           <h2>Authenticated Accounts:</h2>
           <ul>
-            ${accountList.length > 0 ? accountList.map((a) => `<li>${a}</li>`).join("") : "<li>No accounts configured</li>"}
+            ${
+              accountList.length > 0
+                ? accountList.map((a) => `<li>${a}</li>`).join("")
+                : "<li>No accounts configured</li>"
+            }
           </ul>
           <p><a href="/auth">Add account</a></p>
         </body>
@@ -874,22 +909,26 @@ async function main() {
     });
 
     // Messages endpoint
-    app.post("/messages", express.json(), async (req: Request, res: Response) => {
-      const sessionId = req.query.sessionId as string;
-      const transport = transports.get(sessionId);
+    app.post(
+      "/messages",
+      express.json(),
+      async (req: Request, res: Response) => {
+        const sessionId = req.query.sessionId as string;
+        const transport = transports.get(sessionId);
 
-      if (!transport) {
-        res.status(400).json({ error: "No active session" });
-        return;
-      }
+        if (!transport) {
+          res.status(400).json({ error: "No active session" });
+          return;
+        }
 
-      try {
-        await transport.handlePostMessage(req, res);
-      } catch (error) {
-        console.error("Error handling message:", error);
-        res.status(500).json({ error: "Internal server error" });
+        try {
+          await transport.handlePostMessage(req, res);
+        } catch (error) {
+          console.error("Error handling message:", error);
+          res.status(500).json({ error: "Internal server error" });
+        }
       }
-    });
+    );
 
     app.listen(MCP_PORT, "0.0.0.0", () => {
       console.error(`Gmail MCP server running on http://0.0.0.0:${MCP_PORT}`);

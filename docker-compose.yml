@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # ==========================
@@ -8,7 +8,7 @@ services:
     build:
       context: ./docker/claude
       dockerfile: Dockerfile
-    container_name: caracas-claude
+    container_name: umbra-claude
     stdin_open: true
     tty: true
     networks:
@@ -21,24 +21,26 @@ services:
         read_only: true
       # qmd index storage (writable)
       - qmd-index:/home/claude/.cache/qmd
-      # Project files (CLAUDE.md, skills, etc.) - read-only
+      # Assistant config (CLAUDE.md, skills, .mcp.json) - READ-WRITE
+      # This allows the assistant to update its own instructions
       - type: bind
-        source: .
+        source: ./assistant
         target: /workspace
-        read_only: true
-      # Claude Code configuration - mount from host for subscription auth
+      # Claude Code auth credentials - READ-ONLY
       # Run `claude login` on host first to authenticate
+      # Only exposes auth, not .env or other secrets
       - type: bind
         source: ${CLAUDE_CONFIG_PATH:-~/.claude}
         target: /home/claude/.claude
+        read_only: true
     environment:
       # Option 1: API key (comment out if using subscription)
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       # Option 2: Subscription auth uses mounted ~/.claude config
       # MCP HTTP endpoints
-      - MCP_OBSIDIAN_VAULT_URL=http://obsidian-vault:3001/mcp
-      - MCP_GMAIL_URL=http://gmail:3002/mcp
-      - MCP_CALENDAR_URL=http://calendar:3003/mcp
+      - MCP_OBSIDIAN_VAULT_URL=http://obsidian-vault:4001/mcp
+      - MCP_GMAIL_URL=http://gmail:4002/mcp
+      - MCP_CALENDAR_URL=http://calendar:4003/mcp
       - MCP_TODOIST_URL=https://ai.todoist.net/mcp
       # qmd configuration
       - QMD_VAULT_PATH=/vault
@@ -64,11 +66,11 @@ services:
     build:
       context: ./mcp-servers/obsidian-vault
       dockerfile: Dockerfile
-    container_name: caracas-obsidian-vault
+    container_name: umbra-obsidian-vault
     networks:
       - mcp-network
     ports:
-      - "${MCP_OBSIDIAN_PORT:-3001}:3001"
+      - "${MCP_OBSIDIAN_PORT:-4001}:4001"
     volumes:
       - type: bind
         source: ${OBSIDIAN_VAULT_PATH}
@@ -76,10 +78,10 @@ services:
     environment:
       - VAULT_PATH=/vault
       - AI_NOTES_PREFIX=AI/
-      - MCP_PORT=3001
+      - MCP_PORT=4001
       - MCP_TRANSPORT=http
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -92,11 +94,11 @@ services:
     build:
       context: ./mcp-servers/gmail
       dockerfile: Dockerfile
-    container_name: caracas-gmail
+    container_name: umbra-gmail
     networks:
       - mcp-network
     ports:
-      - "${MCP_GMAIL_PORT:-3002}:3002"
+      - "${MCP_GMAIL_PORT:-4002}:4002"
     volumes:
       - type: bind
         source: ${GMAIL_CREDENTIALS_PATH}
@@ -106,10 +108,10 @@ services:
     environment:
       - GMAIL_CREDENTIALS_PATH=/config/credentials.json
       - GMAIL_TOKENS_PATH=/config/tokens
-      - MCP_PORT=3002
+      - MCP_PORT=4002
       - MCP_TRANSPORT=http
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3002/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -122,11 +124,11 @@ services:
     build:
       context: ./mcp-servers/calendar
       dockerfile: Dockerfile
-    container_name: caracas-calendar
+    container_name: umbra-calendar
     networks:
       - mcp-network
     ports:
-      - "${MCP_CALENDAR_PORT:-3003}:3003"
+      - "${MCP_CALENDAR_PORT:-4003}:4003"
     volumes:
       - type: bind
         source: ${CALENDAR_CREDENTIALS_PATH}
@@ -137,10 +139,10 @@ services:
       - GOOGLE_OAUTH_CREDENTIALS=/config/gcp-oauth.keys.json
       - GOOGLE_TOKEN_PATH=/config/tokens
       - ENABLED_TOOLS=list-calendars,list-events,get-event,search-events,list-colors,get-freebusy,get-current-time,create-event,manage-accounts
-      - MCP_PORT=3003
+      - MCP_PORT=4003
       - MCP_TRANSPORT=http
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3003/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4003/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -149,12 +151,12 @@ services:
 networks:
   mcp-network:
     driver: bridge
-    name: caracas-mcp-network
+    name: umbra-mcp-network
 
 volumes:
   qmd-index:
-    name: caracas-qmd-index
+    name: umbra-qmd-index
   gmail-tokens:
-    name: caracas-gmail-tokens
+    name: umbra-gmail-tokens
   calendar-tokens:
-    name: caracas-calendar-tokens
+    name: umbra-calendar-tokens
