@@ -7,7 +7,28 @@ description: Find unwanted newsletter subscriptions and help unsubscribe. Search
 
 Find and clean up unwanted email subscriptions across all accounts.
 
+## MCP Tools Used
+
+| Operation | Tool |
+|-----------|------|
+| Read memory | `read_note` |
+| Search promotional emails | `search_threads` |
+| Get unsubscribe link | `get_unsubscribe_info` |
+| Update memory | `create_ai_note` |
+
+## Gmail Accounts
+
+| Account | Email |
+|---------|-------|
+| Personal | kedrzu@gmail.com |
+| Work | kedrzu@sigma.clinic |
+
 ## Process
+
+0. **Check AI Memory** for context
+   - Use `read_note` to read `AI/Memory/People.md` - don't suggest unsubscribing from known contacts
+   - Use `read_note` to read `AI/Memory/EmailWorkflow-Personal.md` and `AI/Memory/EmailWorkflow-Work.md` - understand existing labeling categories
+   - Use `read_note` to read `AI/Memory/Preferences.md` - check unsubscribe preferences
 
 1. **Search for promotional emails** in each account
    - Query: `category:promotions OR label:promotions`

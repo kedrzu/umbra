@@ -1,4 +1,20 @@
 {
+  "model": "sonnet",
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["qmd"],
+    "network": {
+      "allowedDomains": [
+        "localhost",
+        "127.0.0.1",
+        "ai.todoist.net",
+        "todoist.net",
+        "*.anthropic.com"
+      ],
+      "allowLocalBinding": false
+    }
+  },
   "permissions": {
     "allow": [
       "mcp__gmail__list_accounts",
@@ -39,12 +55,12 @@
       "mcp__qmd__*",
       "mcp__obsidian-search__*",
 
-      "mcp__obsidian-vault__read_note",
-      "mcp__obsidian-vault__list_notes",
-      "mcp__obsidian-vault__search_notes",
-      "mcp__obsidian-vault__create_ai_note",
-      "mcp__obsidian-vault__update_ai_note",
-      "mcp__obsidian-vault__append_to_user_note"
+      "mcp__obsidian__read_note",
+      "mcp__obsidian__list_notes",
+      "mcp__obsidian__search_notes",
+      "mcp__obsidian__create_ai_note",
+      "mcp__obsidian__update_ai_note",
+      "mcp__obsidian__append_to_user_note"
     ],
     "ask": [
       "mcp__calendar__create-event",
@@ -66,9 +82,13 @@
       "mcp__todoist__reopen*",
       "mcp__todoist__move*",
 
-      "mcp__obsidian-vault__delete*",
-      "mcp__obsidian-vault__move*",
-      "mcp__obsidian-vault__rename*"
+      "mcp__obsidian__delete*",
+      "mcp__obsidian__move*",
+      "mcp__obsidian__rename*",
+
+      "Read(../*)",
+      "Edit(../*)",
+      "Write(../*)"
     ]
   }
 }

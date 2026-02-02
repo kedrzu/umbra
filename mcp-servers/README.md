@@ -2,7 +2,7 @@
 
 Custom MCP (Model Context Protocol) servers for the Umbra AI Assistant.
 
-## obsidian-vault
+## obsidian
 
 Permission-separated Obsidian vault access server.
 
@@ -27,7 +27,7 @@ Permission-separated Obsidian vault access server.
 ### Build
 
 ```bash
-cd obsidian-vault
+cd obsidian
 npm install
 npm run build
 ```

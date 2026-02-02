@@ -2,7 +2,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -177,7 +177,7 @@ const tools: Tool[] = [
 // Create server
 const server = new Server(
   {
-    name: "obsidian-vault",
+    name: "obsidian",
     version: "1.0.0",
   },
   {
@@ -399,71 +399,50 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Start server with appropriate transport
 async function main() {
   if (MCP_TRANSPORT === "http") {
-    // HTTP/SSE transport for Docker
+    // Streamable HTTP transport for Docker
     const app = express();
+
+    // Create a single stateless transport
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Stateless mode
+    });
+
+    // Connect server to transport once
+    await server.connect(transport);
 
     // Health check endpoint
     app.get("/health", (_req: Request, res: Response) => {
       res.json({
         status: "ok",
-        server: "obsidian-vault-mcp",
+        server: "obsidian-mcp",
         version: "1.0.0",
       });
     });
 
-    // Store active transports by session ID
-    const transports = new Map<string, SSEServerTransport>();
-
-    // SSE endpoint for MCP
-    app.get("/sse", async (req: Request, res: Response) => {
-      console.error("New SSE connection");
-
-      const transport = new SSEServerTransport("/messages", res);
-      const sessionId = crypto.randomUUID();
-      transports.set(sessionId, transport);
-
-      res.on("close", () => {
-        console.error(`SSE connection closed: ${sessionId}`);
-        transports.delete(sessionId);
-      });
-
-      await server.connect(transport);
-    });
-
-    // Messages endpoint for client-to-server communication
-    app.post(
-      "/messages",
-      express.json(),
-      async (req: Request, res: Response) => {
-        const sessionId = req.query.sessionId as string;
-        const transport = transports.get(sessionId);
-
-        if (!transport) {
-          res.status(400).json({ error: "No active session" });
-          return;
-        }
-
-        try {
-          await transport.handlePostMessage(req, res);
-        } catch (error) {
-          console.error("Error handling message:", error);
+    // Handle all MCP requests
+    app.all("/mcp", express.json(), async (req: Request, res: Response) => {
+      try {
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        console.error("Error handling MCP request:", error);
+        if (!res.headersSent) {
           res.status(500).json({ error: "Internal server error" });
         }
       }
-    );
+    });
 
     app.listen(MCP_PORT, "0.0.0.0", () => {
       console.error(
-        `Obsidian Vault MCP server running on http://0.0.0.0:${MCP_PORT}`
+        `Obsidian MCP server running on http://0.0.0.0:${MCP_PORT}`
       );
-      console.error("Transport: HTTP/SSE");
+      console.error("Transport: Streamable HTTP (stateless)");
       console.error(`Vault path: ${VAULT_PATH}`);
     });
   } else {
     // stdio transport for local/CLI usage
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("Obsidian Vault MCP server running (stdio transport)");
+    console.error("Obsidian MCP server running (stdio transport)");
   }
 }
 

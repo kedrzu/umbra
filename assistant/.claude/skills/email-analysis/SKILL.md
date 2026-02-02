@@ -7,6 +7,22 @@ description: Analyze email patterns across accounts and help design labeling/wor
 
 Przeanalizuj wzorce emaili i pomóż zaprojektować strategię workflow.
 
+## MCP Tools Used
+
+| Operation | Tool |
+|-----------|------|
+| Search emails | `search_threads` |
+| Read thread content | `get_thread` |
+| Read memory | `read_note` |
+| Save workflow | `create_ai_note` |
+
+## Gmail Accounts
+
+| Account | Email |
+|---------|-------|
+| Personal | kedrzu@gmail.com |
+| Work | kedrzu@sigma.clinic |
+
 ## Cel
 
 Strategia labelowania i obsługi emaili nie jest jeszcze zdefiniowana. Ten skill pomoże:
@@ -83,7 +99,9 @@ Na podstawie analizy zaproponuj:
 1. Przedstaw propozycję użytkownikowi
 2. Zbierz feedback
 3. Dostosuj strategię
-4. Zapisz finalną strategię w `AI/Memory/EmailWorkflow-[account].md`
+4. Użyj `create_ai_note` aby zapisać finalną strategię w `AI/Memory/EmailWorkflow-[account].md`
+
+**Ważne**: Workflow zapisany w `AI/Memory/EmailWorkflow-[account].md` będzie automatycznie używany przez `/inbox-review` do labelowania i kategoryzacji emaili. Po zakończeniu analizy, uruchom `/inbox-review` aby zobaczyć strategię w akcji.
 
 ## Format wyjściowy
 

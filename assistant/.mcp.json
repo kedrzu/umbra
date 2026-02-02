@@ -1,16 +1,16 @@
 {
   "mcpServers": {
-    "obsidian-vault": {
-      "type": "sse",
-      "url": "http://obsidian-vault:4001/sse"
+    "obsidian": {
+      "type": "http",
+      "url": "http://localhost:4001/mcp"
     },
     "gmail": {
-      "type": "sse",
-      "url": "http://gmail:4002/sse"
+      "type": "http",
+      "url": "http://localhost:4002/mcp"
     },
     "calendar": {
-      "type": "sse",
-      "url": "http://calendar:4003/sse"
+      "type": "http",
+      "url": "http://localhost:4003/mcp"
     },
     "todoist": {
       "type": "http",
@@ -20,7 +20,7 @@
       "command": "qmd",
       "args": ["mcp"],
       "env": {
-        "QMD_VAULT_PATH": "/vault"
+        "QMD_VAULT_PATH": "/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu"
       }
     }
   }

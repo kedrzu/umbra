@@ -1,72 +1,14 @@
-version: "3.8"
+name: umbra
 
 services:
   # ==========================
-  # Claude Code CLI Container
+  # Obsidian MCP Server
   # ==========================
-  claude:
+  obsidian:
     build:
-      context: ./docker/claude
+      context: ./mcp-servers/obsidian
       dockerfile: Dockerfile
-    container_name: umbra-claude
-    stdin_open: true
-    tty: true
-    networks:
-      - mcp-network
-    volumes:
-      # Read-only access to Obsidian vault (for qmd search)
-      - type: bind
-        source: ${OBSIDIAN_VAULT_PATH}
-        target: /vault
-        read_only: true
-      # qmd index storage (writable)
-      - qmd-index:/home/claude/.cache/qmd
-      # Assistant config (CLAUDE.md, skills, .mcp.json) - READ-WRITE
-      # This allows the assistant to update its own instructions
-      - type: bind
-        source: ./assistant
-        target: /workspace
-      # Claude Code auth credentials - READ-ONLY
-      # Run `claude login` on host first to authenticate
-      # Only exposes auth, not .env or other secrets
-      - type: bind
-        source: ${CLAUDE_CONFIG_PATH:-~/.claude}
-        target: /home/claude/.claude
-        read_only: true
-    environment:
-      # Option 1: API key (comment out if using subscription)
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      # Option 2: Subscription auth uses mounted ~/.claude config
-      # MCP HTTP endpoints
-      - MCP_OBSIDIAN_VAULT_URL=http://obsidian-vault:4001/mcp
-      - MCP_GMAIL_URL=http://gmail:4002/mcp
-      - MCP_CALENDAR_URL=http://calendar:4003/mcp
-      - MCP_TODOIST_URL=https://ai.todoist.net/mcp
-      # qmd configuration
-      - QMD_VAULT_PATH=/vault
-      - XDG_CACHE_HOME=/home/claude/.cache
-    depends_on:
-      obsidian-vault:
-        condition: service_healthy
-      gmail:
-        condition: service_healthy
-      calendar:
-        condition: service_healthy
-    working_dir: /workspace
-    healthcheck:
-      test: ["CMD", "node", "--version"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ==========================
-  # Obsidian Vault MCP Server
-  # ==========================
-  obsidian-vault:
-    build:
-      context: ./mcp-servers/obsidian-vault
-      dockerfile: Dockerfile
-    container_name: umbra-obsidian-vault
+    container_name: umbra-obsidian
     networks:
       - mcp-network
     ports:
@@ -134,19 +76,16 @@ services:
         source: ${CALENDAR_CREDENTIALS_PATH}
         target: /config/gcp-oauth.keys.json
         read_only: true
-      - calendar-tokens:/config/tokens
+      - ${CALENDAR_TOKENS_PATH:-~/.config/google-calendar-mcp}:/config/tokens
     environment:
       - GOOGLE_OAUTH_CREDENTIALS=/config/gcp-oauth.keys.json
-      - GOOGLE_TOKEN_PATH=/config/tokens
+      - GOOGLE_CALENDAR_MCP_TOKEN_PATH=/config/tokens/tokens.json
       - ENABLED_TOOLS=list-calendars,list-events,get-event,search-events,list-colors,get-freebusy,get-current-time,create-event,manage-accounts
-      - MCP_PORT=4003
-      - MCP_TRANSPORT=http
+      - TRANSPORT=http
+      - HOST=0.0.0.0
+      - PORT=4003
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4003/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      disable: true
 
 networks:
   mcp-network:
@@ -154,8 +93,6 @@ networks:
     name: umbra-mcp-network
 
 volumes:
-  qmd-index:
-    name: umbra-qmd-index
   gmail-tokens:
     name: umbra-gmail-tokens
   calendar-tokens:

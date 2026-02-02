@@ -1,5 +1,5 @@
 {
-  "name": "obsidian-vault-mcp",
+  "name": "obsidian-mcp",
   "version": "1.0.0",
   "description": "MCP server for permission-separated Obsidian vault access",
   "type": "module",

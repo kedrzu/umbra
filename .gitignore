@@ -13,6 +13,9 @@ dist/
 *-credentials.json
 *-tokens.json
 
+# Generated MCP config (created by setup.sh)
+assistant/.mcp.json
+
 # OS files
 .DS_Store
 Thumbs.db

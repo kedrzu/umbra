@@ -2,7 +2,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
@@ -13,6 +13,9 @@ import { google, gmail_v1 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 import * as fs from "fs/promises";
 import * as path from "path";
+import TurndownService from "turndown";
+import EmailReplyParser from "email-reply-parser";
+import EmailForwardParser from "email-forward-parser";
 
 // Configuration from environment
 const CREDENTIALS_PATH = process.env.GMAIL_CREDENTIALS_PATH || "";
@@ -169,7 +172,8 @@ const tools: Tool[] = [
   },
   {
     name: "get_message",
-    description: "Get full details of a specific email message",
+    description:
+      "Get full details of a specific email message. Returns processed markdown with quotes/signatures stripped by default.",
     inputSchema: {
       type: "object",
       properties: {
@@ -181,13 +185,19 @@ const tools: Tool[] = [
           type: "string",
           description: "The ID of the message to retrieve",
         },
+        rawBody: {
+          type: "boolean",
+          description:
+            "If true, return raw HTML/text without markdown conversion or quote stripping (default: false)",
+        },
       },
       required: ["account", "messageId"],
     },
   },
   {
     name: "get_thread",
-    description: "Get all messages in a thread",
+    description:
+      "Get all messages in a thread. Returns processed markdown with quotes/signatures stripped by default.",
     inputSchema: {
       type: "object",
       properties: {
@@ -198,6 +208,11 @@ const tools: Tool[] = [
         threadId: {
           type: "string",
           description: "The ID of the thread to retrieve",
+        },
+        rawBody: {
+          type: "boolean",
+          description:
+            "If true, return raw HTML/text without markdown conversion or quote stripping (default: false)",
         },
       },
       required: ["account", "threadId"],
@@ -429,6 +444,289 @@ function getHeader(
   );
 }
 
+// ============================================================================
+// Email Processing Functions
+// ============================================================================
+
+interface AttachmentInfo {
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
+interface ProcessedEmail {
+  body: string;
+  attachments: AttachmentInfo[];
+}
+
+// Singleton Turndown instance for performance
+let turndownInstance: TurndownService | null = null;
+
+function getTurndownService(): TurndownService {
+  if (!turndownInstance) {
+    turndownInstance = new TurndownService({
+      headingStyle: "atx",
+      hr: "---",
+      bulletListMarker: "-",
+      codeBlockStyle: "fenced",
+      fence: "```",
+      emDelimiter: "*",
+      strongDelimiter: "**",
+      linkStyle: "inlined",
+    });
+
+    // Remove style, script, head, meta, link tags
+    turndownInstance.remove(["style", "script", "head", "meta", "link"]);
+
+    // Custom rule: Remove Gmail quote containers
+    turndownInstance.addRule("gmail-quote", {
+      filter: (node) => {
+        if (node.nodeName !== "DIV") return false;
+        const className = (node as Element).getAttribute("class") || "";
+        return className.includes("gmail_quote");
+      },
+      replacement: () => "",
+    });
+
+    // Custom rule: Remove Outlook-style quoted content (blue border)
+    turndownInstance.addRule("outlook-quote", {
+      filter: (node) => {
+        if (node.nodeName !== "DIV" && node.nodeName !== "BLOCKQUOTE") {
+          return false;
+        }
+        const style = (node as Element).getAttribute("style") || "";
+        return (
+          style.includes("border-left") &&
+          (style.includes("blue") ||
+            style.includes("#00f") ||
+            style.includes("rgb(0, 0, 255)") ||
+            style.includes("#1010ff") ||
+            style.includes("border:none"))
+        );
+      },
+      replacement: () => "",
+    });
+
+    // Custom rule: Simplify images to [alt-text]
+    turndownInstance.addRule("images", {
+      filter: "img",
+      replacement: (_content, node) => {
+        const alt = (node as Element).getAttribute("alt") || "image";
+        return `[${alt}]`;
+      },
+    });
+  }
+  return turndownInstance;
+}
+
+// Convert HTML to Markdown
+function convertHtmlToMarkdown(html: string): string {
+  if (!html || html.trim() === "") {
+    return "";
+  }
+
+  try {
+    const turndown = getTurndownService();
+    let markdown = turndown.turndown(html);
+
+    // Clean up excessive whitespace
+    markdown = markdown
+      .replace(/\n{3,}/g, "\n\n") // Max 2 consecutive newlines
+      .replace(/^\s+|\s+$/g, ""); // Trim
+
+    return markdown;
+  } catch (error) {
+    // Fallback: strip HTML tags
+    console.error("HTML to markdown conversion failed:", error);
+    return stripHtmlTags(html);
+  }
+}
+
+// Fallback HTML tag stripping
+function stripHtmlTags(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Format file size for display
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Process text content: handle forwards and strip replies/signatures
+function processTextContent(text: string, subject: string): string {
+  if (!text || text.trim() === "") {
+    return "";
+  }
+
+  try {
+    // Check if this is a forwarded email
+    const forwardParser = new EmailForwardParser();
+    const forwardResult = forwardParser.read(text, subject);
+
+    if (forwardResult.forwarded && forwardResult.email) {
+      // Format forwarded email nicely
+      const forwardingMessage = forwardResult.message?.trim() || "";
+      const originalEmail = forwardResult.email;
+
+      let output = "";
+
+      // Add the forwarding message (what the person wrote when forwarding)
+      if (forwardingMessage) {
+        output += forwardingMessage + "\n\n";
+      }
+
+      // Add formatted original email
+      output += "---\n**Forwarded Email**\n";
+      if (originalEmail.from?.address) {
+        output += `From: ${originalEmail.from.name ? `${originalEmail.from.name} <${originalEmail.from.address}>` : originalEmail.from.address}\n`;
+      }
+      if (originalEmail.to) {
+        // Handle both single object and array cases
+        const toArray = Array.isArray(originalEmail.to)
+          ? originalEmail.to
+          : [originalEmail.to];
+        const toAddresses = toArray
+          .map((t) => (t.name ? `${t.name} <${t.address}>` : t.address))
+          .join(", ");
+        output += `To: ${toAddresses}\n`;
+      }
+      if (originalEmail.date) {
+        output += `Date: ${originalEmail.date}\n`;
+      }
+      if (originalEmail.subject) {
+        output += `Subject: ${originalEmail.subject}\n`;
+      }
+      output += "\n";
+
+      // Process the original email body (strip its quotes/signatures too)
+      if (originalEmail.body) {
+        const replyParser = new EmailReplyParser();
+        const parsed = replyParser.read(originalEmail.body);
+        output += parsed.getVisibleText();
+      }
+
+      return output.trim();
+    }
+
+    // Not a forward - strip quoted replies and signatures
+    const replyParser = new EmailReplyParser();
+    const parsed = replyParser.read(text);
+    return parsed.getVisibleText().trim();
+  } catch (error) {
+    console.error("Text processing failed:", error);
+    return text; // Return original on error
+  }
+}
+
+// Extract attachments from message payload
+function extractAttachments(
+  payload: gmail_v1.Schema$MessagePart
+): AttachmentInfo[] {
+  const attachments: AttachmentInfo[] = [];
+
+  function scanParts(part: gmail_v1.Schema$MessagePart) {
+    // Check if this part is an attachment
+    if (part.filename && part.filename.length > 0) {
+      attachments.push({
+        filename: part.filename,
+        mimeType: part.mimeType || "application/octet-stream",
+        size: part.body?.size || 0,
+      });
+    }
+
+    // Recursively scan nested parts
+    if (part.parts) {
+      for (const subPart of part.parts) {
+        scanParts(subPart);
+      }
+    }
+  }
+
+  scanParts(payload);
+  return attachments;
+}
+
+// Extract raw body content (HTML preferred, fallback to text)
+interface RawBodyContent {
+  html: string | null;
+  text: string | null;
+}
+
+function extractRawBody(payload: gmail_v1.Schema$MessagePart): RawBodyContent {
+  let html: string | null = null;
+  let text: string | null = null;
+
+  function scanParts(part: gmail_v1.Schema$MessagePart) {
+    // Direct body data
+    if (part.body?.data) {
+      const decoded = decodeBase64Url(part.body.data);
+      if (part.mimeType === "text/html") {
+        html = decoded;
+      } else if (part.mimeType === "text/plain") {
+        text = decoded;
+      }
+    }
+
+    // Check nested parts
+    if (part.parts) {
+      for (const subPart of part.parts) {
+        // Skip attachments
+        if (subPart.filename && subPart.filename.length > 0) continue;
+        scanParts(subPart);
+      }
+    }
+  }
+
+  scanParts(payload);
+  return { html, text };
+}
+
+// Main email processing function
+function processEmailContent(
+  payload: gmail_v1.Schema$MessagePart,
+  subject: string,
+  rawMode: boolean = false
+): ProcessedEmail {
+  const attachments = extractAttachments(payload);
+  const { html, text } = extractRawBody(payload);
+
+  // If raw mode, return unprocessed content
+  if (rawMode) {
+    return {
+      body: html || text || "",
+      attachments,
+    };
+  }
+
+  let processedBody = "";
+
+  if (html) {
+    // Convert HTML to markdown first
+    const markdown = convertHtmlToMarkdown(html);
+    // Then process for forwards/replies
+    processedBody = processTextContent(markdown, subject);
+  } else if (text) {
+    // Process plain text directly
+    processedBody = processTextContent(text, subject);
+  }
+
+  return {
+    body: processedBody,
+    attachments,
+  };
+}
+
 // Create server
 const server = new Server(
   {
@@ -510,6 +808,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "get_message": {
         const gmail = getGmailClient(args?.account as string);
+        const rawBody = args?.rawBody === true;
 
         const message = await gmail.users.messages.get({
           userId: "me",
@@ -518,7 +817,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
 
         const headers = message.data.payload?.headers;
-        const body = extractMessageBody(message.data.payload!);
+        const subject = getHeader(headers, "Subject");
+        const { body, attachments } = processEmailContent(
+          message.data.payload!,
+          subject,
+          rawBody
+        );
 
         return {
           content: [
@@ -528,7 +832,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   id: message.data.id,
                   threadId: message.data.threadId,
-                  subject: getHeader(headers, "Subject"),
+                  subject,
                   from: getHeader(headers, "From"),
                   to: getHeader(headers, "To"),
                   cc: getHeader(headers, "Cc"),
@@ -536,6 +840,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   labels: message.data.labelIds,
                   snippet: message.data.snippet,
                   body,
+                  attachments:
+                    attachments.length > 0
+                      ? attachments.map((a) => ({
+                          filename: a.filename,
+                          mimeType: a.mimeType,
+                          size: formatFileSize(a.size),
+                        }))
+                      : undefined,
                 },
                 null,
                 2
@@ -547,6 +859,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "get_thread": {
         const gmail = getGmailClient(args?.account as string);
+        const rawBody = args?.rawBody === true;
 
         const thread = await gmail.users.threads.get({
           userId: "me",
@@ -556,14 +869,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const messages = (thread.data.messages || []).map((msg) => {
           const headers = msg.payload?.headers;
+          const subject = getHeader(headers, "Subject");
+          const { body, attachments } = processEmailContent(
+            msg.payload!,
+            subject,
+            rawBody
+          );
+
           return {
             id: msg.id,
             from: getHeader(headers, "From"),
             to: getHeader(headers, "To"),
             date: getHeader(headers, "Date"),
-            subject: getHeader(headers, "Subject"),
+            subject,
             snippet: msg.snippet,
-            body: extractMessageBody(msg.payload!),
+            body,
+            attachments:
+              attachments.length > 0
+                ? attachments.map((a) => ({
+                    filename: a.filename,
+                    mimeType: a.mimeType,
+                    size: formatFileSize(a.size),
+                  }))
+                : undefined,
           };
         });
 
@@ -876,6 +1204,14 @@ async function main() {
     const credentials = await loadCredentials();
     const app = express();
 
+    // Create a single stateless transport
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Stateless mode
+    });
+
+    // Connect server to transport once
+    await server.connect(transport);
+
     // Health check
     app.get("/health", (_req: Request, res: Response) => {
       res.json({
@@ -889,50 +1225,21 @@ async function main() {
     // OAuth routes
     setupOAuthRoutes(app, credentials);
 
-    // Store active transports
-    const transports = new Map<string, SSEServerTransport>();
-
-    // SSE endpoint
-    app.get("/sse", async (req: Request, res: Response) => {
-      console.error("New SSE connection");
-
-      const transport = new SSEServerTransport("/messages", res);
-      const sessionId = crypto.randomUUID();
-      transports.set(sessionId, transport);
-
-      res.on("close", () => {
-        console.error(`SSE connection closed: ${sessionId}`);
-        transports.delete(sessionId);
-      });
-
-      await server.connect(transport);
-    });
-
-    // Messages endpoint
-    app.post(
-      "/messages",
-      express.json(),
-      async (req: Request, res: Response) => {
-        const sessionId = req.query.sessionId as string;
-        const transport = transports.get(sessionId);
-
-        if (!transport) {
-          res.status(400).json({ error: "No active session" });
-          return;
-        }
-
-        try {
-          await transport.handlePostMessage(req, res);
-        } catch (error) {
-          console.error("Error handling message:", error);
+    // Handle all MCP requests
+    app.all("/mcp", express.json(), async (req: Request, res: Response) => {
+      try {
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        console.error("Error handling MCP request:", error);
+        if (!res.headersSent) {
           res.status(500).json({ error: "Internal server error" });
         }
       }
-    );
+    });
 
     app.listen(MCP_PORT, "0.0.0.0", () => {
       console.error(`Gmail MCP server running on http://0.0.0.0:${MCP_PORT}`);
-      console.error("Transport: HTTP/SSE");
+      console.error("Transport: Streamable HTTP (stateless)");
       console.error(`Accounts loaded: ${accounts.size}`);
       console.error(`Visit http://localhost:${MCP_PORT}/auth to add accounts`);
     });

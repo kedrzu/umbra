@@ -146,7 +146,7 @@ docker compose run --rm claude chat
 docker compose logs -f
 
 # Specific service
-docker compose logs -f obsidian-vault
+docker compose logs -f obsidian
 docker compose logs -f gmail
 ```
 
@@ -157,7 +157,7 @@ docker compose logs -f gmail
 docker compose ps
 
 # Individual health endpoints
-curl http://localhost:4001/health  # obsidian-vault
+curl http://localhost:4001/health  # obsidian
 curl http://localhost:4002/health  # gmail
 curl http://localhost:4003/health  # calendar
 ```
@@ -244,7 +244,7 @@ This:
 | Volume         | Container       | Access         | Purpose                      |
 | -------------- | --------------- | -------------- | ---------------------------- |
 | Obsidian vault | claude          | read-only      | qmd search                   |
-| Obsidian vault | obsidian-vault  | read-write     | Note operations (AI/ folder) |
+| Obsidian vault | obsidian  | read-write     | Note operations (AI/ folder) |
 | `assistant/`   | claude          | **read-write** | Self-modifying instructions  |
 | qmd-index      | claude          | read-write     | Search index                 |
 | OAuth tokens   | gmail, calendar | read-write     | Auth tokens                  |
@@ -275,7 +275,7 @@ This enables the assistant to learn and improve its workflows. Changes are persi
 
 ```bash
 # Check logs
-docker compose logs obsidian-vault
+docker compose logs obsidian
 
 # Rebuild images
 docker compose build --no-cache

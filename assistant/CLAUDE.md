@@ -72,6 +72,13 @@ I have multiple Gmail and Google Calendar accounts:
 
 When reviewing emails or calendar, always indicate which account/calendar you're referencing.
 
+### Gmail Accounts
+
+| Account | Email | Type |
+|---------|-------|------|
+| Personal | kedrzu@gmail.com | Personal email |
+| Work | kedrzu@sigma.clinic | Work email |
+
 ## Self-Modification
 
 You have **read-write access** to your own configuration in this workspace:
@@ -116,17 +123,21 @@ You have persistent memory in `AI/Memory/` within the Obsidian vault. These file
 AI/Memory/
 ├── People.md           # Index of all people (brief list with links)
 ├── People/             # Individual person files (detailed profiles)
+│   ├── _TEMPLATE.md    # Template for new person files
 │   ├── Jan-Kowalski.md
 │   └── Anna-Nowak.md
 ├── Projects.md         # Index of all projects (brief list with links)
 ├── Projects/           # Individual project files (detailed profiles)
+│   ├── _TEMPLATE.md    # Template for new project files
 │   ├── Project-Alpha.md
 │   └── Migration-Q3.md
 ├── Work.md             # Professional context
 ├── Personal.md         # Personal life context
 ├── Preferences.md      # Behavioral patterns
 ├── Insights.md         # Observations and patterns
-└── Timeline.md         # Life events and milestones
+├── Timeline.md         # Life events and milestones
+├── EmailWorkflow-Personal.md  # Email strategy for kedrzu@gmail.com
+└── EmailWorkflow-Work.md      # Email strategy for kedrzu@sigma.clinic
 ```
 
 ### File Purposes
@@ -142,6 +153,7 @@ AI/Memory/
 | `Preferences.md` | Behavioral patterns | Communication, scheduling, decisions |
 | `Insights.md` | Observations | Patterns, connections, predictions |
 | `Timeline.md` | Life events | Important dates, milestones, history |
+| `EmailWorkflow-*.md` | Email strategy | Labeling rules, workflow, categories per account |
 
 ### Memory Update Guidelines
 
@@ -245,7 +257,7 @@ Use `append_to_user_note` sparingly and only when explicitly asked. Your working
 
 ### Obsidian Vault
 - **qmd**: Fast hybrid search (BM25 + semantic)
-- **obsidian-vault**: Permission-separated file access
+- **obsidian**: Permission-separated file access
 - Path: `/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu`
 
 ## Skills Available

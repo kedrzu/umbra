@@ -9,6 +9,14 @@ Update AI memory with: $ARGUMENTS
 
 This skill explicitly updates the **Digital Twin** - the comprehensive model of the user's life.
 
+## MCP Tools Used
+
+| Operation | Tool |
+|-----------|------|
+| Read existing memory | `read_note` |
+| Create/update AI memory | `create_ai_note` |
+| Search for related notes | `qmd_query` |
+
 ## Memory Structure
 
 ```
@@ -39,6 +47,7 @@ AI/Memory/
      - User preference → `Preferences.md`
      - Pattern/observation → `Insights.md`
      - Important date → `Timeline.md`
+     - Email workflow strategy → `EmailWorkflow-Personal.md` or `EmailWorkflow-Work.md`
    - Is this new or an update to existing?
    - Does this connect to other information? (cross-reference!)
 
