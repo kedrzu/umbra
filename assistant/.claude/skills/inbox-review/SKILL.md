@@ -63,7 +63,22 @@ Review email inbox across all configured Gmail accounts.
 
 7. **Suggest additional labels** for organization not covered by workflow
 
-8. **Update Digital Twin Memory** (REQUIRED)
+8. **Zapisz przypomnienia** dla emaili wymagających follow-up
+   - Jeśli email wymaga działania w przyszłości, zaproponuj datę przypomnienia
+   - Użyj `read_note` aby przeczytać `AI/Memory/EmailReminders.md`
+   - Użyj `update_ai_note` (lub `create_ai_note` jeśli nie istnieje) aby dodać przypomnienie
+   - Uwzględnij: datę przypomnienia, konto źródłowe, temat, link do wątku, kontekst
+   - Format linku Gmail: `https://mail.google.com/mail/u/{email}/#inbox/{threadId}`
+     - Personal: `https://mail.google.com/mail/u/kedrzu@gmail.com/#inbox/{threadId}`
+     - Work: `https://mail.google.com/mail/u/kedrzu@sigma.clinic/#inbox/{threadId}`
+   - Sugeruj daty na podstawie:
+     - Deadline w emailu → użyj tej daty
+     - Oczekiwana odpowiedź → +3-5 dni roboczych
+     - Czekanie na dokument → obiecana data + 1 dzień
+     - Okresowe sprawdzenie → za tydzień
+   - Sprawdź aktualną datę żeby przypomnienia miały sens
+
+9. **Update Digital Twin Memory** (REQUIRED)
    Use `read_note` then `create_ai_note` to update AI Memory files:
    - `AI/Memory/People.md` - New contacts, updated info about known people
    - `AI/Memory/Projects.md` - Project updates mentioned in emails
@@ -95,9 +110,36 @@ Review email inbox across all configured Gmail accounts.
 ### Suggested Actions
 - [ ] [Specific follow-up actions]
 
+## EmailReminders.md Format
+
+Struktura pliku `AI/Memory/EmailReminders.md`:
+
+```markdown
+# Email Reminders
+
+Przypomnienia o emailach wymagających działania.
+
+## Oczekujące
+
+### YYYY-MM-DD (Dzień tygodnia)
+- [ ] **[Konto]** Temat emaila
+  - Od: sender@example.com
+  - Link: [Otwórz w Gmail](https://mail.google.com/mail/u/EMAIL/#inbox/THREAD_ID)
+  - Kontekst: Dlaczego wymaga follow-up
+  - Dodano: YYYY-MM-DD
+
+## Rozwiązane
+
+### Miesiąc YYYY
+- [x] ~~**[Konto]** Temat~~ - Rozwiązane YYYY-MM-DD
+```
+
+Konta: `[Personal]` dla kedrzu@gmail.com, `[Praca]` dla kedrzu@sigma.clinic
+
 ## Important Rules
 
 - Never send emails, only create drafts
 - Ask before applying labels to important threads
 - Update AI/Memory/People.md with new important contacts
 - Note any emails that might need unsubscribe review
+- Zapisuj przypomnienia tylko dla emaili naprawdę wymagających follow-up

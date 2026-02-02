@@ -137,45 +137,37 @@ if command -v qmd &> /dev/null; then
 fi
 
 # ==========================================
-# Generate .mcp.json
+# Generate configuration from templates
 # ==========================================
 echo
-echo -e "${YELLOW}Generating MCP configuration...${NC}"
+echo -e "${YELLOW}Generating configuration files from templates...${NC}"
 
 # Get absolute path to qmd
 QMD_PATH=$(command -v qmd 2>/dev/null || echo "qmd")
 
-cat > "$ASSISTANT_DIR/.mcp.json" << EOF
-{
-  "mcpServers": {
-    "obsidian": {
-      "type": "http",
-      "url": "http://localhost:${MCP_OBSIDIAN_PORT:-4001}/mcp"
-    },
-    "gmail": {
-      "type": "http",
-      "url": "http://localhost:${MCP_GMAIL_PORT:-4002}/mcp"
-    },
-    "calendar": {
-      "type": "http",
-      "url": "http://localhost:${MCP_CALENDAR_PORT:-4003}/mcp"
-    },
-    "todoist": {
-      "type": "http",
-      "url": "https://ai.todoist.net/mcp"
-    },
-    "qmd": {
-      "command": "$QMD_PATH",
-      "args": ["mcp"],
-      "env": {
-        "QMD_VAULT_PATH": "$OBSIDIAN_VAULT_PATH"
-      }
-    }
-  }
-}
-EOF
+# Set default ports
+MCP_OBSIDIAN_PORT="${MCP_OBSIDIAN_PORT:-4001}"
+MCP_GMAIL_PORT="${MCP_GMAIL_PORT:-4002}"
+MCP_CALENDAR_PORT="${MCP_CALENDAR_PORT:-4003}"
 
-echo -e "  ${GREEN}✓${NC} Generated $ASSISTANT_DIR/.mcp.json"
+# Export all variables for envsubst
+export OBSIDIAN_VAULT_PATH MCP_OBSIDIAN_PORT MCP_GMAIL_PORT MCP_CALENDAR_PORT QMD_PATH
+
+# Generate .mcp.json from template
+envsubst < "$ASSISTANT_DIR/.mcp.template.json" > "$ASSISTANT_DIR/.mcp.json"
+echo -e "  ${GREEN}✓${NC} Generated .mcp.json"
+
+# Generate .claude/settings.json from template
+# First make it writable if it exists and is read-only
+if [ -f "$ASSISTANT_DIR/.claude/settings.json" ]; then
+    chmod 644 "$ASSISTANT_DIR/.claude/settings.json" 2>/dev/null || true
+fi
+
+envsubst < "$ASSISTANT_DIR/.claude/settings.template.json" > "$ASSISTANT_DIR/.claude/settings.json"
+
+# Make settings read-only to prevent agent from modifying its own restrictions
+chmod 444 "$ASSISTANT_DIR/.claude/settings.json"
+echo -e "  ${GREEN}✓${NC} Generated .claude/settings.json (read-only)"
 
 # ==========================================
 # Build Docker images

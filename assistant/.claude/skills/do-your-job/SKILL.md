@@ -11,11 +11,12 @@ Run the complete assistant workflow.
 
 When run without arguments or with `all`:
 
-### 1. Generate Daily Dashboard
-First, create today's dashboard note in Obsidian.
+### 1. Daily Briefing
+Run `/daily-briefing` to create today's dashboard:
 - Gather calendar events across all accounts
 - Pull priority tasks from Todoist
 - Check email counts and priorities
+- Review email reminders from `AI/Memory/EmailReminders.md`
 - Write to `Inbox/Dashboard-[date].md`
 
 ### 2. Inbox Review
@@ -24,6 +25,7 @@ Review emails across all accounts:
 - Summarize important emails
 - Draft responses for urgent items
 - Flag potential unsubscribes
+- Save reminders for emails needing follow-up
 
 ### 3. Task Check
 Review Todoist status:
@@ -62,8 +64,8 @@ Pass arguments to focus on specific areas:
 | `email` | Focus on inbox review only |
 | `calendar` | Focus on schedule only |
 | `tasks` | Focus on Todoist only |
-| `dashboard` | Generate dashboard only |
-| `quick` | Brief status check, no dashboard |
+| `briefing` | Run daily briefing only |
+| `quick` | Brief status check, no briefing |
 
 ## Output Format
 

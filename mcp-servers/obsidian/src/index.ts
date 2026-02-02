@@ -172,6 +172,55 @@ const tools: Tool[] = [
       required: ["path", "content"],
     },
   },
+  {
+    name: "save_file",
+    description:
+      "Save a binary file (PDF, image, document) to the vault. Used for storing email attachments or downloaded files.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description:
+            "Path for the file relative to vault root (e.g., 'Faktury/invoice-2025-01.pdf')",
+        },
+        data: {
+          type: "string",
+          description: "Base64-encoded file content",
+        },
+        overwrite: {
+          type: "boolean",
+          description: "Whether to overwrite if file exists (default: false)",
+        },
+      },
+      required: ["path", "data"],
+    },
+  },
+  {
+    name: "list_files",
+    description:
+      "List non-markdown files in a folder. Useful for finding stored attachments.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        folder: {
+          type: "string",
+          description:
+            "Folder path relative to vault root. Empty string for vault root.",
+        },
+        recursive: {
+          type: "boolean",
+          description: "Whether to search recursively (default: false)",
+        },
+        extensions: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Filter by extensions without dot (e.g., ['pdf', 'png']). Empty for all non-md files.",
+        },
+      },
+    },
+  },
 ];
 
 // Create server
@@ -381,6 +430,114 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         return {
           content: [{ type: "text", text: `Created user note at ${notePath}` }],
+        };
+      }
+
+      case "save_file": {
+        const filePath = args?.path as string;
+        const dataBase64 = args?.data as string;
+        const overwrite = (args?.overwrite as boolean) || false;
+
+        const fullPath = securePath(filePath);
+
+        // Check if file already exists
+        if (!overwrite) {
+          try {
+            await fs.access(fullPath);
+            throw new Error(
+              `File already exists at ${filePath}. Use overwrite: true to replace it.`
+            );
+          } catch (e) {
+            if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+          }
+        }
+
+        // Decode base64 data
+        const buffer = Buffer.from(dataBase64, "base64");
+
+        // Create directory if needed
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+
+        // Write the file
+        await fs.writeFile(fullPath, buffer);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  status: "saved",
+                  path: filePath,
+                  size: buffer.length,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      case "list_files": {
+        const folder = (args?.folder as string) || "";
+        const recursive = (args?.recursive as boolean) || false;
+        const extensions = (args?.extensions as string[]) || [];
+        const fullPath = securePath(folder || ".");
+
+        const files: Array<{ path: string; size: number; modified: string }> =
+          [];
+
+        async function scanDir(dir: string, prefix: string) {
+          const entries = await fs.readdir(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            const entryPath = path.join(dir, entry.name);
+            const relativePath = prefix
+              ? `${prefix}/${entry.name}`
+              : entry.name;
+
+            if (entry.isDirectory()) {
+              // Skip hidden folders
+              if (entry.name.startsWith(".")) continue;
+              if (recursive) {
+                await scanDir(entryPath, relativePath);
+              }
+            } else if (!entry.name.endsWith(".md")) {
+              // Skip markdown files (those are handled by list_notes)
+              // Also skip hidden files
+              if (entry.name.startsWith(".")) continue;
+
+              // Filter by extension if specified
+              if (extensions.length > 0) {
+                const ext = path.extname(entry.name).slice(1).toLowerCase();
+                if (!extensions.includes(ext)) continue;
+              }
+
+              const stat = await fs.stat(entryPath);
+              files.push({
+                path: relativePath,
+                size: stat.size,
+                modified: stat.mtime.toISOString(),
+              });
+            }
+          }
+        }
+
+        await scanDir(fullPath, folder);
+
+        // Sort by modification time, newest first
+        files.sort(
+          (a, b) =>
+            new Date(b.modified).getTime() - new Date(a.modified).getTime()
+        );
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(files, null, 2),
+            },
+          ],
         };
       }
 

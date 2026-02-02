@@ -372,6 +372,29 @@ const tools: Tool[] = [
       required: ["account", "messageId"],
     },
   },
+  {
+    name: "get_attachment",
+    description:
+      "Get the content of an email attachment as base64-encoded data. Use get_message first to get the attachmentId.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: {
+          type: "string",
+          description: "Email account",
+        },
+        messageId: {
+          type: "string",
+          description: "Message ID containing the attachment",
+        },
+        attachmentId: {
+          type: "string",
+          description: "Attachment ID from the message (from get_message response)",
+        },
+      },
+      required: ["account", "messageId", "attachmentId"],
+    },
+  },
 ];
 
 // Helper to decode base64url
@@ -449,6 +472,7 @@ function getHeader(
 // ============================================================================
 
 interface AttachmentInfo {
+  attachmentId: string;
   filename: string;
   mimeType: string;
   size: number;
@@ -636,9 +660,10 @@ function extractAttachments(
   const attachments: AttachmentInfo[] = [];
 
   function scanParts(part: gmail_v1.Schema$MessagePart) {
-    // Check if this part is an attachment
-    if (part.filename && part.filename.length > 0) {
+    // Check if this part is an attachment (has filename and attachmentId)
+    if (part.filename && part.filename.length > 0 && part.body?.attachmentId) {
       attachments.push({
+        attachmentId: part.body.attachmentId,
         filename: part.filename,
         mimeType: part.mimeType || "application/octet-stream",
         size: part.body?.size || 0,
@@ -843,9 +868,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   attachments:
                     attachments.length > 0
                       ? attachments.map((a) => ({
+                          attachmentId: a.attachmentId,
                           filename: a.filename,
                           mimeType: a.mimeType,
                           size: formatFileSize(a.size),
+                          sizeBytes: a.size,
                         }))
                       : undefined,
                 },
@@ -887,9 +914,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             attachments:
               attachments.length > 0
                 ? attachments.map((a) => ({
+                    attachmentId: a.attachmentId,
                     filename: a.filename,
                     mimeType: a.mimeType,
                     size: formatFileSize(a.size),
+                    sizeBytes: a.size,
                   }))
                 : undefined,
           };
@@ -1076,6 +1105,56 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: `Marked message ${args?.messageId} as important`,
+            },
+          ],
+        };
+      }
+
+      case "get_attachment": {
+        const gmail = getGmailClient(args?.account as string);
+        const messageId = args?.messageId as string;
+        const attachmentId = args?.attachmentId as string;
+
+        // Fetch the attachment data
+        const attachment = await gmail.users.messages.attachments.get({
+          userId: "me",
+          messageId: messageId,
+          id: attachmentId,
+        });
+
+        // Get the message to find the attachment metadata
+        const message = await gmail.users.messages.get({
+          userId: "me",
+          id: messageId,
+          format: "full",
+        });
+
+        // Find the attachment info
+        const attachments = extractAttachments(message.data.payload!);
+        const attachmentInfo = attachments.find(
+          (a) => a.attachmentId === attachmentId
+        );
+
+        // Convert from base64url to standard base64
+        const base64Data = attachment.data.data
+          ? attachment.data.data.replace(/-/g, "+").replace(/_/g, "/")
+          : "";
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  filename: attachmentInfo?.filename || "attachment",
+                  mimeType:
+                    attachmentInfo?.mimeType || "application/octet-stream",
+                  size: attachment.data.size,
+                  data: base64Data,
+                },
+                null,
+                2
+              ),
             },
           ],
         };
