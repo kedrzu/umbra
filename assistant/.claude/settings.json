@@ -55,14 +55,7 @@
       "mcp__todoist__add_task",
 
       "mcp__qmd__*",
-      "mcp__obsidian-search__*",
-
-      "mcp__obsidian__read_note",
-      "mcp__obsidian__list_notes",
-      "mcp__obsidian__search_notes",
-      "mcp__obsidian__create_ai_note",
-      "mcp__obsidian__update_ai_note",
-      "mcp__obsidian__append_to_user_note"
+      "mcp__obsidian-search__*"
     ],
     "ask": [
       "mcp__calendar__create-event",
@@ -84,15 +77,14 @@
       "mcp__todoist__reopen*",
       "mcp__todoist__move*",
 
-      "mcp__obsidian__delete*",
-      "mcp__obsidian__move*",
-      "mcp__obsidian__rename*",
-
       "Read(../*)",
       "Edit(../*)",
       "Write(../*)",
-      "Edit(/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu/*)",
-      "Write(/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu/*)"
+
+      "Bash(git *)",
+      "Bash(*&& git *)",
+      "Bash(*; git *)",
+      "Bash(*| git *)"
     ]
   }
 }

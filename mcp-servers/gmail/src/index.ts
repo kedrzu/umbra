@@ -275,8 +275,9 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "apply_label",
-    description: "Apply a label to a message",
+    name: "update_thread",
+    description:
+      "Update a thread by adding/removing labels. Use this for labeling, archiving (remove INBOX), marking read/unread (remove/add UNREAD), starring (add/remove STARRED), marking important (add/remove IMPORTANT), or changing categories (CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS).",
     inputSchema: {
       type: "object",
       properties: {
@@ -284,92 +285,22 @@ const tools: Tool[] = [
           type: "string",
           description: "Email account",
         },
-        messageId: {
+        threadId: {
           type: "string",
-          description: "Message ID to label",
+          description: "Thread ID to update",
         },
-        labelId: {
-          type: "string",
-          description: "Label ID to apply",
+        addLabelIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Label IDs to add to the thread",
         },
-      },
-      required: ["account", "messageId", "labelId"],
-    },
-  },
-  {
-    name: "remove_label",
-    description: "Remove a label from a message",
-    inputSchema: {
-      type: "object",
-      properties: {
-        account: {
-          type: "string",
-          description: "Email account",
-        },
-        messageId: {
-          type: "string",
-          description: "Message ID",
-        },
-        labelId: {
-          type: "string",
-          description: "Label ID to remove",
+        removeLabelIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "Label IDs to remove from the thread",
         },
       },
-      required: ["account", "messageId", "labelId"],
-    },
-  },
-  {
-    name: "mark_read",
-    description: "Mark a message as read",
-    inputSchema: {
-      type: "object",
-      properties: {
-        account: {
-          type: "string",
-          description: "Email account",
-        },
-        messageId: {
-          type: "string",
-          description: "Message ID to mark as read",
-        },
-      },
-      required: ["account", "messageId"],
-    },
-  },
-  {
-    name: "mark_unread",
-    description: "Mark a message as unread",
-    inputSchema: {
-      type: "object",
-      properties: {
-        account: {
-          type: "string",
-          description: "Email account",
-        },
-        messageId: {
-          type: "string",
-          description: "Message ID to mark as unread",
-        },
-      },
-      required: ["account", "messageId"],
-    },
-  },
-  {
-    name: "mark_important",
-    description: "Mark a message as important",
-    inputSchema: {
-      type: "object",
-      properties: {
-        account: {
-          type: "string",
-          description: "Email account",
-        },
-        messageId: {
-          type: "string",
-          description: "Message ID to mark as important",
-        },
-      },
-      required: ["account", "messageId"],
+      required: ["account", "threadId"],
     },
   },
   {
@@ -1005,106 +936,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "apply_label": {
+      case "update_thread": {
         const gmail = getGmailClient(args?.account as string);
+        const threadId = args?.threadId as string;
+        const addLabelIds = (args?.addLabelIds as string[]) || [];
+        const removeLabelIds = (args?.removeLabelIds as string[]) || [];
 
-        await gmail.users.messages.modify({
+        if (addLabelIds.length === 0 && removeLabelIds.length === 0) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: "No labels to add or remove",
+              },
+            ],
+          };
+        }
+
+        await gmail.users.threads.modify({
           userId: "me",
-          id: args?.messageId as string,
+          id: threadId,
           requestBody: {
-            addLabelIds: [args?.labelId as string],
+            addLabelIds: addLabelIds.length > 0 ? addLabelIds : undefined,
+            removeLabelIds:
+              removeLabelIds.length > 0 ? removeLabelIds : undefined,
           },
         });
+
+        const changes: string[] = [];
+        if (addLabelIds.length > 0) {
+          changes.push(`added: ${addLabelIds.join(", ")}`);
+        }
+        if (removeLabelIds.length > 0) {
+          changes.push(`removed: ${removeLabelIds.join(", ")}`);
+        }
 
         return {
           content: [
             {
               type: "text",
-              text: `Applied label ${args?.labelId} to message ${args?.messageId}`,
-            },
-          ],
-        };
-      }
-
-      case "remove_label": {
-        const gmail = getGmailClient(args?.account as string);
-
-        await gmail.users.messages.modify({
-          userId: "me",
-          id: args?.messageId as string,
-          requestBody: {
-            removeLabelIds: [args?.labelId as string],
-          },
-        });
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Removed label ${args?.labelId} from message ${args?.messageId}`,
-            },
-          ],
-        };
-      }
-
-      case "mark_read": {
-        const gmail = getGmailClient(args?.account as string);
-
-        await gmail.users.messages.modify({
-          userId: "me",
-          id: args?.messageId as string,
-          requestBody: {
-            removeLabelIds: ["UNREAD"],
-          },
-        });
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Marked message ${args?.messageId} as read`,
-            },
-          ],
-        };
-      }
-
-      case "mark_unread": {
-        const gmail = getGmailClient(args?.account as string);
-
-        await gmail.users.messages.modify({
-          userId: "me",
-          id: args?.messageId as string,
-          requestBody: {
-            addLabelIds: ["UNREAD"],
-          },
-        });
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Marked message ${args?.messageId} as unread`,
-            },
-          ],
-        };
-      }
-
-      case "mark_important": {
-        const gmail = getGmailClient(args?.account as string);
-
-        await gmail.users.messages.modify({
-          userId: "me",
-          id: args?.messageId as string,
-          requestBody: {
-            addLabelIds: ["IMPORTANT"],
-          },
-        });
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Marked message ${args?.messageId} as important`,
+              text: `Updated thread ${threadId}: ${changes.join("; ")}`,
             },
           ],
         };

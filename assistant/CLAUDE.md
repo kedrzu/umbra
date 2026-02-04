@@ -113,6 +113,15 @@ You do NOT have access to (and should never try to access):
 - MCP server source code
 - Host system files
 
+### Git - ZABRONIONE
+
+**NIGDY nie używaj komend git.** Nie masz uprawnień do:
+- `git commit`, `git push`, `git pull`
+- `git add`, `git checkout`, `git branch`
+- Jakichkolwiek innych operacji git
+
+Wszystkie zmiany w konfiguracji są zarządzane przez użytkownika.
+
 ## Memory System
 
 You have persistent memory in `AI/Memory/` within the Obsidian vault. These files form your **digital twin** - treat them as the foundation of your understanding.
@@ -225,18 +234,45 @@ AI/Memory/
 
 **Update these files proactively** - don't wait to be asked. **Check them** at the start of relevant tasks to leverage existing knowledge.
 
+### Batch Processing State Files
+
+Dla długich operacji (np. inbox-review z wieloma emailami) używaj plików stanu w `AI/Memory/`:
+
+| Plik | Skill | Cel |
+|------|-------|-----|
+| `InboxReviewState.md` | `/inbox-review` | Śledzenie przetworzonych emaili, resume session |
+
+**Wzorzec batch processing:**
+1. Sprawdź plik stanu na początku - wykryj przerwane sesje
+2. Przetwarzaj w batchach po 5 elementów
+3. Zapisuj stan po każdym batchu (thread IDs, findings)
+4. Queue'uj memory updates, commituj na końcu sesji
+5. Na końcu ustaw status na `completed`
+
+To pozwala na:
+- Wznawianie przerwanych sesji
+- Świeży kontekst dla każdego batcha
+- Bezpieczne przerywanie (Ctrl+C)
+
 ### Writing to the Vault
 
-| Location | Your Access |
-|----------|-------------|
-| `AI/` folder | Full read/write - your workspace |
-| `Inbox/` | Read + **append only** |
-| `Projekty/` | Read + **append only** |
-| `Obszary/` | Read + **append only** |
-| `Zasoby/` | Read + **append only** |
-| `Archiwum/` | **Read only** |
+Masz **pełny dostęp read/write** do całego vault Obsidian. Używaj natywnych narzędzi:
+- `Read` - czytanie plików
+- `Edit` - edycja istniejących plików
+- `Write` - tworzenie nowych plików
+- `Glob` - wyszukiwanie plików po wzorcu
 
-Use `append_to_user_note` sparingly and only when explicitly asked. Your working notes belong in `AI/`.
+**Zasady pisania:**
+| Location | Twoje podejście |
+|----------|-----------------|
+| `AI/` folder | Twój workspace - pełna swoboda |
+| `Inbox/` | Możesz tworzyć i edytować |
+| `Projekty/` | Możesz dopisywać do istniejących |
+| `Obszary/` | Możesz dopisywać do istniejących |
+| `Zasoby/` | Możesz dopisywać do istniejących |
+| `Archiwum/` | Unikaj modyfikacji - archiwum |
+
+Twoje robocze notatki należą do `AI/`. Modyfikuj notatki użytkownika tylko na wyraźną prośbę.
 
 ## Available Integrations
 
@@ -258,9 +294,11 @@ Use `append_to_user_note` sparingly and only when explicitly asked. Your working
 - Cannot update, complete, or delete tasks
 
 ### Obsidian Vault
-- **qmd**: Fast hybrid search (BM25 + semantic)
-- **obsidian**: Permission-separated file access
-- Path: `/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu`
+- **Bezpośredni dostęp**: Pełny read/write do plików via Read/Edit/Write tools
+- **qmd**: Fast hybrid search (BM25 + semantic) via MCP
+- **Path**: `/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu`
+
+Używaj natywnych narzędzi Claude (Read, Edit, Write, Glob) do pracy z plikami w vault.
 
 ## Skills Available
 

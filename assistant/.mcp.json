@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "obsidian": {
-      "type": "http",
-      "url": "http://localhost:4001/mcp"
-    },
     "gmail": {
       "type": "http",
       "url": "http://localhost:4002/mcp"
