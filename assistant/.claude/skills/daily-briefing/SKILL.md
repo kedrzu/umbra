@@ -7,26 +7,40 @@ description: Poranny briefing. Zbiera kalendarz, zadania, emaile, przegląda prz
 
 Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci i kontaktów są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Foldery w vault:
+- `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
+- `./obsidian/AI/Memory/` - pamięć systemowa (Projects.md, EmailReminders.md, etc.)
+- `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
+
 ## MCP Tools Used
 
 | Operation | Tool |
 |-----------|------|
-| Read memory | `read_note` |
+| Read memory | `Read` |
+| Search contacts/notes | `qmd` (MCP) - NIE Glob! |
+| List files in vault | `Bash(ls ./obsidian/...)` - NIE Glob! |
 | Calendar events | `list-events` |
 | Tasks | Todoist tools |
 | Email scan | `search_threads` |
-| Create dashboard | `create_user_note` |
-| Update memory | `update_ai_note` |
+| Create dashboard | `Write` |
+| Update memory | `Edit` |
+
+**WAŻNE**: `./obsidian/` jest symlinkiem - Glob może nie działać!
 
 ## Process
 
 1. **Pobierz aktualną datę i czas**
 
 2. **Przeczytaj AI Memory**
-   - `AI/Memory/Projects.md` - aktywne projekty
-   - `Kontakty/*.md` - profile kontaktów (Glob + Read frontmatter dla uczestników spotkań)
-   - `AI/Memory/EmailReminders.md` - przypomnienia do przeglądu
-   - `AI/Memory/Insights.md` - wzorce i preferencje
+   - `./obsidian/AI/Memory/Projects.md` - aktywne projekty
+   - `./obsidian/AI/Memory/EmailReminders.md` - przypomnienia do przeglądu
+   - `./obsidian/AI/Memory/Insights.md` - wzorce i preferencje
+
+   **NIE ładuj listy kontaktów** - jeśli potrzebujesz info o uczestniku spotkania, użyj `qmd` do wyszukania po imieniu
 
 3. **Zbierz wydarzenia z kalendarza** na dziś
    - Użyj `list-events` dla wszystkich kont (Personal, Work, Shared)
@@ -61,19 +75,13 @@ Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 9. **Przedstaw briefing użytkownikowi**
 
 10. **Aktualizuj Digital Twin Memory**
-    - Nowe osoby z kalendarza → utwórz `Kontakty/Imie-Nazwisko.md` z frontmatter YAML
-    - Uczestnicy spotkań → aktualizuj `ostatni_kontakt` w frontmatter kontaktu
-    - Po spotkaniach → dodaj wpis do `## Historia kontaktów` uczestników:
-      ```markdown
-      ### 2025-02-04 | Spotkanie | Nazwa spotkania
-      - **Źródło**: Kalendarz (Work/Personal)
+    - Nowe osoby z kalendarza → utwórz `./obsidian/Kontakty/Imie-Nazwisko.md` (użyj `qmd` żeby sprawdzić czy już istnieje)
+    - Uczestnicy spotkań → użyj `qmd` do znalezienia kontaktu, aktualizuj `ostatni_kontakt`
+    - Po spotkaniach → dodaj wpis do `## Historia kontaktów` uczestników
+    - Kontekst projektowy → `./obsidian/AI/Memory/Projects.md`
+    - Wzorce → `./obsidian/AI/Memory/Insights.md`
 
-      Notatki ze spotkania...
-
-      ---
-      ```
-    - Kontekst projektowy → `Projects.md`
-    - Wzorce → `Insights.md`
+    **WAŻNE**: NIE ładuj całej listy kontaktów - wyszukuj przez `qmd`!
 
 ## Template notatki Dashboard
 

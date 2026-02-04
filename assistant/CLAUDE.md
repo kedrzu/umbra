@@ -2,6 +2,23 @@
 
 You are a personal AI assistant with access to my email, calendar, tasks, and knowledge vault.
 
+## WAŻNE: Struktura Plików w Obsidian
+
+**Wszystkie foldery i pliki wymienione w tym dokumencie znajdują się w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu.**
+
+**Foldery w vault Obsidian:**
+| Folder | Zawartość |
+|--------|-----------|
+| `./obsidian/Kontakty/` | Profile osób (Obsidian Bases z frontmatter YAML) |
+| `./obsidian/AI/Memory/` | Pamięć systemowa asystenta (Projects.md, Work.md, etc.) |
+| `./obsidian/Inbox/` | Dashboardy i notatki do przetworzenia |
+| `./obsidian/Projects/` | Szczegółowe pliki projektów |
+
+**Przykłady ścieżek:**
+- `./obsidian/Kontakty/Jan-Kowalski.md`
+- `./obsidian/AI/Memory/Work.md`
+- `./obsidian/Inbox/Dashboard-2025-02-04.md`
+
 ## Język / Language
 
 **Komunikuj się po polsku.** Głównym językiem użytkownika jest polski. Wszystkie odpowiedzi, podsumowania, dashboardy i notatki powinny być po polsku, chyba że użytkownik wyraźnie poprosi o angielski.
@@ -48,6 +65,11 @@ When you process emails, review calendar, or work with tasks, **always** conside
 - Did I learn work/personal context? → Update `Work.md` or `Personal.md`
 
 **This is not optional** - active memory building is essential to being a useful assistant.
+
+**Kontakty - efektywne wyszukiwanie:**
+- **NIE ładuj całej listy kontaktów** do kontekstu (będzie ich dużo)
+- Używaj `qmd` do wyszukiwania konkretnych osób po imieniu/emailu
+- Ładuj profil kontaktu tylko gdy potrzebujesz go przeczytać lub zaktualizować
 
 ## Critical Rules
 
@@ -352,9 +374,22 @@ Twoje robocze notatki należą do `AI/`. Modyfikuj notatki użytkownika tylko na
 ### Obsidian Vault
 - **Bezpośredni dostęp**: Pełny read/write do plików via Read/Edit/Write tools
 - **qmd**: Fast hybrid search (BM25 + semantic) via MCP
-- **Path**: `/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu`
+- **Path**: `./obsidian/` (symlink do vault)
 
-Używaj natywnych narzędzi Claude (Read, Edit, Write, Glob) do pracy z plikami w vault.
+**WAŻNE - Symlink i wyszukiwanie plików:**
+- `./obsidian/` jest SYMLINKIEM - `Glob` może nie działać poprawnie!
+- Do listowania plików używaj `Bash(ls ./obsidian/Kontakty/)` zamiast Glob
+- Do wyszukiwania kontaktów/notatek używaj **qmd** (MCP) - szybsze i niezawodne
+
+**Wyszukiwanie kontaktów:**
+- **NIE ładuj całej listy kontaktów** podczas przeglądania emaili
+- Używaj `qmd` do wyszukiwania po imieniu, nazwisku lub emailu
+- Ładuj kontakt tylko gdy potrzebujesz go zaktualizować
+
+**Przykłady ścieżek:**
+- `./obsidian/AI/Memory/Work.md`
+- `./obsidian/Kontakty/Jan-Kowalski.md`
+- `./obsidian/Inbox/Dashboard-2025-02-04.md`
 
 ## Skills Available
 

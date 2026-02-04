@@ -7,6 +7,19 @@ description: Research a topic using the Obsidian knowledge vault. Searches acros
 
 Research a topic: $ARGUMENTS
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci i notatek są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Przeszukujesz vault Obsidian używając:
+- `qmd` MCP - semantic + keyword search
+- `Read`, `Glob` - bezpośredni dostęp do plików
+
+Foldery w vault:
+- `./obsidian/Kontakty/` - profile osób
+- `./obsidian/AI/Memory/` - pamięć systemowa
+- `./obsidian/AI/Research/` - zapisane raporty badawcze
+
 ## Process
 
 1. **Understand the Query**
@@ -27,8 +40,8 @@ Research a topic: $ARGUMENTS
    - Look for connections between notes
    - Check linked notes (Obsidian wiki-links)
 
-4. **Check AI Memory**
-   - `AI/Memory/People.md` - relevant people
+4. **Check AI Memory** (wszystkie pliki w vault Obsidian)
+   - `Kontakty/*.md` - relevant people
    - `AI/Memory/Projects.md` - related projects
    - `AI/Memory/Insights.md` - past observations
 

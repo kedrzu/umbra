@@ -23,12 +23,16 @@ Find and clean up unwanted email subscriptions across all accounts.
 | Personal | kedrzu@gmail.com |
 | Work | kedrzu@sigma.clinic |
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
 ## Process
 
-0. **Check AI Memory** for context
-   - Use `read_note` to read `AI/Memory/People.md` - don't suggest unsubscribing from known contacts
-   - Use `read_note` to read `AI/Memory/EmailWorkflow-Personal.md` and `AI/Memory/EmailWorkflow-Work.md` - understand existing labeling categories
-   - Use `read_note` to read `AI/Memory/Preferences.md` - check unsubscribe preferences
+0. **Check AI Memory** for context (pliki w vault Obsidian)
+   - Użyj `Glob` z pattern `Kontakty/*.md` i `Read` aby przeczytać profile kontaktów - nie sugeruj wypisywania się od znanych osób
+   - Użyj `Read` dla `./obsidian/AI/Memory/EmailWorkflow-Personal.md` i `./obsidian/AI/Memory/EmailWorkflow-Work.md` - zrozum kategorie labelowania
+   - Użyj `Read` dla `./obsidian/AI/Memory/Preferences.md` - sprawdź preferencje unsubscribe
 
 1. **Search for promotional emails** in each account
    - Query: `category:promotions OR label:promotions`

@@ -9,13 +9,25 @@ Update AI memory with: $ARGUMENTS
 
 This skill explicitly updates the **Digital Twin** - the comprehensive model of the user's life.
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci i kontaktów są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Foldery w vault:
+- `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
+- `./obsidian/AI/Memory/` - pamięć systemowa (Projects.md, Work.md, Personal.md, etc.)
+- `./obsidian/Projects/` - szczegółowe pliki projektów
+
 ## MCP Tools Used
 
 | Operation | Tool |
 |-----------|------|
-| Read existing memory | `read_note` |
-| Create/update AI memory | `create_ai_note` |
-| Search for related notes | `qmd_query` |
+| Read existing memory | `Read` |
+| Create/update AI memory | `Edit`, `Write` |
+| Search for related notes | `qmd` (MCP) |
+| List files in vault | `Bash(ls ./obsidian/...)` - NIE Glob! |
+
+**WAŻNE**: `./obsidian/` jest symlinkiem - Glob może nie działać!
 
 ## Memory Structure
 
@@ -54,14 +66,18 @@ Kontakty/               # Osobny folder w vault (Obsidian Bases)
 
 2. **For People (Kontakty)**
 
+   **Szukanie istniejącego kontaktu:**
+   - Użyj `qmd` do wyszukania po imieniu, nazwisku lub emailu
+   - NIE używaj Glob do listowania wszystkich kontaktów!
+
    **If new person:**
-   - Create file in `Kontakty/` using `_TEMPLATE-Osoba.md`
+   - Create file in `./obsidian/Kontakty/` using `_TEMPLATE-Osoba.md`
    - Wypełnij frontmatter YAML (imię, nazwisko, email, kategoria, opis, etc.)
    - Use kebab-case for filenames: `Jan-Kowalski.md`
    - Brak indeksu - Obsidian Bases automatycznie wyświetla kontakty
 
    **If updating existing person:**
-   - Znajdź plik w `Kontakty/`
+   - Znajdź plik używając `qmd` (wyszukaj po imieniu/emailu)
    - Aktualizuj frontmatter YAML (np. `ostatni_kontakt`, `email`)
    - Dodaj wpis do `## Historia kontaktów` jeśli był kontakt
 

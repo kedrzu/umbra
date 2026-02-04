@@ -1,4 +1,18 @@
 {
+  "model": "sonnet",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "qmd embed --silent 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
@@ -15,7 +29,6 @@
     }
   },
   "permissions": {
-    "additionalDirectories": ["${OBSIDIAN_VAULT_PATH}"],
     "allow": [
       "mcp__gmail__list_accounts",
       "mcp__gmail__search_threads",
@@ -23,11 +36,7 @@
       "mcp__gmail__get_message",
       "mcp__gmail__create_draft",
       "mcp__gmail__list_labels",
-      "mcp__gmail__apply_label",
-      "mcp__gmail__remove_label",
-      "mcp__gmail__mark_important",
-      "mcp__gmail__mark_read",
-      "mcp__gmail__mark_unread",
+      "mcp__gmail__update_thread",
       "mcp__gmail__get_unsubscribe_link",
       "mcp__gmail__extract_attachment*",
       "mcp__gmail__get_personal_email_style_guide",
@@ -54,13 +63,11 @@
 
       "mcp__qmd__*",
       "mcp__obsidian-search__*",
-
-      "mcp__obsidian__read_note",
-      "mcp__obsidian__list_notes",
-      "mcp__obsidian__search_notes",
-      "mcp__obsidian__create_ai_note",
-      "mcp__obsidian__update_ai_note",
-      "mcp__obsidian__append_to_user_note"
+      "Read(./obsidian/*)",
+      "Edit(./obsidian/*)",
+      "Write(./obsidian/*)",
+      "Bash(ls ./obsidian/*)",
+      "Bash(cd ./obsidian/*)"
     ],
     "ask": ["mcp__calendar__create-event", "mcp__gmail__unsubscribe"],
     "deny": [
@@ -79,13 +86,14 @@
       "mcp__todoist__reopen*",
       "mcp__todoist__move*",
 
-      "mcp__obsidian__delete*",
-      "mcp__obsidian__move*",
-      "mcp__obsidian__rename*",
-
       "Read(../*)",
       "Edit(../*)",
-      "Write(../*)"
+      "Write(../*)",
+
+      "Bash(git *)",
+      "Bash(*&& git *)",
+      "Bash(*; git *)",
+      "Bash(*| git *)"
     ]
   }
 }

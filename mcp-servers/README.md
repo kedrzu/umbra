@@ -2,43 +2,6 @@
 
 Custom MCP (Model Context Protocol) servers for the Umbra AI Assistant.
 
-## obsidian
-
-Permission-separated Obsidian vault access server.
-
-### Features
-
-- **Read any note** in the vault
-- **Full write access** to `AI/` folder (assistant's workspace)
-- **Append-only access** to user notes (outside `AI/`)
-- **Path traversal protection** built-in
-
-### Tools
-
-| Tool                  | Description                         | Permissions       |
-| --------------------- | ----------------------------------- | ----------------- |
-| `read_note`           | Read any note in vault              | All notes         |
-| `list_notes`          | List notes in a folder              | All folders       |
-| `create_ai_note`      | Create note in AI/ folder           | AI/ only          |
-| `update_ai_note`      | Update note in AI/ folder           | AI/ only          |
-| `append_to_user_note` | Append to user notes                | User notes only   |
-| `create_user_note`    | Create new user note (no overwrite) | User folders only |
-
-### Build
-
-```bash
-cd obsidian
-npm install
-npm run build
-```
-
-### Configuration
-
-Environment variables:
-
-- `VAULT_PATH`: Path to Obsidian vault (required)
-- `AI_NOTES_PREFIX`: Prefix for AI-writable folder (default: `AI/`)
-
 ## gmail
 
 Multi-account Gmail MCP server with read-only access (no sending).
@@ -48,21 +11,21 @@ Multi-account Gmail MCP server with read-only access (no sending).
 - **Multi-account support** - authenticate multiple Gmail accounts
 - **Search and read** emails across all accounts
 - **Create drafts** (no send capability for safety)
-- **Label management** - apply labels, mark as read/important
+- **Label management** - unified `update_thread` for labels, archive, read/unread, star, important, categories
 - **OAuth management** - web-based authentication flow
 
 ### Tools
 
-| Tool | Description |
-|------|-------------|
-| `list_accounts` | List all authenticated Gmail accounts |
-| `search_threads` | Search emails with Gmail query syntax |
-| `get_thread` | Get full thread with all messages |
-| `get_message` | Get single message details |
-| `create_draft` | Create email draft |
-| `apply_label` | Apply label to messages |
-| `mark_important` | Mark message as important |
-| `mark_read` | Mark message as read |
+| Tool             | Description                                                                 |
+| ---------------- | --------------------------------------------------------------------------- |
+| `list_accounts`  | List all authenticated Gmail accounts                                       |
+| `search_threads` | Search emails with Gmail query syntax                                       |
+| `get_thread`     | Get full thread with all messages                                           |
+| `get_message`    | Get single message details                                                  |
+| `create_draft`   | Create email draft                                                          |
+| `list_labels`    | List all labels in an account                                               |
+| `update_thread`  | Add/remove labels (archive, read/unread, star, important, categories, etc.) |
+| `get_attachment` | Get attachment content as base64                                            |
 
 ### Multi-Account Usage
 

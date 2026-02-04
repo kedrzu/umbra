@@ -37,8 +37,98 @@ interface AccountInfo {
   gmail: gmail_v1.Gmail;
 }
 
+interface LabelInfo {
+  id: string;
+  name: string;
+  type: string;
+}
+
 // Store authenticated accounts
 const accounts = new Map<string, AccountInfo>();
+
+// Cache for labels per account (lazy loaded)
+const labelCache = new Map<string, LabelInfo[]>();
+
+// Load labels for an account (lazy, cached)
+async function getLabelsForAccount(email: string): Promise<LabelInfo[]> {
+  // Return cached labels if available
+  if (labelCache.has(email)) {
+    return labelCache.get(email)!;
+  }
+
+  // Fetch labels from API
+  const gmail = getGmailClient(email);
+  const response = await gmail.users.labels.list({
+    userId: "me",
+  });
+
+  const labels = (response.data.labels || []).map((label) => ({
+    id: label.id || "",
+    name: label.name || "",
+    type: label.type || "",
+  }));
+
+  // Cache the labels
+  labelCache.set(email, labels);
+  console.error(`Loaded ${labels.length} labels for account: ${email}`);
+
+  return labels;
+}
+
+// Resolve label name to ID (supports nested labels like "AI/Done")
+async function resolveLabelNameToId(
+  email: string,
+  labelName: string
+): Promise<string> {
+  // System labels are used as-is (uppercase)
+  const systemLabels = [
+    "INBOX",
+    "UNREAD",
+    "STARRED",
+    "IMPORTANT",
+    "SENT",
+    "DRAFT",
+    "SPAM",
+    "TRASH",
+    "CATEGORY_PERSONAL",
+    "CATEGORY_SOCIAL",
+    "CATEGORY_PROMOTIONS",
+    "CATEGORY_UPDATES",
+    "CATEGORY_FORUMS",
+  ];
+
+  if (systemLabels.includes(labelName.toUpperCase())) {
+    return labelName.toUpperCase();
+  }
+
+  // For custom labels, look up by name
+  const labels = await getLabelsForAccount(email);
+  const label = labels.find(
+    (l) => l.name.toLowerCase() === labelName.toLowerCase()
+  );
+
+  if (label) {
+    return label.id;
+  }
+
+  // Label not found - throw error with helpful message
+  throw new Error(
+    `Label "${labelName}" not found. Available labels: ${labels
+      .filter((l) => l.type === "user")
+      .map((l) => l.name)
+      .join(", ")}`
+  );
+}
+
+// Resolve multiple label names to IDs
+async function resolveLabelNamesToIds(
+  email: string,
+  labelNames: string[]
+): Promise<string[]> {
+  return Promise.all(
+    labelNames.map((name) => resolveLabelNameToId(email, name))
+  );
+}
 
 // Load credentials
 async function loadCredentials(): Promise<{
@@ -277,7 +367,7 @@ const tools: Tool[] = [
   {
     name: "update_thread",
     description:
-      "Update a thread by adding/removing labels. Use this for labeling, archiving (remove INBOX), marking read/unread (remove/add UNREAD), starring (add/remove STARRED), marking important (add/remove IMPORTANT), or changing categories (CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS).",
+      "Update a thread by adding/removing labels. Accepts label NAMES (not IDs) - e.g., 'AI/Done', 'AI/Triage', 'Work/Projects'. System labels: INBOX, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS.",
     inputSchema: {
       type: "object",
       properties: {
@@ -289,15 +379,17 @@ const tools: Tool[] = [
           type: "string",
           description: "Thread ID to update",
         },
-        addLabelIds: {
+        addLabels: {
           type: "array",
           items: { type: "string" },
-          description: "Label IDs to add to the thread",
+          description:
+            "Label names to add to the thread (e.g., 'AI/Done', 'UNREAD')",
         },
-        removeLabelIds: {
+        removeLabels: {
           type: "array",
           items: { type: "string" },
-          description: "Label IDs to remove from the thread",
+          description:
+            "Label names to remove from the thread (e.g., 'INBOX', 'AI/Triage')",
         },
       },
       required: ["account", "threadId"],
@@ -937,12 +1029,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "update_thread": {
-        const gmail = getGmailClient(args?.account as string);
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
         const threadId = args?.threadId as string;
-        const addLabelIds = (args?.addLabelIds as string[]) || [];
-        const removeLabelIds = (args?.removeLabelIds as string[]) || [];
+        const addLabels = (args?.addLabels as string[]) || [];
+        const removeLabels = (args?.removeLabels as string[]) || [];
 
-        if (addLabelIds.length === 0 && removeLabelIds.length === 0) {
+        if (addLabels.length === 0 && removeLabels.length === 0) {
           return {
             content: [
               {
@@ -952,6 +1045,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ],
           };
         }
+
+        // Resolve label names to IDs
+        const addLabelIds =
+          addLabels.length > 0
+            ? await resolveLabelNamesToIds(account, addLabels)
+            : [];
+        const removeLabelIds =
+          removeLabels.length > 0
+            ? await resolveLabelNamesToIds(account, removeLabels)
+            : [];
 
         await gmail.users.threads.modify({
           userId: "me",
@@ -964,11 +1067,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
 
         const changes: string[] = [];
-        if (addLabelIds.length > 0) {
-          changes.push(`added: ${addLabelIds.join(", ")}`);
+        if (addLabels.length > 0) {
+          changes.push(`added: ${addLabels.join(", ")}`);
         }
-        if (removeLabelIds.length > 0) {
-          changes.push(`removed: ${removeLabelIds.join(", ")}`);
+        if (removeLabels.length > 0) {
+          changes.push(`removed: ${removeLabels.join(", ")}`);
         }
 
         return {

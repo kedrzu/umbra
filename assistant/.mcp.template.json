@@ -1,9 +1,5 @@
 {
   "mcpServers": {
-    "obsidian": {
-      "type": "http",
-      "url": "http://localhost:${MCP_OBSIDIAN_PORT}/mcp"
-    },
     "gmail": {
       "type": "http",
       "url": "http://localhost:${MCP_GMAIL_PORT}/mcp"

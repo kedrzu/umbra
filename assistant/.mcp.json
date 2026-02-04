@@ -13,7 +13,7 @@
       "url": "https://ai.todoist.net/mcp"
     },
     "qmd": {
-      "command": "qmd",
+      "command": "/Users/kedrzu/.bun/bin/qmd",
       "args": ["mcp"],
       "env": {
         "QMD_VAULT_PATH": "/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu"

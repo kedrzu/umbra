@@ -7,6 +7,15 @@ description: Run the full assistant routine. Reviews inbox, generates daily dash
 
 Run the complete assistant workflow.
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci i kontaktów są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Foldery w vault:
+- `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
+- `./obsidian/AI/Memory/` - pamięć systemowa
+- `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
+
 ## Default Routine (Morning)
 
 When run without arguments or with `all`:
@@ -42,15 +51,15 @@ Combine all findings into actionable summary:
 ### 5. Digital Twin Memory Update (CRITICAL)
 Update AI Memory with ALL new context learned. This is essential to being a useful assistant:
 
-| Source | What to Capture | Memory File |
-|--------|-----------------|-------------|
-| Email | New contacts, people info | `People.md` |
-| Email | Project mentions, updates | `Projects.md` |
-| Calendar | Attendees, event patterns | `People.md`, `Insights.md` |
-| Tasks | Project progress | `Projects.md` |
-| All | Work/personal context | `Work.md`, `Personal.md` |
-| All | Important dates | `Timeline.md` |
-| All | Behavioral patterns | `Preferences.md`, `Insights.md` |
+| Source | What to Capture | Memory File (w vault Obsidian) |
+|--------|-----------------|--------------------------------|
+| Email | New contacts, people info | `Kontakty/*.md` |
+| Email | Project mentions, updates | `AI/Memory/Projects.md` |
+| Calendar | Attendees, event patterns | `Kontakty/*.md`, `AI/Memory/Insights.md` |
+| Tasks | Project progress | `AI/Memory/Projects.md` |
+| All | Work/personal context | `AI/Memory/Work.md`, `AI/Memory/Personal.md` |
+| All | Important dates | `AI/Memory/Timeline.md` |
+| All | Behavioral patterns | `AI/Memory/Preferences.md`, `AI/Memory/Insights.md` |
 
 **Goal**: After each routine, the digital twin should know more than before.
 

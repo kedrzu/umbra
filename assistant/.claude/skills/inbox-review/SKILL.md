@@ -9,16 +9,29 @@ Review email inbox across all configured Gmail accounts with batch processing fo
 
 **Scope:** Przetwarza wszystkie emaile bez labeli `AI/Done` lub `AI/Triage` (nie tylko nieprzeczytane).
 
-## MCP Tools Used
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci i kontaktów są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Foldery w vault:
+- `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
+- `./obsidian/AI/Memory/` - pamięć systemowa (EmailReminders.md, InboxReviewState.md, etc.)
+- `./obsidian/Inbox/` - dashboardy
+
+## Tools Used
 
 | Operation | Tool |
 |-----------|------|
-| Read memory | `read_note` |
-| Update memory | `update_ai_note`, `create_ai_note` |
-| Search emails | `search_threads` |
-| Read thread content | `get_thread` |
-| Create draft | `create_draft` |
-| Apply labels | `apply_label` (uses threadId) |
+| Read vault files | `Read` |
+| Update vault files | `Edit`, `Write` |
+| Search contacts/notes | `qmd` (MCP) - NIE Glob! |
+| List files in vault | `Bash(ls ./obsidian/...)` - NIE Glob! |
+| Search emails | `mcp__gmail__search_threads` |
+| Read thread content | `mcp__gmail__get_thread` |
+| Create draft | `mcp__gmail__create_draft` |
+| Update thread | `mcp__gmail__update_thread` (add/remove labels) |
+
+**WAŻNE**: `./obsidian/` jest symlinkiem - Glob może nie działać!
 
 ## Gmail Accounts
 
@@ -94,11 +107,11 @@ Review email inbox across all configured Gmail accounts with batch processing fo
    ```
 
 3. **Load AI Memory** (only on first batch)
-   - Use `Glob` to find `Kontakty/*.md` - profile kontaktów z frontmatter YAML
-   - Wyciągnij `email` z frontmatter każdego kontaktu do szybkiego matchowania
-   - Use `read_note` to read `AI/Memory/Preferences.md` for email preferences
-   - Use `read_note` to read `AI/Memory/EmailWorkflow-Personal.md` (if exists)
-   - Use `read_note` to read `AI/Memory/EmailWorkflow-Work.md` (if exists)
+   - Use `Read` to read `./obsidian/AI/Memory/Preferences.md` for email preferences
+   - Use `Read` to read `./obsidian/AI/Memory/EmailWorkflow-Personal.md` (if exists)
+   - Use `Read` to read `./obsidian/AI/Memory/EmailWorkflow-Work.md` (if exists)
+
+   **NIE ładuj listy kontaktów** - wyszukuj kontakty na żądanie używając `qmd`!
 
 ### Phase 2: Batch Processing Loop
 
@@ -115,10 +128,10 @@ For each email in batch:
 1. **Read thread content** using `get_thread`
 
 2. **Identify priority** by checking:
-   - Sender importance - matchuj email nadawcy z polem `email` w frontmatter `Kontakty/*.md`
    - Subject keywords (urgent, important, deadline, action required)
    - Thread context and length
    - Calendar invites or meeting-related
+   - Sender importance (tylko jeśli potrzebujesz - użyj `qmd` do wyszukania nadawcy)
 
 3. **Categorize**:
    - **Priority** - Needs attention today
@@ -133,7 +146,7 @@ For each email in batch:
 
 5. **Apply labels** per EmailWorkflow rules (ask before applying to important threads)
 
-6. **Mark as processed** using `apply_label` with threadId (from `search_threads` or `get_thread`):
+6. **Mark as processed** using `update_thread` with threadId (from `search_threads` or `get_thread`):
    - Priority/needs attention → apply `AI/Triage`
    - FYI/Low Priority/Spam → apply `AI/Done`
 
@@ -144,7 +157,7 @@ For each email in batch:
    - Queue memory updates (new contacts, project updates, etc.)
 
 #### Step 3: Save Batch State
-After processing each batch, use `update_ai_note` to update `AI/Memory/InboxReviewState.md`:
+After processing each batch, use `Edit` to update `AI/Memory/InboxReviewState.md`:
 - Add processed thread IDs to list
 - Update processed counts
 - Increment current batch number
@@ -163,8 +176,8 @@ Batch [N] complete: [X] emails processed. Continuing...
 ### Phase 3: Session Completion
 
 1. **Zapisz przypomnienia** dla emaili wymagających follow-up
-   - Use `read_note` to read `AI/Memory/EmailReminders.md`
-   - Use `update_ai_note` (or `create_ai_note`) to add reminders
+   - Use `Read` to read `AI/Memory/EmailReminders.md`
+   - Use `Edit` (or `Write` if file doesn't exist) to add reminders
    - Format linku Gmail:
      - Personal: `https://mail.google.com/mail/u/kedrzu@gmail.com/#inbox/{threadId}`
      - Work: `https://mail.google.com/mail/u/kedrzu@sigma.clinic/#inbox/{threadId}`
@@ -177,6 +190,7 @@ Batch [N] complete: [X] emails processed. Continuing...
 2. **Commit pending memory updates**
 
    **Kontakty (Kontakty/):**
+   - Użyj `qmd` do wyszukania kontaktu po emailu nadawcy (NIE ładuj całej listy!)
    - Dla znanych kontaktów: aktualizuj `ostatni_kontakt` w frontmatter YAML
    - Dodaj wpis do `## Historia kontaktów` z datą, typem (Email) i linkiem Gmail:
      ```markdown
@@ -189,10 +203,10 @@ Batch [N] complete: [X] emails processed. Continuing...
 
      ---
      ```
-   - Dla nowych kontaktów: utwórz plik w `Kontakty/` z frontmatter YAML
+   - Dla nowych ważnych kontaktów: utwórz plik w `./obsidian/Kontakty/` z frontmatter YAML
 
    **Inne pliki:**
-   Use `read_note` then `update_ai_note` for:
+   Use `Read` then `Edit` (or `Write` for new files) for:
    - `AI/Memory/Projects.md` - Project updates mentioned in emails
    - `AI/Memory/Work.md` / `AI/Memory/Personal.md` - Context learned
    - `AI/Memory/Timeline.md` - Important dates discovered

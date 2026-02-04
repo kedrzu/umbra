@@ -2,34 +2,6 @@ name: umbra
 
 services:
   # ==========================
-  # Obsidian MCP Server
-  # ==========================
-  obsidian:
-    build:
-      context: ./mcp-servers/obsidian
-      dockerfile: Dockerfile
-    container_name: umbra-obsidian
-    networks:
-      - mcp-network
-    ports:
-      - "${MCP_OBSIDIAN_PORT:-4001}:4001"
-    volumes:
-      - type: bind
-        source: ${OBSIDIAN_VAULT_PATH}
-        target: /vault
-    environment:
-      - VAULT_PATH=/vault
-      - AI_NOTES_PREFIX=AI/
-      - MCP_PORT=4001
-      - MCP_TRANSPORT=http
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  # ==========================
   # Gmail MCP Server
   # ==========================
   gmail:

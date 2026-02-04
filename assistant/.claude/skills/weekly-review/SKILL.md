@@ -7,6 +7,14 @@ description: Conduct a weekly review. Summarizes the past week, reviews upcoming
 
 Comprehensive review of the past week and planning for the next.
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci i kontaktów są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Foldery w vault:
+- `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
+- `./obsidian/AI/Memory/` - pamięć systemowa (Projects.md, Insights.md, etc.)
+
 ## Process
 
 ### Part 1: Review the Past Week
@@ -56,15 +64,15 @@ Comprehensive review of the past week and planning for the next.
 8. **Comprehensive Memory Update**
    Weekly review is a key moment to enrich the digital twin:
 
-   | What to Update | Memory File | What to Capture |
-   |----------------|-------------|-----------------|
-   | Project statuses | `Projects.md` | Progress, blockers, timeline changes |
-   | People updates | `People.md` | New contacts, relationship developments |
-   | Work context | `Work.md` | Team changes, goals, challenges |
-   | Personal context | `Personal.md` | Life updates, goal progress |
-   | Weekly patterns | `Insights.md` | Productivity patterns, meeting load, energy |
-   | Preferences | `Preferences.md` | Scheduling habits, communication patterns |
-   | Milestones | `Timeline.md` | Important events from the week |
+   | What to Update | Memory File (w vault Obsidian) | What to Capture |
+   |----------------|--------------------------------|-----------------|
+   | Project statuses | `AI/Memory/Projects.md` | Progress, blockers, timeline changes |
+   | People updates | `Kontakty/*.md` | New contacts, relationship developments |
+   | Work context | `AI/Memory/Work.md` | Team changes, goals, challenges |
+   | Personal context | `AI/Memory/Personal.md` | Life updates, goal progress |
+   | Weekly patterns | `AI/Memory/Insights.md` | Productivity patterns, meeting load, energy |
+   | Preferences | `AI/Memory/Preferences.md` | Scheduling habits, communication patterns |
+   | Milestones | `AI/Memory/Timeline.md` | Important events from the week |
 
    **The weekly review should significantly expand the digital twin.**
 

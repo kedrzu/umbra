@@ -100,6 +100,34 @@ else
 fi
 
 # ==========================================
+# Create symlink to Obsidian vault
+# ==========================================
+echo
+echo -e "${YELLOW}Creating Obsidian vault symlink...${NC}"
+
+OBSIDIAN_SYMLINK="$ASSISTANT_DIR/obsidian"
+
+if [ -L "$OBSIDIAN_SYMLINK" ]; then
+    # Symlink exists, check if it points to the right place
+    CURRENT_TARGET=$(readlink "$OBSIDIAN_SYMLINK")
+    if [ "$CURRENT_TARGET" = "$OBSIDIAN_VAULT_PATH" ]; then
+        echo -e "  ${GREEN}✓${NC} Symlink already exists and points to correct vault"
+    else
+        echo "  Updating symlink to point to correct vault..."
+        rm "$OBSIDIAN_SYMLINK"
+        ln -s "$OBSIDIAN_VAULT_PATH" "$OBSIDIAN_SYMLINK"
+        echo -e "  ${GREEN}✓${NC} Symlink updated"
+    fi
+elif [ -e "$OBSIDIAN_SYMLINK" ]; then
+    echo -e "  ${RED}✗${NC} $OBSIDIAN_SYMLINK exists but is not a symlink"
+    echo "    Please remove it manually and re-run setup"
+    exit 1
+else
+    ln -s "$OBSIDIAN_VAULT_PATH" "$OBSIDIAN_SYMLINK"
+    echo -e "  ${GREEN}✓${NC} Created symlink: assistant/obsidian -> $OBSIDIAN_VAULT_PATH"
+fi
+
+# ==========================================
 # Install qmd
 # ==========================================
 echo
@@ -146,12 +174,11 @@ echo -e "${YELLOW}Generating configuration files from templates...${NC}"
 QMD_PATH=$(command -v qmd 2>/dev/null || echo "qmd")
 
 # Set default ports
-MCP_OBSIDIAN_PORT="${MCP_OBSIDIAN_PORT:-4001}"
 MCP_GMAIL_PORT="${MCP_GMAIL_PORT:-4002}"
 MCP_CALENDAR_PORT="${MCP_CALENDAR_PORT:-4003}"
 
 # Export all variables for envsubst
-export OBSIDIAN_VAULT_PATH MCP_OBSIDIAN_PORT MCP_GMAIL_PORT MCP_CALENDAR_PORT QMD_PATH
+export OBSIDIAN_VAULT_PATH MCP_GMAIL_PORT MCP_CALENDAR_PORT QMD_PATH
 
 # Generate .mcp.json from template
 envsubst < "$ASSISTANT_DIR/.mcp.template.json" > "$ASSISTANT_DIR/.mcp.json"
@@ -211,7 +238,6 @@ check_server() {
     fi
 }
 
-check_server "obsidian" "${MCP_OBSIDIAN_PORT:-4001}"
 check_server "gmail" "${MCP_GMAIL_PORT:-4002}"
 check_server "calendar" "${MCP_CALENDAR_PORT:-4003}"
 

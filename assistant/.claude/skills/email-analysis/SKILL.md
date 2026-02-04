@@ -7,6 +7,12 @@ description: Analyze email patterns across accounts and help design labeling/wor
 
 Przeanalizuj wzorce emaili i pomóż zaprojektować strategię workflow.
 
+## Vault Obsidian
+
+**WAŻNE**: Wszystkie pliki pamięci są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
+
+Strategia workflow jest zapisywana w `./obsidian/AI/Memory/EmailWorkflow-Personal.md` lub `./obsidian/AI/Memory/EmailWorkflow-Work.md`.
+
 ## MCP Tools Used
 
 | Operation | Tool |
