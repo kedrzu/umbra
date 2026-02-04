@@ -94,7 +94,8 @@ Review email inbox across all configured Gmail accounts with batch processing fo
    ```
 
 3. **Load AI Memory** (only on first batch)
-   - Use `read_note` to read `AI/Memory/People.md` for known contacts
+   - Use `Glob` to find `Kontakty/*.md` - profile kontaktów z frontmatter YAML
+   - Wyciągnij `email` z frontmatter każdego kontaktu do szybkiego matchowania
    - Use `read_note` to read `AI/Memory/Preferences.md` for email preferences
    - Use `read_note` to read `AI/Memory/EmailWorkflow-Personal.md` (if exists)
    - Use `read_note` to read `AI/Memory/EmailWorkflow-Work.md` (if exists)
@@ -114,7 +115,7 @@ For each email in batch:
 1. **Read thread content** using `get_thread`
 
 2. **Identify priority** by checking:
-   - Sender importance (known contacts from Memory)
+   - Sender importance - matchuj email nadawcy z polem `email` w frontmatter `Kontakty/*.md`
    - Subject keywords (urgent, important, deadline, action required)
    - Thread context and length
    - Calendar invites or meeting-related
@@ -174,8 +175,24 @@ Batch [N] complete: [X] emails processed. Continuing...
      - Okresowe sprawdzenie → za tydzień
 
 2. **Commit pending memory updates**
-   Use `read_note` then `update_ai_note` for each relevant file:
-   - `AI/Memory/People.md` - New contacts, updated info about known people
+
+   **Kontakty (Kontakty/):**
+   - Dla znanych kontaktów: aktualizuj `ostatni_kontakt` w frontmatter YAML
+   - Dodaj wpis do `## Historia kontaktów` z datą, typem (Email) i linkiem Gmail:
+     ```markdown
+     ### 2025-02-04 | Email | Re: Temat wiadomości
+     - **Źródło**: Email (kedrzu@gmail.com)
+     - **Thread ID**: `abc123xyz`
+     - **Link**: [Otwórz w Gmail](https://mail.google.com/mail/u/kedrzu@gmail.com/#inbox/abc123xyz)
+
+     Streszczenie konwersacji...
+
+     ---
+     ```
+   - Dla nowych kontaktów: utwórz plik w `Kontakty/` z frontmatter YAML
+
+   **Inne pliki:**
+   Use `read_note` then `update_ai_note` for:
    - `AI/Memory/Projects.md` - Project updates mentioned in emails
    - `AI/Memory/Work.md` / `AI/Memory/Personal.md` - Context learned
    - `AI/Memory/Timeline.md` - Important dates discovered
@@ -218,7 +235,9 @@ Batch [N] complete: [X] emails processed. Continuing...
 - **Reminders set:** [list]
 
 ### Memory Updated
-- [Brief list of what was updated in AI Memory]
+- **Kontakty zaktualizowane:** [lista osób - aktualizacja ostatni_kontakt i historia]
+- **Nowe kontakty:** [lista nowych profili w Kontakty/]
+- **Inne:** [Brief list of what was updated in AI Memory]
 
 ## EmailReminders.md Format
 

@@ -41,7 +41,7 @@ You should **proactively** build the digital twin by:
 ### After Every Meaningful Interaction
 
 When you process emails, review calendar, or work with tasks, **always** consider:
-- Did I learn about a new person? → Update `People.md`
+- Did I learn about a new person? → Update `Kontakty/` (utwórz lub aktualizuj profil)
 - Did a project status change? → Update `Projects.md`
 - Did I notice a pattern or preference? → Update `Preferences.md` or `Insights.md`
 - Did something significant happen? → Update `Timeline.md`
@@ -126,15 +126,12 @@ Wszystkie zmiany w konfiguracji są zarządzane przez użytkownika.
 
 You have persistent memory in `AI/Memory/` within the Obsidian vault. These files form your **digital twin** - treat them as the foundation of your understanding.
 
+**Kontakty (osoby)** są przechowywane w dedykowanym folderze `Kontakty/` z wykorzystaniem **Obsidian Bases** jako systemu bazodanowego.
+
 ### Structure
 
 ```
 AI/Memory/
-├── People.md           # Index of all people (brief list with links)
-├── People/             # Individual person files (detailed profiles)
-│   ├── _TEMPLATE.md    # Template for new person files
-│   ├── Jan-Kowalski.md
-│   └── Anna-Nowak.md
 ├── Projects.md         # Index of all projects (brief list with links)
 ├── Projects/           # Individual project files (detailed profiles)
 │   ├── _TEMPLATE.md    # Template for new project files
@@ -148,14 +145,19 @@ AI/Memory/
 ├── EmailReminders.md   # Przypomnienia o emailach wymagających follow-up
 ├── EmailWorkflow-Personal.md  # Email strategy for kedrzu@gmail.com
 └── EmailWorkflow-Work.md      # Email strategy for kedrzu@sigma.clinic
+
+Kontakty/               # Osobny folder w vault (nie w AI/Memory)
+├── Kontakty.base       # Obsidian Bases - widok wszystkich kontaktów
+├── _TEMPLATE-Osoba.md  # Szablon dla nowych osób
+└── Imie-Nazwisko.md    # Profile osób (dane w frontmatter YAML)
 ```
 
 ### File Purposes
 
 | File/Folder | Purpose | What to Capture |
 |-------------|---------|-----------------|
-| `People.md` | **Index** of everyone | Brief list with links to individual files |
-| `People/*.md` | **Detailed profiles** | Deep info about each person |
+| `Kontakty/*.md` | **Profile osób** | Dane w frontmatter YAML queryowalne przez Bases |
+| `Kontakty/Kontakty.base` | **Baza danych** | Widok tabeli wszystkich kontaktów z filtrami |
 | `Projects.md` | **Index** of all projects | Brief list with links to individual files |
 | `Projects/*.md` | **Detailed profiles** | Full project context and history |
 | `Work.md` | Professional context | Company, role, team, goals, career |
@@ -166,38 +168,91 @@ AI/Memory/
 | `EmailReminders.md` | Email follow-ups | Przypomnienia o emailach do follow-up z linkami Gmail |
 | `EmailWorkflow-*.md` | Email strategy | Labeling rules, workflow, categories per account |
 
+### Kontakty - Obsidian Bases
+
+Kontakty używają **frontmatter YAML** jako źródła danych dla Obsidian Bases:
+
+**Kategorie kontaktów:**
+| Kategoria | Opis |
+|-----------|------|
+| `praca` | Współpracownicy, koledzy z pracy |
+| `rodzina` | Rodzina |
+| `znajomy` | Przyjaciele i znajomi |
+| `biznes` | Kontakty związane z pracą, startupami, AI |
+| `rzemieślnik` | Wykonawcy na prywatne projekty (np. stół, remont) |
+| `medyczny` | Lekarze, koordynatorzy klinik |
+
+**Status kontaktu:**
+| Status | Znaczenie |
+|--------|-----------|
+| `aktywny` | Aktywny kontakt |
+| `nieaktywny` | Tymczasowo nieaktywny |
+| `archiwalny` | Zarchiwizowany - ukryty we wszystkich widokach |
+
+**Ważne**: Tylko użytkownik może ustawić `status: archiwalny`. AI nigdy nie archiwizuje kontaktów.
+
 ### Memory Update Guidelines
 
-**People index (`People.md`) - brief list:**
-```markdown
-# Ludzie
+**Profil osoby (`Kontakty/Jan-Kowalski.md`) z frontmatter YAML:**
+```yaml
+---
+typ: osoba
+utworzono: 2025-02-04
+zaktualizowano: 2025-02-04
+imie: Jan
+nazwisko: Kowalski
+email: jan@example.com
+telefon: "+48 600 123 456"
+kategoria: praca           # praca | rodzina | znajomy | biznes | rzemieślnik | medyczny
+opis: "Tech Lead, zespół backend"  # Oneliner widoczny w tabeli Bases
+status: aktywny            # aktywny | nieaktywny | archiwalny
+priorytet: normalny        # wysoki | normalny | niski
+firma: Google
+stanowisko: Senior Engineer
+branza: IT
+linkedin_url: "https://linkedin.com/in/jan-kowalski"
+linkedin_id: jan-kowalski
+ostatni_kontakt: 2025-02-01
+nastepny_kontakt: 2025-02-15
+preferowany_kanal: email   # email | telefon | slack | spotkanie
+projekty:
+  - "[[Projects/Project-Alpha]]"
+powiazania:
+  - "[[Kontakty/Anna-Nowak]]"
+---
 
-## Praca
-- [[People/Jan-Kowalski|Jan Kowalski]] - Tech Lead, zespół backend
-- [[People/Anna-Nowak|Anna Nowak]] - Manager
-
-## Rodzina
-- [[People/Marta-Kowalska|Marta]] - żona
-
-## Przyjaciele
-- [[People/Tomek-Wisniewski|Tomek Wiśniewski]] - znajomy z studiów
-```
-
-**Individual person file (`People/Jan-Kowalski.md`) - detailed:**
-```markdown
 # Jan Kowalski
 
-- **Relacja**: Kolega z pracy, zespół backend
-- **Kontekst**: Pracujemy razem od 2022, prowadzi projekt X
-- **Komunikacja**: Preferuje krótkie maile, odpowiada szybko rano
-- **Projekty wspólne**: [[Projects/Project-Alpha|Project Alpha]], [[Projects/Migration-Q3|Migration Q3]]
-- **Ważne**: Ma córkę (Zuzia, ~5 lat), interesuje się bieganiem
-- **Powiązania**: Raportuje do [[People/Anna-Nowak|Anna Nowak]]
-- **Historia**:
-  - 2024-01: Rozpoczęliśmy współpracę przy Project Alpha
-  - 2024-06: Awansował na tech leada
-- **Ostatni kontakt**: 2025-01-28 (email o deadline)
+## Podsumowanie
+Kolega z pracy od 2022, prowadzi projekt X.
+
+## LinkedIn
+> Cache danych z profilu. Ostatnia aktualizacja: -
+
+## Komunikacja
+- **Preferowany kanał**: Email
+- **Styl**: Krótkie maile, odpowiada szybko rano
+
+## Projekty wspólne
+- [[Projects/Project-Alpha|Project Alpha]]
+
+## Powiązania
+- [[Kontakty/Anna-Nowak|Anna Nowak]] - jego manager
+
+## Szczegóły osobiste
+- Ma córkę (Zuzia, ~5 lat), interesuje się bieganiem
+
+## Historia kontaktów
+### 2025-01-28 | Email | Deadline projektu
+- **Źródło**: Email
+Rozmowa o deadline projektu Alpha.
+
+---
+
+## Dziennik relacji
 ```
+
+**Ważne**: Przy każdym kontakcie aktualizuj pole `ostatni_kontakt` w frontmatter!
 
 **Project index (`Projects.md`) - brief list:**
 ```markdown
@@ -219,7 +274,7 @@ AI/Memory/
 
 - **Typ**: Praca / kluczowy projekt
 - **Status**: Aktywny, faza 2
-- **Zespół**: [[People/Jan-Kowalski|Jan Kowalski]] (lead), [[People/Anna-Nowak|Anna Nowak]], ja
+- **Zespół**: [[Kontakty/Jan-Kowalski|Jan Kowalski]] (lead), [[Kontakty/Anna-Nowak|Anna Nowak]], ja
 - **Deadline**: 2025-03-15
 - **Kontekst**: Migracja systemu legacy, budżet 500k
 - **Ryzyka**: Zależność od zewnętrznego API
@@ -266,6 +321,7 @@ Masz **pełny dostęp read/write** do całego vault Obsidian. Używaj natywnych 
 | Location | Twoje podejście |
 |----------|-----------------|
 | `AI/` folder | Twój workspace - pełna swoboda |
+| `Kontakty/` | Tworzenie i edycja profili osób |
 | `Inbox/` | Możesz tworzyć i edytować |
 | `Projekty/` | Możesz dopisywać do istniejących |
 | `Obszary/` | Możesz dopisywać do istniejących |

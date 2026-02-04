@@ -15,9 +15,7 @@
     }
   },
   "permissions": {
-    "additionalDirectories": [
-      "${OBSIDIAN_VAULT_PATH}"
-    ],
+    "additionalDirectories": ["${OBSIDIAN_VAULT_PATH}"],
     "allow": [
       "mcp__gmail__list_accounts",
       "mcp__gmail__search_threads",
@@ -64,10 +62,7 @@
       "mcp__obsidian__update_ai_note",
       "mcp__obsidian__append_to_user_note"
     ],
-    "ask": [
-      "mcp__calendar__create-event",
-      "mcp__gmail__unsubscribe"
-    ],
+    "ask": ["mcp__calendar__create-event", "mcp__gmail__unsubscribe"],
     "deny": [
       "mcp__gmail__send*",
       "mcp__gmail__delete*",
@@ -90,9 +85,7 @@
 
       "Read(../*)",
       "Edit(../*)",
-      "Write(../*)",
-      "Edit(${OBSIDIAN_VAULT_PATH}/*)",
-      "Write(${OBSIDIAN_VAULT_PATH}/*)"
+      "Write(../*)"
     ]
   }
 }

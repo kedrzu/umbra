@@ -21,10 +21,6 @@ This skill explicitly updates the **Digital Twin** - the comprehensive model of 
 
 ```
 AI/Memory/
-├── People.md           # Index of all people (brief list with links)
-├── People/             # Individual person files (detailed profiles)
-│   ├── _TEMPLATE.md    # Template for new person files
-│   └── Jan-Kowalski.md
 ├── Projects.md         # Index of all projects (brief list with links)
 ├── Projects/           # Individual project files (detailed profiles)
 │   ├── _TEMPLATE.md    # Template for new project files
@@ -34,13 +30,18 @@ AI/Memory/
 ├── Preferences.md      # Behavioral patterns
 ├── Insights.md         # Observations and patterns
 └── Timeline.md         # Life events and milestones
+
+Kontakty/               # Osobny folder w vault (Obsidian Bases)
+├── Kontakty.base       # Widok tabeli wszystkich kontaktów
+├── _TEMPLATE-Osoba.md  # Szablon dla nowych osób
+└── Imie-Nazwisko.md    # Profile osób (dane w frontmatter YAML)
 ```
 
 ## Process
 
 1. **Analyze the Information**
    - What category does this fit?
-     - Person info → `People.md` (index) + `People/Imie-Nazwisko.md` (details)
+     - Person info → `Kontakty/Imie-Nazwisko.md` (frontmatter YAML + sekcje)
      - Project context → `Projects.md` (index) + `Projects/Nazwa-Projektu.md` (details)
      - Work context → `Work.md`
      - Personal context → `Personal.md`
@@ -51,71 +52,129 @@ AI/Memory/
    - Is this new or an update to existing?
    - Does this connect to other information? (cross-reference!)
 
-2. **For People or Projects**
+2. **For People (Kontakty)**
 
-   **If new person/project:**
-   - Create individual file in `People/` or `Projects/` using template
-   - Add entry to index file (`People.md` or `Projects.md`)
-   - Use kebab-case for filenames: `Jan-Kowalski.md`, `Project-Alpha.md`
+   **If new person:**
+   - Create file in `Kontakty/` using `_TEMPLATE-Osoba.md`
+   - Wypełnij frontmatter YAML (imię, nazwisko, email, kategoria, opis, etc.)
+   - Use kebab-case for filenames: `Jan-Kowalski.md`
+   - Brak indeksu - Obsidian Bases automatycznie wyświetla kontakty
+
+   **If updating existing person:**
+   - Znajdź plik w `Kontakty/`
+   - Aktualizuj frontmatter YAML (np. `ostatni_kontakt`, `email`)
+   - Dodaj wpis do `## Historia kontaktów` jeśli był kontakt
+
+   **Kategorie kontaktów**: `praca` | `rodzina` | `znajomy` | `biznes` | `rzemieślnik` | `medyczny`
+
+3. **For Projects**
+
+   **If new project:**
+   - Create individual file in `Projects/` using template
+   - Add entry to `Projects.md` index
+   - Use kebab-case for filenames: `Project-Alpha.md`
 
    **If updating existing:**
    - Find and update the individual file
    - Update index if status changed
 
-3. **For Other Memory Files**
+4. **For Other Memory Files**
    - Read current file
    - Find the right section
    - Add or update entry
 
-4. **Cross-Reference**
+5. **Cross-Reference**
    - Link people to projects they're involved in
    - Link projects to people on the team
-   - Use Obsidian wiki-links: `[[People/Jan-Kowalski|Jan Kowalski]]`
+   - Use Obsidian wiki-links: `[[Kontakty/Jan-Kowalski|Jan Kowalski]]`
 
-5. **Confirm to User**
+6. **Confirm to User**
    - What was stored
    - Where it was stored
    - How it will be used
 
 ## File Templates
 
-### Person Index Entry (in `People.md`)
-```markdown
-- [[People/Jan-Kowalski|Jan Kowalski]] - Tech Lead, zespół backend
-```
+### Person File (`Kontakty/Jan-Kowalski.md`) z frontmatter YAML
 
-### Person Detail File (`People/Jan-Kowalski.md`)
-```markdown
+```yaml
+---
+typ: osoba
+utworzono: 2025-02-04
+zaktualizowano: 2025-02-04
+imie: Jan
+nazwisko: Kowalski
+email: jan@example.com
+telefon: "+48 600 123 456"
+kategoria: praca           # praca | rodzina | znajomy | biznes | rzemieślnik | medyczny
+opis: "Tech Lead, zespół backend"  # Oneliner widoczny w tabeli Bases
+status: aktywny            # aktywny | nieaktywny | archiwalny
+priorytet: normalny        # wysoki | normalny | niski
+firma: Google
+stanowisko: Senior Engineer
+branza: IT
+linkedin_url: "https://linkedin.com/in/jan-kowalski"
+linkedin_id: jan-kowalski
+ostatni_kontakt: 2025-02-01
+nastepny_kontakt: 2025-02-15
+preferowany_kanal: email   # email | telefon | slack | spotkanie
+projekty:
+  - "[[Projects/Project-Alpha]]"
+powiazania:
+  - "[[Kontakty/Anna-Nowak]]"
+---
+
 # Jan Kowalski
 
-- **Relacja**: Kolega z pracy, zespół backend
-- **Skąd się znamy**: Pracujemy razem od 2022
-- **Kontekst**: Prowadzi projekt X, ekspert od Kubernetes
+## Podsumowanie
+Kolega z pracy od 2022, prowadzi projekt X. Ekspert od Kubernetes.
+
+## LinkedIn
+> Cache danych z profilu LinkedIn. Aktualizować przy okazji.
+> Ostatnia aktualizacja: -
+
+**Tytuł**:
+**About**:
+**Doświadczenie**:
 
 ## Komunikacja
 - **Preferowany kanał**: Email, Slack
 - **Styl**: Krótkie maile, odpowiada szybko rano
+- **Najlepszy czas**: Rano
 
 ## Projekty wspólne
 - [[Projects/Project-Alpha|Project Alpha]] - Tech Lead
 
 ## Powiązania
-- [[People/Anna-Nowak|Anna Nowak]] - jego manager
+- [[Kontakty/Anna-Nowak|Anna Nowak]] - jego manager
 
-## Ważne
+## Szczegóły osobiste
 - Ma córkę (Zuzia, ~5 lat)
 - Interesuje się bieganiem
 
-## Historia
-- 2024-01: Rozpoczęliśmy współpracę przy Project Alpha
-- 2024-06: Awansował na tech leada
+## Historia kontaktów
 
-## Notatki
-- **Ostatni kontakt**: 2025-01-28 (email o deadline)
+### 2025-02-01 | Email | Deadline projektu
+- **Źródło**: Email (jan@example.com)
+
+Rozmowa o deadline projektu Alpha.
 
 ---
-*Ostatnia aktualizacja: 2025-01-28*
+
+### 2024-06-15 | Spotkanie | Awans
+- **Źródło**: Spotkanie
+
+Awansował na tech leada.
+
+---
+
+## Dziennik relacji
+- Świetna współpraca, komunikatywny
 ```
+
+**Ważne**: Przy każdym kontakcie:
+1. Aktualizuj `ostatni_kontakt` w frontmatter!
+2. Dodaj wpis do `## Historia kontaktów` z datą i źródłem
 
 ### Project Index Entry (in `Projects.md`)
 ```markdown
@@ -134,8 +193,8 @@ AI/Memory/
 Migracja systemu legacy do nowej architektury, budżet 500k.
 
 ## Zespół
-- [[People/Jan-Kowalski|Jan Kowalski]] - Tech Lead
-- [[People/Anna-Nowak|Anna Nowak]] - PM
+- [[Kontakty/Jan-Kowalski|Jan Kowalski]] - Tech Lead
+- [[Kontakty/Anna-Nowak|Anna Nowak]] - PM
 - Ja - Backend developer
 
 ## Timeline
@@ -160,9 +219,9 @@ Migracja systemu legacy do nowej architektury, budżet 500k.
 
 ### Memory Updated
 
-**Category**: [People/Projects/Work/Personal/Preferences/Insights/Timeline]
+**Category**: [Kontakty/Projects/Work/Personal/Preferences/Insights/Timeline]
 **Files updated**:
-- `AI/Memory/[path]`
+- `Kontakty/[Imie-Nazwisko].md` lub `AI/Memory/[path]`
 
 **Action**: [Created new / Updated existing]
 
@@ -177,13 +236,16 @@ Migracja systemu legacy do nowej architektury, budżet 500k.
 
 ## Important Rules
 
-- **People & Projects**: Always use index + individual files
+- **People (Kontakty)**: Bez indeksu - bezpośrednio `Kontakty/Imie-Nazwisko.md` z frontmatter YAML
+- **Projects**: Index (`Projects.md`) + individual files (`Projects/Nazwa.md`)
 - **Naming**: Use kebab-case for filenames (e.g., `Jan-Kowalski.md`)
-- **Cross-reference**: Link between people and projects
-- **Templates**: Use `_TEMPLATE.md` files as starting point
+- **Cross-reference**: Link between people and projects: `[[Kontakty/...]]`, `[[Projects/...]]`
+- **Templates**: Use `_TEMPLATE-Osoba.md` for new contacts
+- **ostatni_kontakt**: Zawsze aktualizuj to pole przy każdym kontakcie!
 - Always read the file first before updating
 - Preserve existing content
 - Use consistent formatting
 - Include dates
 - Be specific - vague memories aren't useful
 - Don't store sensitive info like passwords
+- **NIGDY** nie ustawiaj `status: archiwalny` - tylko użytkownik może archiwizować kontakty

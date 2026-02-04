@@ -24,7 +24,7 @@ Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 
 2. **Przeczytaj AI Memory**
    - `AI/Memory/Projects.md` - aktywne projekty
-   - `AI/Memory/People.md` - kontekst osób
+   - `Kontakty/*.md` - profile kontaktów (Glob + Read frontmatter dla uczestników spotkań)
    - `AI/Memory/EmailReminders.md` - przypomnienia do przeglądu
    - `AI/Memory/Insights.md` - wzorce i preferencje
 
@@ -61,7 +61,17 @@ Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 9. **Przedstaw briefing użytkownikowi**
 
 10. **Aktualizuj Digital Twin Memory**
-    - Nowe osoby z kalendarza → `People.md`
+    - Nowe osoby z kalendarza → utwórz `Kontakty/Imie-Nazwisko.md` z frontmatter YAML
+    - Uczestnicy spotkań → aktualizuj `ostatni_kontakt` w frontmatter kontaktu
+    - Po spotkaniach → dodaj wpis do `## Historia kontaktów` uczestników:
+      ```markdown
+      ### 2025-02-04 | Spotkanie | Nazwa spotkania
+      - **Źródło**: Kalendarz (Work/Personal)
+
+      Notatki ze spotkania...
+
+      ---
+      ```
     - Kontekst projektowy → `Projects.md`
     - Wzorce → `Insights.md`
 
