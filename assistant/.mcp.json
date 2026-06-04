@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "gmail": {
+      "type": "http",
+      "url": "http://localhost:4002/mcp"
+    },
+    "calendar": {
+      "type": "http",
+      "url": "http://localhost:4003/mcp"
+    },
+    "todoist": {
+      "type": "http",
+      "url": "https://ai.todoist.net/mcp"
+    },
+    "qmd": {
+      "command": "/Users/kedrzu/.bun/bin/qmd",
+      "args": ["mcp"],
+      "env": {
+        "QMD_VAULT_PATH": "/Users/kedrzu/Library/Mobile Documents/iCloud~md~obsidian/Documents/kedrzu"
+      }
+    }
+  }
+}

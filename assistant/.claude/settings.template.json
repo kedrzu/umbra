@@ -1,0 +1,99 @@
+{
+  "model": "sonnet",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "qmd embed --silent 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["qmd"],
+    "network": {
+      "allowedDomains": [
+        "localhost",
+        "127.0.0.1",
+        "ai.todoist.net",
+        "todoist.net",
+        "*.anthropic.com"
+      ],
+      "allowLocalBinding": false
+    }
+  },
+  "permissions": {
+    "allow": [
+      "mcp__gmail__list_accounts",
+      "mcp__gmail__search_threads",
+      "mcp__gmail__get_thread",
+      "mcp__gmail__get_message",
+      "mcp__gmail__create_draft",
+      "mcp__gmail__list_labels",
+      "mcp__gmail__update_thread",
+      "mcp__gmail__get_unsubscribe_link",
+      "mcp__gmail__extract_attachment*",
+      "mcp__gmail__get_personal_email_style_guide",
+
+      "mcp__calendar__list-calendars",
+      "mcp__calendar__list-events",
+      "mcp__calendar__get-event",
+      "mcp__calendar__search-events",
+      "mcp__calendar__list-colors",
+      "mcp__calendar__get-freebusy",
+      "mcp__calendar__get-current-time",
+      "mcp__calendar__manage-accounts",
+
+      "mcp__todoist__get_tasks",
+      "mcp__todoist__get_task",
+      "mcp__todoist__get_projects",
+      "mcp__todoist__get_project",
+      "mcp__todoist__get_sections",
+      "mcp__todoist__get_labels",
+      "mcp__todoist__get_comments",
+      "mcp__todoist__search_tasks",
+      "mcp__todoist__create_task",
+      "mcp__todoist__add_task",
+
+      "mcp__qmd__*",
+      "mcp__obsidian-search__*",
+      "Read(./obsidian/*)",
+      "Edit(./obsidian/*)",
+      "Write(./obsidian/*)",
+      "Bash(ls ./obsidian/*)",
+      "Bash(cd ./obsidian/*)"
+    ],
+    "ask": ["mcp__calendar__create-event", "mcp__gmail__unsubscribe"],
+    "deny": [
+      "mcp__gmail__send*",
+      "mcp__gmail__delete*",
+      "mcp__gmail__trash*",
+
+      "mcp__calendar__update-event",
+      "mcp__calendar__delete-event",
+      "mcp__calendar__respond-to-event",
+
+      "mcp__todoist__update*",
+      "mcp__todoist__delete*",
+      "mcp__todoist__complete*",
+      "mcp__todoist__close*",
+      "mcp__todoist__reopen*",
+      "mcp__todoist__move*",
+
+      "Read(../*)",
+      "Edit(../*)",
+      "Write(../*)",
+
+      "Bash(git *)",
+      "Bash(*&& git *)",
+      "Bash(*; git *)",
+      "Bash(*| git *)"
+    ]
+  }
+}

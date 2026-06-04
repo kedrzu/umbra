@@ -1,0 +1,71 @@
+name: umbra
+
+services:
+  # ==========================
+  # Gmail MCP Server
+  # ==========================
+  gmail:
+    build:
+      context: ./mcp-servers/gmail
+      dockerfile: Dockerfile
+    container_name: umbra-gmail
+    networks:
+      - mcp-network
+    ports:
+      - "${MCP_GMAIL_PORT:-4002}:4002"
+    volumes:
+      - type: bind
+        source: ${GMAIL_CREDENTIALS_PATH}
+        target: /config/credentials.json
+        read_only: true
+      - gmail-tokens:/config/tokens
+    environment:
+      - GMAIL_CREDENTIALS_PATH=/config/credentials.json
+      - GMAIL_TOKENS_PATH=/config/tokens
+      - MCP_PORT=4002
+      - MCP_TRANSPORT=http
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ==========================
+  # Google Calendar MCP Server
+  # ==========================
+  calendar:
+    build:
+      context: ./mcp-servers/calendar
+      dockerfile: Dockerfile
+    container_name: umbra-calendar
+    networks:
+      - mcp-network
+    ports:
+      - "${MCP_CALENDAR_PORT:-4003}:4003"
+    volumes:
+      - type: bind
+        source: ${CALENDAR_CREDENTIALS_PATH}
+        target: /config/gcp-oauth.keys.json
+        read_only: true
+      - ${CALENDAR_TOKENS_PATH:-~/.config/google-calendar-mcp}:/config/tokens
+    environment:
+      - GOOGLE_OAUTH_CREDENTIALS=/config/gcp-oauth.keys.json
+      - GOOGLE_CALENDAR_MCP_TOKEN_PATH=/config/tokens/tokens.json
+      - ENABLED_TOOLS=list-calendars,list-events,get-event,search-events,list-colors,get-freebusy,get-current-time,create-event,manage-accounts
+      - TRANSPORT=http
+      - HOST=0.0.0.0
+      - PORT=4003
+    healthcheck:
+      disable: true
+
+networks:
+  mcp-network:
+    driver: bridge
+    name: umbra-mcp-network
+
+volumes:
+  gmail-tokens:
+    name: umbra-gmail-tokens
+  calendar-tokens:
+    name: umbra-calendar-tokens
