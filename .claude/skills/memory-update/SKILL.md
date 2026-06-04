@@ -1,6 +1,6 @@
 ---
 name: memory-update
-description: Explicitly update the AI's memory with new information. Use when user shares important context they want remembered, or when assistant learns something that should be preserved. Stores in AI/Memory/ folder.
+description: Explicitly update the AI's memory with new information. Use when user shares important context they want remembered, or when assistant learns something that should be preserved. Stores in Asystent/Memory/ folder.
 ---
 
 # Memory Update
@@ -15,7 +15,7 @@ This skill explicitly updates the **Digital Twin** - the comprehensive model of 
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/AI/Memory/` - pamięć systemowa (Projects.md, Work.md, Personal.md, etc.)
+- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, Work.md, Personal.md, etc.)
 - `./obsidian/Projects/` - szczegółowe pliki projektów
 
 ## MCP Tools Used
@@ -32,7 +32,7 @@ Foldery w vault:
 ## Memory Structure
 
 ```
-AI/Memory/
+Asystent/Memory/
 ├── Projects.md         # Index of all projects (brief list with links)
 ├── Projects/           # Individual project files (detailed profiles)
 │   ├── _TEMPLATE.md    # Template for new project files
@@ -237,7 +237,7 @@ Migracja systemu legacy do nowej architektury, budżet 500k.
 
 **Category**: [Kontakty/Projects/Work/Personal/Preferences/Insights/Timeline]
 **Files updated**:
-- `Kontakty/[Imie-Nazwisko].md` lub `AI/Memory/[path]`
+- `Kontakty/[Imie-Nazwisko].md` lub `Asystent/Memory/[path]`
 
 **Action**: [Created new / Updated existing]
 

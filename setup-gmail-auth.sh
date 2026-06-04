@@ -4,8 +4,8 @@ set -e
 # Gmail OAuth Setup Script
 # Run this to authenticate Gmail accounts
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+# This script lives at the project root; resolve it regardless of the caller's cwd.
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors
 RED='\033[0;31m'

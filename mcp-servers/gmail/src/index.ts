@@ -130,6 +130,31 @@ async function resolveLabelNamesToIds(
   );
 }
 
+// AI processing labels - the assistant workflow convention for tracking which
+// threads have been handled. AI/Done = fully processed; AI/Triage = the agent
+// was unsure and left it for the user. Centralized here so the search filter and
+// any future logic stay in sync.
+const LABEL_DONE = "AI/Done";
+const LABEL_TRIAGE = "AI/Triage";
+
+// Translate a high-level processing status into a Gmail search clause. This lets
+// callers ask for a view ("unprocessed", "triage", ...) without hand-writing the
+// -label: clauses, keeping the AI/Done|Triage convention owned by the MCP.
+function filterClause(filter?: string): string {
+  switch (filter) {
+    case "unprocessed": // never touched: no Done, no Triage
+      return `-label:${LABEL_DONE} -label:${LABEL_TRIAGE}`;
+    case "triage": // the user's triage backlog
+      return `label:${LABEL_TRIAGE}`;
+    case "pending": // not finished (includes Triage)
+      return `-label:${LABEL_DONE}`;
+    case "done": // already processed
+      return `label:${LABEL_DONE}`;
+    default: // no status filter - raw query (backward compatible)
+      return "";
+  }
+}
+
 // Load credentials
 async function loadCredentials(): Promise<{
   client_id: string;
@@ -239,7 +264,8 @@ const tools: Tool[] = [
   },
   {
     name: "search_threads",
-    description: "Search for email threads using Gmail search syntax",
+    description:
+      "Search for email threads using Gmail search syntax. Filtering runs per-message under the hood (Gmail thread-level label negation is unreliable), then results are de-duplicated into threads. A thread is returned if ANY of its messages matches the query - so a new reply still surfaces its thread even when older messages carry labels you are excluding (e.g. -label:AI/Done). Threads are ordered by most recent matching message. Pass the optional 'filter' to restrict by AI processing status (the MCP appends the right AI/Done|AI/Triage clause) instead of writing -label: clauses yourself.",
     inputSchema: {
       type: "object",
       properties: {
@@ -250,7 +276,13 @@ const tools: Tool[] = [
         query: {
           type: "string",
           description:
-            "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com', 'subject:meeting')",
+            "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com', 'subject:meeting'). Acts as the scope; combined with 'filter' if provided.",
+        },
+        filter: {
+          type: "string",
+          enum: ["unprocessed", "triage", "pending", "done"],
+          description:
+            "Optional AI processing status. 'unprocessed' = no AI/Done and no AI/Triage; 'triage' = has AI/Triage; 'pending' = no AI/Done (includes triage); 'done' = has AI/Done. Omit for a raw query.",
         },
         maxResults: {
           type: "number",
@@ -815,17 +847,51 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const gmail = getGmailClient(args?.account as string);
         const maxResults = (args?.maxResults as number) || 20;
 
-        const response = await gmail.users.threads.list({
-          userId: "me",
-          q: args?.query as string,
-          maxResults,
-        });
+        // Combine the caller's scope query with the AI-status clause (if any).
+        const clause = filterClause(args?.filter as string | undefined);
+        const q = [args?.query as string, clause].filter(Boolean).join(" ");
+
+        // Filter per-message (Gmail thread-level label negation is unreliable -
+        // a whole conversation disappears from -label:X once any message has X,
+        // so new replies to processed threads would never resurface). We list
+        // messages, then de-duplicate their threadIds. messages.list is returned
+        // in reverse-chronological order, so first-seen order gives threads
+        // sorted by most recent matching message. Page until we have enough
+        // distinct threads (or hit a safety cap).
+        const threadIds: string[] = [];
+        const seen = new Set<string>();
+        let pageToken: string | undefined = undefined;
+        const MAX_PAGES = 5;
+
+        for (
+          let page = 0;
+          page < MAX_PAGES && threadIds.length < maxResults;
+          page++
+        ) {
+          const res: any = await gmail.users.messages.list({
+            userId: "me",
+            q,
+            maxResults: 100,
+            pageToken,
+          });
+
+          for (const m of res.data.messages || []) {
+            if (m.threadId && !seen.has(m.threadId)) {
+              seen.add(m.threadId);
+              threadIds.push(m.threadId);
+              if (threadIds.length >= maxResults) break;
+            }
+          }
+
+          pageToken = res.data.nextPageToken || undefined;
+          if (!pageToken) break;
+        }
 
         const threads = await Promise.all(
-          (response.data.threads || []).map(async (thread) => {
+          threadIds.map(async (id) => {
             const threadData = await gmail.users.threads.get({
               userId: "me",
-              id: thread.id!,
+              id,
               format: "metadata",
               metadataHeaders: ["Subject", "From", "Date"],
             });
@@ -834,7 +900,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const headers = firstMessage?.payload?.headers;
 
             return {
-              id: thread.id,
+              id,
               snippet: threadData.data.messages?.[0]?.snippet,
               subject: getHeader(headers, "Subject"),
               from: getHeader(headers, "From"),
@@ -928,6 +994,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           return {
             id: msg.id,
+            labels: msg.labelIds,
             from: getHeader(headers, "From"),
             to: getHeader(headers, "To"),
             date: getHeader(headers, "Date"),

@@ -13,7 +13,7 @@ This guide explains how to run the Umbra Personal Assistant in Docker containers
 │  │  - Claude Code CLI (sandboxed)                                      │ │
 │  │  - qmd (semantic search)                                            │ │
 │  │  - Read-only vault access                                           │ │
-│  │  - Read-write assistant/ folder (self-modifying)                    │ │
+│  │  - Read-write / folder (self-modifying)                    │ │
 │  │  - Connects to MCPs via HTTP/SSE                                    │ │
 │  └──────────────────────────────────────────────────────────────────┬─┘ │
 │                                                                      │   │
@@ -65,7 +65,7 @@ Your credentials are saved to `~/.claude/` and will be mounted into the containe
 ### 3. Run Setup Script
 
 ```bash
-./scripts/docker-setup.sh
+./setup.sh
 ```
 
 This will:
@@ -133,7 +133,7 @@ docker compose run --rm claude
 
 ```bash
 # Run a specific skill
-docker compose run --rm claude --skill inbox-review
+docker compose run --rm claude --skill email-review
 
 # Chat mode
 docker compose run --rm claude chat
@@ -244,15 +244,15 @@ This:
 | Volume         | Container       | Access         | Purpose                      |
 | -------------- | --------------- | -------------- | ---------------------------- |
 | Obsidian vault | claude          | read-only      | qmd search                   |
-| Obsidian vault | obsidian  | read-write     | Note operations (AI/ folder) |
-| `assistant/`   | claude          | **read-write** | Self-modifying instructions  |
+| Obsidian vault | obsidian  | read-write     | Note operations (Asystent/ folder) |
+| `/`   | claude          | **read-write** | Self-modifying instructions  |
 | qmd-index      | claude          | read-write     | Search index                 |
 | OAuth tokens   | gmail, calendar | read-write     | Auth tokens                  |
 | ~/.claude      | claude          | read-only      | Auth credentials only        |
 
 ### Self-Modifying Assistant
 
-The `assistant/` folder is mounted **read-write**, allowing Claude to update its own:
+The `/` folder is mounted **read-write**, allowing Claude to update its own:
 
 - `CLAUDE.md` - Core instructions
 - `.claude/skills/` - Skill definitions

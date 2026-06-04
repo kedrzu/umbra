@@ -31,8 +31,8 @@ Find and clean up unwanted email subscriptions across all accounts.
 
 0. **Check AI Memory** for context (pliki w vault Obsidian)
    - Użyj `Glob` z pattern `Kontakty/*.md` i `Read` aby przeczytać profile kontaktów - nie sugeruj wypisywania się od znanych osób
-   - Użyj `Read` dla `./obsidian/AI/Memory/EmailWorkflow-Personal.md` i `./obsidian/AI/Memory/EmailWorkflow-Work.md` - zrozum kategorie labelowania
-   - Użyj `Read` dla `./obsidian/AI/Memory/Preferences.md` - sprawdź preferencje unsubscribe
+   - Użyj `Read` dla `./obsidian/Asystent/Memory/EmailWorkflow-Personal.md` i `./obsidian/Asystent/Memory/EmailWorkflow-Work.md` - zrozum kategorie labelowania
+   - Użyj `Read` dla `./obsidian/Asystent/Memory/Preferences.md` - sprawdź preferencje unsubscribe
 
 1. **Search for promotional emails** in each account
    - Query: `category:promotions OR label:promotions`
@@ -94,5 +94,5 @@ Find and clean up unwanted email subscriptions across all accounts.
 - **ALWAYS ask for approval** before unsubscribing
 - Present options clearly with consequences
 - Don't unsubscribe from anything work-related without explicit approval
-- Keep a record of unsubscribed senders in AI/Memory
+- Keep a record of unsubscribed senders in Asystent/Memory
 - Label processed emails for tracking

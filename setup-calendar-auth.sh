@@ -5,8 +5,8 @@ set -e
 # Run this on the HOST machine to authenticate Google Calendar accounts
 # (The calendar MCP auth server only binds to localhost, so Docker doesn't work)
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+# This script lives at the project root; resolve it regardless of the caller's cwd.
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors
 RED='\033[0;31m'

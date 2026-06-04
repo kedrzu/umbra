@@ -4,9 +4,8 @@ set -e
 # Umbra Personal Assistant - Setup Script
 # Idempotent script that sets up everything needed to run the assistant
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-ASSISTANT_DIR="$PROJECT_ROOT/assistant"
+# This script lives at the project root; resolve it regardless of the caller's cwd.
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -105,7 +104,7 @@ fi
 echo
 echo -e "${YELLOW}Creating Obsidian vault symlink...${NC}"
 
-OBSIDIAN_SYMLINK="$ASSISTANT_DIR/obsidian"
+OBSIDIAN_SYMLINK="$PROJECT_ROOT/obsidian"
 
 if [ -L "$OBSIDIAN_SYMLINK" ]; then
     # Symlink exists, check if it points to the right place
@@ -124,7 +123,7 @@ elif [ -e "$OBSIDIAN_SYMLINK" ]; then
     exit 1
 else
     ln -s "$OBSIDIAN_VAULT_PATH" "$OBSIDIAN_SYMLINK"
-    echo -e "  ${GREEN}✓${NC} Created symlink: assistant/obsidian -> $OBSIDIAN_VAULT_PATH"
+    echo -e "  ${GREEN}✓${NC} Created symlink: obsidian -> $OBSIDIAN_VAULT_PATH"
 fi
 
 # ==========================================
@@ -181,19 +180,19 @@ MCP_CALENDAR_PORT="${MCP_CALENDAR_PORT:-4003}"
 export OBSIDIAN_VAULT_PATH MCP_GMAIL_PORT MCP_CALENDAR_PORT QMD_PATH
 
 # Generate .mcp.json from template
-envsubst < "$ASSISTANT_DIR/.mcp.template.json" > "$ASSISTANT_DIR/.mcp.json"
+envsubst < "$PROJECT_ROOT/.mcp.template.json" > "$PROJECT_ROOT/.mcp.json"
 echo -e "  ${GREEN}✓${NC} Generated .mcp.json"
 
 # Generate .claude/settings.json from template
 # First make it writable if it exists and is read-only
-if [ -f "$ASSISTANT_DIR/.claude/settings.json" ]; then
-    chmod 644 "$ASSISTANT_DIR/.claude/settings.json" 2>/dev/null || true
+if [ -f "$PROJECT_ROOT/.claude/settings.json" ]; then
+    chmod 644 "$PROJECT_ROOT/.claude/settings.json" 2>/dev/null || true
 fi
 
-envsubst < "$ASSISTANT_DIR/.claude/settings.template.json" > "$ASSISTANT_DIR/.claude/settings.json"
+envsubst < "$PROJECT_ROOT/.claude/settings.template.json" > "$PROJECT_ROOT/.claude/settings.json"
 
 # Make settings read-only to prevent agent from modifying its own restrictions
-chmod 444 "$ASSISTANT_DIR/.claude/settings.json"
+chmod 444 "$PROJECT_ROOT/.claude/settings.json"
 echo -e "  ${GREEN}✓${NC} Generated .claude/settings.json (read-only)"
 
 # ==========================================
@@ -302,8 +301,8 @@ echo -e "${GREEN}╚════════════════════
 echo
 echo "To use the assistant:"
 echo
-echo "  Run Claude Code from the assistant directory:"
-echo -e "     ${BLUE}cd $ASSISTANT_DIR && claude${NC}"
+echo "  Run Claude Code from the directory:"
+echo -e "     ${BLUE}claude${NC}"
 echo
 echo "  Try a skill:"
 echo -e "     ${BLUE}/daily-dashboard${NC}"
@@ -311,5 +310,5 @@ echo
 echo "To manage MCP servers:"
 echo -e "  View logs:    ${BLUE}docker compose logs -f${NC}"
 echo -e "  Stop:         ${BLUE}docker compose down${NC}"
-echo -e "  Restart:      ${BLUE}$SCRIPT_DIR/setup.sh${NC}"
+echo -e "  Restart:      ${BLUE}$PROJECT_ROOT/setup.sh${NC}"
 echo

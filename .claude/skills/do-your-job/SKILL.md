@@ -13,7 +13,7 @@ Run the complete assistant workflow.
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/AI/Memory/` - pamięć systemowa
+- `./obsidian/Asystent/Memory/` - pamięć systemowa
 - `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
 
 ## Default Routine (Morning)
@@ -25,16 +25,15 @@ Run `/daily-briefing` to create today's dashboard:
 - Gather calendar events across all accounts
 - Pull priority tasks from Todoist
 - Check email counts and priorities
-- Review email reminders from `AI/Memory/EmailReminders.md`
+- Review email reminders from `Asystent/Memory/EmailReminders.md`
 - Write to `Inbox/Dashboard-[date].md`
 
-### 2. Inbox Review
-Review emails across all accounts:
-- Identify priority messages
-- Summarize important emails
-- Draft responses for urgent items
-- Flag potential unsubscribes
+### 2. Email Review
+Run `/email-review` (codzienny autopilot) across all accounts:
+- Classify/label/draft per the EmailWorkflow rulebook, mark `AI/Done`
+- Flag ambiguous threads as `AI/Triage` without blocking
 - Save reminders for emails needing follow-up
+- If the `AI/Triage` pile is large, recommend `/email-triage` to resolve it interactively
 
 ### 3. Task Check
 Review Todoist status:
@@ -54,12 +53,12 @@ Update AI Memory with ALL new context learned. This is essential to being a usef
 | Source | What to Capture | Memory File (w vault Obsidian) |
 |--------|-----------------|--------------------------------|
 | Email | New contacts, people info | `Kontakty/*.md` |
-| Email | Project mentions, updates | `AI/Memory/Projects.md` |
-| Calendar | Attendees, event patterns | `Kontakty/*.md`, `AI/Memory/Insights.md` |
-| Tasks | Project progress | `AI/Memory/Projects.md` |
-| All | Work/personal context | `AI/Memory/Work.md`, `AI/Memory/Personal.md` |
-| All | Important dates | `AI/Memory/Timeline.md` |
-| All | Behavioral patterns | `AI/Memory/Preferences.md`, `AI/Memory/Insights.md` |
+| Email | Project mentions, updates | `Asystent/Memory/Projects.md` |
+| Calendar | Attendees, event patterns | `Kontakty/*.md`, `Asystent/Memory/Insights.md` |
+| Tasks | Project progress | `Asystent/Memory/Projects.md` |
+| All | Work/personal context | `Asystent/Memory/Work.md`, `Asystent/Memory/Personal.md` |
+| All | Important dates | `Asystent/Memory/Timeline.md` |
+| All | Behavioral patterns | `Asystent/Memory/Preferences.md`, `Asystent/Memory/Insights.md` |
 
 **Goal**: After each routine, the digital twin should know more than before.
 

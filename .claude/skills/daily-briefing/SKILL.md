@@ -13,7 +13,7 @@ Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/AI/Memory/` - pamięć systemowa (Projects.md, EmailReminders.md, etc.)
+- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, EmailReminders.md, etc.)
 - `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
 
 ## MCP Tools Used
@@ -36,9 +36,9 @@ Foldery w vault:
 1. **Pobierz aktualną datę i czas**
 
 2. **Przeczytaj AI Memory**
-   - `./obsidian/AI/Memory/Projects.md` - aktywne projekty
-   - `./obsidian/AI/Memory/EmailReminders.md` - przypomnienia do przeglądu
-   - `./obsidian/AI/Memory/Insights.md` - wzorce i preferencje
+   - `./obsidian/Asystent/Memory/Projects.md` - aktywne projekty
+   - `./obsidian/Asystent/Memory/EmailReminders.md` - przypomnienia do przeglądu
+   - `./obsidian/Asystent/Memory/Insights.md` - wzorce i preferencje
 
    **NIE ładuj listy kontaktów** - jeśli potrzebujesz info o uczestniku spotkania, użyj `qmd` do wyszukania po imieniu
 
@@ -78,8 +78,8 @@ Foldery w vault:
     - Nowe osoby z kalendarza → utwórz `./obsidian/Kontakty/Imie-Nazwisko.md` (użyj `qmd` żeby sprawdzić czy już istnieje)
     - Uczestnicy spotkań → użyj `qmd` do znalezienia kontaktu, aktualizuj `ostatni_kontakt`
     - Po spotkaniach → dodaj wpis do `## Historia kontaktów` uczestników
-    - Kontekst projektowy → `./obsidian/AI/Memory/Projects.md`
-    - Wzorce → `./obsidian/AI/Memory/Insights.md`
+    - Kontekst projektowy → `./obsidian/Asystent/Memory/Projects.md`
+    - Wzorce → `./obsidian/Asystent/Memory/Insights.md`
 
     **WAŻNE**: NIE ładuj całej listy kontaktów - wyszukuj przez `qmd`!
 
@@ -192,7 +192,7 @@ Które możemy oznaczyć jako załatwione? (np. "1 i 3" / "wszystkie" / "żadne"
 ### Oznaczanie jako rozwiązane
 
 Gdy użytkownik wskaże które przypomnienia są załatwione:
-1. Przeczytaj `AI/Memory/EmailReminders.md`
+1. Przeczytaj `Asystent/Memory/EmailReminders.md`
 2. Przenieś wskazane przypomnienia do sekcji "Rozwiązane"
 3. Dodaj datę rozwiązania i przekreślenie
 4. Zapisz zaktualizowany plik

@@ -13,7 +13,7 @@ Comprehensive review of the past week and planning for the next.
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/AI/Memory/` - pamięć systemowa (Projects.md, Insights.md, etc.)
+- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, Insights.md, etc.)
 
 ## Process
 
@@ -35,7 +35,7 @@ Foldery w vault:
    - Important conversations that happened
 
 4. **Project Progress**
-   - Check `AI/Memory/Projects.md`
+   - Check `Asystent/Memory/Projects.md`
    - What moved forward?
    - What's stalled?
 
@@ -66,13 +66,13 @@ Foldery w vault:
 
    | What to Update | Memory File (w vault Obsidian) | What to Capture |
    |----------------|--------------------------------|-----------------|
-   | Project statuses | `AI/Memory/Projects.md` | Progress, blockers, timeline changes |
+   | Project statuses | `Asystent/Memory/Projects.md` | Progress, blockers, timeline changes |
    | People updates | `Kontakty/*.md` | New contacts, relationship developments |
-   | Work context | `AI/Memory/Work.md` | Team changes, goals, challenges |
-   | Personal context | `AI/Memory/Personal.md` | Life updates, goal progress |
-   | Weekly patterns | `AI/Memory/Insights.md` | Productivity patterns, meeting load, energy |
-   | Preferences | `AI/Memory/Preferences.md` | Scheduling habits, communication patterns |
-   | Milestones | `AI/Memory/Timeline.md` | Important events from the week |
+   | Work context | `Asystent/Memory/Work.md` | Team changes, goals, challenges |
+   | Personal context | `Asystent/Memory/Personal.md` | Life updates, goal progress |
+   | Weekly patterns | `Asystent/Memory/Insights.md` | Productivity patterns, meeting load, energy |
+   | Preferences | `Asystent/Memory/Preferences.md` | Scheduling habits, communication patterns |
+   | Milestones | `Asystent/Memory/Timeline.md` | Important events from the week |
 
    **The weekly review should significantly expand the digital twin.**
 
