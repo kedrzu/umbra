@@ -36,8 +36,8 @@ Wszystkie pliki pamięci i kontaktów są w vault (`./obsidian/`), NIE w folderz
 | Treść wątku | `mcp__gmail__get_thread` |
 | Draft (nie wysyła) | `mcp__gmail__create_draft` |
 | Labele wątku | `mcp__gmail__update_thread` (addLabels/removeLabels po NAZWACH; opcjonalny `priority: P0..P3`) |
-| Odłożenie wątku z datą | `mcp__gmail__defer_thread` (account, threadId, until=`RRRR-MM-DD`) |
-| Oznaczenie nieaktualne | `mcp__gmail__mark_outdated` (account, threadId) |
+| Odłożenie wątku z datą | `mcp__gmail__defer_thread` (account, threadId, until=`RRRR-MM-DD`, `priority` wymagany) |
+| Oznaczenie nieaktualne | `mcp__gmail__mark_outdated` (account, threadId, `priority` wymagany) |
 | Sprzątanie pustych labelek defer | `mcp__gmail__cleanup_defer_labels` (account) |
 | Batch w subagencie | `Agent` (`model: "sonnet"`) |
 
@@ -68,7 +68,7 @@ Filtrowanie działa per-wiadomość: gdy do przetworzonego wątku przyjdzie NOWA
 
 1. **Wiedza / digital twin** — wyłuskaj kandydatów do pamięci (kontakty: `ostatni_kontakt` + wpis w `## Historia kontaktów`; oraz `Projects.md`/`Work.md`/`Personal.md`/`Timeline.md`/`Insights.md`, gdy mail coś ujawnia). Zapisuje główny agent w Fazie 3 — jak zwykle.
 2. **Przypomnienie (warunkowo)** — utwórz kandydata na reminder **tylko** gdy treść wskazuje, że użytkownik czeka na odpowiedź lub ma sam wykonać follow-up („czekam na odpowiedź", „dam znać", „prześlę do…", zadane pytanie bez odpowiedzi). Daty jak w Fazie 3.
-3. **Status** — nałóż `AI/Done`. Jeśli wątek miał `AI/Triage` — zdejmij go. **Nie** nakładaj labeli kategorii, **nie** twórz draftów, **nigdy** `AI/Triage`.
+3. **Status + priorytet** — nałóż `AI/Done` **z priorytetem** (`update_thread(addLabels:["AI/Done"], priority: …)`; MCP wymaga priorytetu przy `AI/Done`). Priorytet z heurystyki: czekam na odpowiedź / mam zrobić follow-up → **P1**; zwykła konwersacja → **P2**; potwierdzenia / „do wiadomości" / wysłane FYI → **P3**. Jeśli wątek miał `AI/Triage` — zdejmij go. **Nie** nakładaj labeli kategorii, **nie** twórz draftów, **nigdy** `AI/Triage`.
 
 Wątki, w których najnowsza wiadomość jest **przychodząca**, idą normalną ścieżką klasyfikacji (niżej).
 
@@ -78,10 +78,10 @@ Główny agent (ten) **orkiestruje**; ciężką pracę per batch zlecaj **subage
 
 **Podział odpowiedzialności:**
 - **Subagent (Sonnet)** dla batcha (lista threadId + konto + adresy użytkownika + treść rulebooka): czyta wątki (`get_thread`) i dla każdego **najpierw sprawdza, czy najnowsza wiadomość jest od użytkownika** (`kedrzu@gmail.com` / `kedrzu@sigma.clinic`):
-  - **Tak → lekka ścieżka** (sekcja „Maile wysłane"): bez klasyfikacji, bez labeli kategorii, bez draftów; nakłada `AI/Done`, zdejmuje ew. `AI/Triage`; w raporcie zwraca tylko kandydatów do pamięci/kontaktów i ew. przypomnienia.
-  - **Nie → klasyfikacja** wg rulebooka: **nakłada labele / tworzy drafty / ustawia `AI/Done` lub `AI/Triage`** (`update_thread`, `create_draft`). **Zawsze nadaj priorytet** — przekaż `priority: P0|P1|P2|P3` w `update_thread` (rozłączność ogarnia MCP; poziomy → sekcja „Priorytety"). **Archiwizując** (`removeLabels:["INBOX"]`) zawsze dołóż etykietę-kubełek użytkownika (np. `Śmieci`, kategoria); jeśli żadna nie pasuje — najpierw `create_label`, potem dodaj. MCP odrzuci zdjęcie INBOX bez kubełka (kategorie Gmaila `CATEGORY_*` się nie liczą). Gdy reguła mówi „czasowy, jeszcze aktualny" → `defer_thread(efektywna data; brak daty → +14 dni)`; gdy reguła mówi „już nieaktualny" → `mark_outdated` (oba bez priorytetu — stany terminalne/odłożone).
+  - **Tak → lekka ścieżka** (sekcja „Maile wysłane"): bez klasyfikacji, bez labeli kategorii, bez draftów; nakłada `AI/Done` **z priorytetem z heurystyki** (czekam na odpowiedź/follow-up → P1; konwersacja → P2; FYI → P3), zdejmuje ew. `AI/Triage`; w raporcie zwraca tylko kandydatów do pamięci/kontaktów i ew. przypomnienia.
+  - **Nie → klasyfikacja** wg rulebooka: **nakłada labele / tworzy drafty / ustawia `AI/Done` lub `AI/Triage`** (`update_thread`, `create_draft`). **Zawsze nadaj priorytet** — przekaż `priority: P0|P1|P2|P3` w `update_thread` (rozłączność ogarnia MCP; poziomy → sekcja „Priorytety"). MCP **wymaga** priorytetu przy każdym `AI/Done`. **Archiwizując** (`removeLabels:["INBOX"]`) zawsze dołóż etykietę-kubełek użytkownika (np. `Śmieci`, kategoria); jeśli żadna nie pasuje — najpierw `create_label`, potem dodaj. MCP odrzuci zdjęcie INBOX bez kubełka (kategorie Gmaila `CATEGORY_*` się nie liczą). Gdy reguła mówi „czasowy, jeszcze aktualny" → `defer_thread(efektywna data; brak daty → +14 dni, **priority**)`; gdy reguła mówi „już nieaktualny" → `mark_outdated(**priority**)`. **Śmieci, Nieaktualne i defer też dostają priorytet** (zwykle P3 dla szumu).
 
-  Wątki z **bucketu `defer-due`** (przekazane subagentowi z adnotacją) re-oceniaj wg sekcji „Defer i Nieaktualne": dalej aktualny → `defer_thread(NOWA data)`; nieaktualny → `mark_outdated`; wymaga akcji → obsłuż normalnie; niepewny → `AI/Triage`.
+  Wątki z **bucketu `defer-due`** (przekazane subagentowi z adnotacją) re-oceniaj wg sekcji „Defer i Nieaktualne": dalej aktualny → `defer_thread(NOWA data, priority)`; nieaktualny → `mark_outdated(priority)`; wymaga akcji → obsłuż normalnie; niepewny → `AI/Triage`. Defer i mark_outdated **wymagają** priorytetu.
 
   W obu przypadkach zwraca **uporządkowany raport** (per wątek: ścieżka, klasyfikacja, akcja, powód triażu, kandydaci na przypomnienia, kandydaci do pamięci/kontaktów). Subagent NIE pisze do vault.
 - **Główny agent (ten)**: pobiera listę, dzieli na batche, odpala subagentów (**kilka wywołań `Agent` w jednej wiadomości = równolegle**; różne threadId → bezpieczne równoległe labelowanie), zbiera raporty i **sam robi wszystkie zapisy do vault** (stan, przypomnienia, pamięć).
@@ -99,16 +99,16 @@ Jeśli wątek był wcześniej `AI/Triage`, a teraz jest w pełni obsłużony: us
 
 ## Priorytety (Priorytet/P0..P3)
 
-**Każdy klasyfikowany wątek przychodzący dostaje dokładnie jeden priorytet** — przekaż `priority` w `update_thread`. Etykiety są **rozłączne**; MCP sam zdejmuje poprzedni `Priorytet/*`, więc nie kombinuj ręcznie.
+**Każdy przetwarzany wątek dostaje dokładnie jeden priorytet** — bez wyjątków. Dotyczy klasyfikacji, **śmieci, Nieaktualne, deferów i poczty wysłanej** (lekka ścieżka). MCP **wymusza** to twardo: każde nałożenie `AI/Done` (przez `update_thread`, `defer_thread`, `mark_outdated`) wymaga priorytetu, a etykiety są **rozłączne** — MCP sam zdejmuje poprzedni `Priorytet/*`. Priorytet podajesz parametrem `priority` (w `update_thread`/`defer_thread`/`mark_outdated`), nie ręcznym labelem.
 
 | Priorytet | Poziom | Znaczenie |
 |-----------|--------|-----------|
 | `P0` | Krytyczny | Działanie dziś. Deadline dziś/jutro, awaria, sprawa pilna od szefa/klienta/VIP. |
 | `P1` | Wysoki | Działanie/odpowiedź w kilka dni. Faktury z terminem, sprawy projektowe, prośby o odpowiedź. |
 | `P2` | Normalny | Do wiadomości, bez pilnego działania. Istotne powiadomienia, potwierdzenia, info. |
-| `P3` | Niski/szum | Można zignorować. Newslettery, promocje, auto-powiadomienia. |
+| `P3` | Niski/szum | Można zignorować. Newslettery, promocje, auto-powiadomienia, śmieci, większość nieaktualnych. |
 
-Domyślne poziomy per kategoria są w rulebooku (`EmailWorkflow-{konto}.md`, sekcja „Priorytety"). **Bez priorytetu** zostają: lekka ścieżka (poczta wychodząca) oraz stany terminalne/odłożone (`mark_outdated`, `defer_thread`).
+Domyślne poziomy per kategoria są w rulebooku (`EmailWorkflow-{konto}.md`, sekcja „Priorytety"). **Poczta wysłana (lekka ścieżka)**: czekam na odpowiedź / mam follow-up → **P1**; zwykła konwersacja → **P2**; potwierdzenia / FYI → **P3**. **Śmieci i Nieaktualne** → zwykle **P3** (chyba że to ważna rzecz odkładana do archiwum — wtedy wyżej).
 
 ## Archiwizacja zawsze z kubełkiem
 
@@ -225,7 +225,7 @@ Dla każdego batcha:
 - **Pytaj przed** nałożeniem labela na wątek `IMPORTANT` / ważny.
 - **Nigdy nie blokuj**: niejasne → `AI/Triage` + powód, leć dalej.
 - Każdy przetworzony wątek przychodzący dostaje `AI/Done`, `AI/Triage`, `AI/Defer/<data>` (przez `defer_thread`) albo `Nieaktualne` (przez `mark_outdated`).
-- **Klasyfikowany wątek przychodzący dostaje priorytet** (`priority: P0..P3`); lekka ścieżka i stany terminalne — bez priorytetu.
+- **Każdy przetwarzany wątek dostaje priorytet** (`priority: P0..P3`) — klasyfikacja, śmieci, Nieaktualne, defer i poczta wysłana. MCP wymusza priorytet przy każdym `AI/Done` (`update_thread`/`defer_thread`/`mark_outdated`).
 - **Archiwizacja zawsze z kubełkiem** — zdjęcie `INBOX` wymaga etykiety użytkownika (MCP odrzuci bez niej); brak pasującej → utwórz nową.
 - **Defer/Nieaktualne tylko wg reguły z rulebooka** — nie zakładaj z góry, że mail jest nieaktualny; niejasne → `AI/Triage`.
 - Wątki z najnowszą wiadomością od użytkownika idą lekką ścieżką: zawsze `AI/Done`, **nigdy** `AI/Triage`, bez labeli kategorii i bez draftów.
