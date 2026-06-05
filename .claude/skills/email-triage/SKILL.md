@@ -13,14 +13,14 @@ Interaktywne czyszczenie sterty `AI/Triage` — maili, których `/email-review` 
 - `./obsidian/Asystent/Memory/EmailWorkflow-Personal.md` (kedrzu@gmail.com)
 - `./obsidian/Asystent/Memory/EmailWorkflow-Work.md` (kedrzu@sigma.clinic)
 
-Mechanikę nakładania labelek/draftów stosuj jak w `/email-review` (ta sama konwencja `AI/Done`/`AI/Triage`).
+Mechanikę nakładania labelek/draftów stosuj jak w `/email-review`. Status `AI/Done`/`AI/Triage` ustawiasz **wyłącznie** parametrem `status: "done"|"triage"` w `update_thread` (rozłączne; MCP zdejmuje przeciwny status i `AI/Defer/*`) — nigdy ręcznie przez addLabels/removeLabels (MCP odrzuci).
 
 ## ⚠️ Podwójne opt-in — NIC nie zapisuj bez wyraźnej zgody
 
 To jest najważniejsza zasada tego skilla. Żadna zmiana reguły ani akcja na mailach nie dzieje się "z marszu":
 
 1. **Opt-in #1 — decyzja.** Użytkownik mówi, co zrobić z grupą (wybór w `AskUserQuestion` lub własnymi słowami).
-2. **Echo + propozycja.** Powtórz **konkretnie, co zrozumiałeś**: dokładny wiersz reguły do dodania/edycji ORAZ dokładne akcje na mailach (które labele na które wątki, ew. draft, archiwizacja, `AI/Done`/zdjęcie `AI/Triage`). **Zakończ turę i czekaj — nic nie zapisuj.**
+2. **Echo + propozycja.** Powtórz **konkretnie, co zrozumiałeś**: dokładny wiersz reguły do dodania/edycji ORAZ dokładne akcje na mailach (które labele na które wątki, ew. draft, archiwizacja, `status:"done"` — MCP sam zdejmie `AI/Triage`). **Zakończ turę i czekaj — nic nie zapisuj.**
 3. **Opt-in #2 — wyraźna akceptacja.** Zapisz regułę i wykonaj akcje **tylko** gdy użytkownik wyraźnie zaakceptuje ("OK / akceptuję / rób tak"). **Każda inna odpowiedź to feedback, nie zgoda** — nanieś poprawki, przedstaw propozycję ponownie (krok 2) i znów czekaj. Pętla aż do wyraźnego "tak".
 
 Gwarancja: "powiedziałeś X → robię dokładnie X (potwierdzone), nigdy po cichu Y". Feedback ≠ koniec.
@@ -32,8 +32,9 @@ Gwarancja: "powiedziałeś X → robię dokładnie X (potwierdzone), nigdy po ci
 | Pobranie sterty triażu | `mcp__gmail__search_threads` (`filter:"triage"`) |
 | Dojrzałe defery (opcjonalnie) | `mcp__gmail__search_threads` (`filter:"defer-due"`) |
 | Treść wątku | `mcp__gmail__get_thread` |
-| Labele / draft | `mcp__gmail__update_thread`, `mcp__gmail__create_draft` |
-| Odłożenie z datą / nieaktualne | `mcp__gmail__defer_thread` (until=`RRRR-MM-DD`), `mcp__gmail__mark_outdated` |
+| Status (AI/Done\|AI/Triage) / labele / draft | `mcp__gmail__update_thread` (status: "done"\|"triage" dla statusu; addLabels/removeLabels dla kategorii), `mcp__gmail__create_draft` |
+| Odłożenie z datą | `mcp__gmail__defer_thread` (until=`RRRR-MM-DD`) |
+| Archiwizacja (Śmieci/Nieaktualne) | `mcp__gmail__update_thread` z `addLabels:["Nieaktualne"\|"Śmieci", …]` — MCP zdejmuje INBOX |
 | Pytania do użytkownika | `AskUserQuestion` |
 | Czytanie/zapis rulebooka | `Read`, `Edit` |
 | Szukanie kontaktów | `qmd` (MCP) |
@@ -49,7 +50,7 @@ mcp__gmail__search_threads(account: <konto>, query: "in:inbox", filter: "triage"
 
 Tylko sterta `AI/Triage` — ten skill **nie** przetwarza świeżych nieprzetworzonych maili (od tego jest `/email-review`).
 
-**Maile wysłane:** nie trafiają już do `AI/Triage` (obsługuje je lekka ścieżka w `/email-review`). Jeśli któryś wątek historycznie tu jest, a jego najnowsza wiadomość jest od użytkownika (`kedrzu@gmail.com` / `kedrzu@sigma.clinic`) → potraktuj lekką ścieżką: zdejmij `AI/Triage`, dodaj `AI/Done`, ew. dopisz reminder/wiedzę. **Nie** twórz dla niego reguły.
+**Maile wysłane:** nie trafiają już do `AI/Triage` (obsługuje je lekka ścieżka w `/email-review`). Jeśli któryś wątek historycznie tu jest, a jego najnowsza wiadomość jest od użytkownika (`kedrzu@gmail.com` / `kedrzu@sigma.clinic`) → potraktuj lekką ścieżką: `update_thread(status:"done", priority: …)` (MCP zdejmie `AI/Triage`), ew. dopisz reminder/wiedzę. **Nie** twórz dla niego reguły.
 
 ## Proces
 
@@ -62,17 +63,17 @@ Podziel stertę na batche (~5-8 wątków) i zleć **subagentom na Sonnecie** *ty
 
 ### 3. Wątki już obsłużone ręcznie
 Jeśli digest pokazuje, że użytkownik już zadziałał od czasu triażu (nowa wiadomość wysłana przez niego / wątek opuścił INBOX / dodany nie-AI label):
-- Posprzątaj status: zdejmij `AI/Triage`, dodaj `AI/Done`.
+- Posprzątaj status: `update_thread(status:"done", priority: …)` — MCP zdejmie `AI/Triage`.
 - Z tego, co użytkownik zrobił, **zaproponuj regułę** — ale przez **podwójne opt-in** (to nadal sugestia, nie auto-zapis).
 
 ### 4. Pętla triażu (zbieraj i pytaj grupami)
 - Zbierz digesty i **pogrupuj po kluczu, na którym oprze się reguła** (domena nadawcy / nadawca + wzorzec tematu).
-- Dla każdej grupy zadaj **jedno** `AskUserQuestion` o decyzję (opt-in #1): proponowana akcja jako opcja domyślna (ze słownika akcji rulebooka) + "jak szeroko?" (ten nadawca / cała domena / ten typ). Decydując raz dla grupy, ogarniasz wiele maili naraz. Wśród opcji (gdy pasuje do grupy) uwzględnij: **„Odłóż do <data> (Defer)"** — mail dziś OK, zdezaktualizuje się później (event/deadline/oferta) — oraz **„Oznacz Nieaktualne (+ archiwizuj)"** — mail już całkowicie nieaktualny. Patrz sekcja „Defer i Nieaktualne".
+- Dla każdej grupy zadaj **jedno** `AskUserQuestion` o decyzję (opt-in #1): proponowana akcja jako opcja domyślna (ze słownika akcji rulebooka) + "jak szeroko?" (ten nadawca / cała domena / ten typ). Decydując raz dla grupy, ogarniasz wiele maili naraz. Wśród opcji (gdy pasuje do grupy) uwzględnij: **„Odłóż do <data> (Defer)"** — mail dziś OK, zdezaktualizuje się później (event/deadline/oferta) — **„Oznacz Nieaktualne (archiwizuj, zostaw do referencji)"**, **„Śmieci (archiwizuj, bezpieczny do usunięcia)"** oraz **„Nieaktualne + Śmieci"** (nieaktualny i bezwartościowy). Patrz sekcja „Defer i Nieaktualne".
 - Po decyzji → **echo + propozycja** (opt-in #2, sekcja wyżej) i czekaj na wyraźną zgodę.
 
 ### 5. Commit (dopiero po opt-in #2)
 - **Reguła**: dopisz lub **zedytuj w miejscu** pasujący wiersz `| Typ | Akcja |` w `EmailWorkflow-{konto}.md`. Najpierw poszukaj istniejącego wiersza o tym samym wzorcu Typ — jeśli jest, edytuj go (nie duplikuj). Zaktualizuj datę "Ostatnia aktualizacja" na górze pliku. (Bez osobnego dziennika zmian.)
-- **Maile**: nałóż uzgodnioną akcję na **każdy** wątek w grupie — labele/draft/archiwizacja wg reguły — potem **zawsze** `AI/Done` + **zdejmij `AI/Triage`** (`addLabels:["AI/Done"]`, `removeLabels:["AI/Triage"]`). **Zawsze nadaj priorytet** — `priority: P0..P3` w `update_thread` (poziomy → sekcja „Priorytety" rulebooka). MCP **wymaga** priorytetu przy każdym `AI/Done`. **Archiwizując** (`removeLabels:["INBOX"]`) zawsze dołóż etykietę-kubełek użytkownika; jeśli żadna nie pasuje — `create_label` i dodaj (MCP odrzuci zdjęcie INBOX bez kubełka; `CATEGORY_*` się nie liczy). Dla decyzji **Defer** użyj `defer_thread(threadId, until, priority)` (nakłada `AI/Defer/<data>` + `AI/Done` + `Priorytet/<P>`, zdejmuje `AI/Triage`); dla **Nieaktualne** użyj `mark_outdated(threadId, priority)` (Nieaktualne + `AI/Done` + `Priorytet/<P>` + archiwum + zdjęcie `AI/Triage`) — **oba wymagają priorytetu** (śmieci/Nieaktualne zwykle P3). Sterta `AI/Triage` ma realnie maleć po sesji, nie tylko rosnąć rulebook. Masowe nałożenie na grupę możesz zlecić subagentowi Sonnet. Tylko wątki świadomie odłożone (bez decyzji) zostają w `AI/Triage`.
+- **Maile**: nałóż uzgodnioną akcję na **każdy** wątek w grupie — labele kategorii/draft/archiwizacja wg reguły — potem **zawsze** oznacz jako done przez `update_thread(status:"done", priority: …)` (MCP nakłada `AI/Done` i **sam zdejmuje `AI/Triage`** oraz `AI/Defer/*`; nie podawaj tych labelek ręcznie — odrzuci). **Zawsze nadaj priorytet** — `priority: P0..P3` (poziomy → sekcja „Priorytety" rulebooka). MCP **wymaga** priorytetu przy każdym `AI/Done`. **Archiwizacja**: wątek opuszcza INBOX **wyłącznie** gdy dostaje marker `Śmieci` i/lub `Nieaktualne` w `addLabels` — MCP sam zdejmuje INBOX. Markery nakładaj na kategorię (np. `Zakupy`+`Śmieci`); sama kategoria nie archiwizuje (MCP odrzuci `removeLabels:["INBOX"]` bez markera). Dla decyzji **Defer** użyj `defer_thread(threadId, until, priority)` (nakłada `AI/Defer/<data>` + `AI/Done` + `P/<n>`, zdejmuje `AI/Triage`); dla **Nieaktualne** użyj `update_thread(status:"done", addLabels:["Nieaktualne", …kategoria; +"Śmieci" jeśli reguła], priority)` (Nieaktualne + `AI/Done` + `P/<n>` + archiwum + zdjęcie `AI/Triage`) — **oba wymagają priorytetu** (śmieci/Nieaktualne zwykle P3). Sterta `AI/Triage` ma realnie maleć po sesji, nie tylko rosnąć rulebook. Masowe nałożenie na grupę możesz zlecić subagentowi Sonnet. Tylko wątki świadomie odłożone (bez decyzji) zostają w `AI/Triage`.
 
 ### 6. Pamięć
 Po sesji skomituj aktualizacje digital twin jak w `/email-review` (kontakty: `ostatni_kontakt` + historia; Projects/Work/Personal/Timeline/Insights gdy maile coś ujawniły).
@@ -85,20 +86,28 @@ Reguły to sekcje `### Kategoria` z tabelą `| Typ | Akcja |`. Akcję buduj ze s
 ### <Kategoria>
 | Typ | Akcja |
 |-----|-------|
-| <wzorzec nadawcy/tematu> | <Label> + [archiwizuj] + [Priorytet/P0..P3] + [IMPORTANT] + AI/Done |
+| <wzorzec nadawcy/tematu> | <Label> + [archiwizuj] + [P/0..P/3] + [IMPORTANT] + AI/Done |
 ```
 
-Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka. Reguła klasyfikująca wątek przychodzący powinna wskazywać priorytet (`Priorytet/P0..P3`); reguła archiwizująca (`archiwizuj`) musi wskazywać etykietę-kubełek użytkownika (nie sam `CATEGORY_*`).
+Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka. Reguła klasyfikująca wątek przychodzący powinna wskazywać priorytet (`P/0..P/3`); reguła archiwizująca (`archiwizuj`) musi wskazywać etykietę-kubełek użytkownika (nie sam `CATEGORY_*`).
 
 **Słownik akcji dla maili z datą ważności** (do reguł i akcji):
 - `Defer:<efektywna data>` — odłóż do daty efektywnej (event/deadline/oferta); brak konkretnej daty → +14 dni. Wykonanie: `defer_thread`.
-- `Nieaktualne + archiwizuj` — mail całkowicie nieaktualny. Wykonanie: `mark_outdated`.
+- `Nieaktualne [+ Śmieci] + archiwizuj` — mail nieaktualny (zostaw do referencji) lub nieaktualny i bezpieczny do usunięcia (+`Śmieci`). Wykonanie: `update_thread(status:"done", addLabels:[…], priority)` — MCP archiwizuje.
+- `Śmieci + archiwizuj` — bezpieczny do usunięcia, bez wartości na przyszłość (marker, nie usuwamy). Wykonanie: `update_thread(status:"done", addLabels:["Śmieci", …kategoria], priority)`.
 
 ## Defer i Nieaktualne
 
 - **Defer** = odłożenie wątku z **efektywną datą** (`defer_thread`): MCP nakłada `AI/Defer/<data>` + `AI/Done`, wątek wraca do oceny dopiero gdy data minie (przez `filter:"defer-due"`). Daje to regułę typu „ten newsletter eventowy → odłóż do daty eventu".
-- **Nieaktualne** = stan terminalny (`mark_outdated`): mail bez wartości (event minął, stara dostawa) — archiwizujemy.
+- **Nieaktualne** = stan terminalny (`update_thread` z `addLabels:["Nieaktualne", …]`): mail stracił aktualność — archiwizujemy (MCP zdejmuje INBOX); zostawiamy do referencji, a jeśli też bezwartościowy → dodaj `Śmieci`.
 - **Dojrzałe defery**: opcjonalnie możesz wciągnąć `filter:"defer-due"` (wątki, których data minęła) i przejść je tak jak stertę triażu — decyzja per grupa: re-defer na nową datę / Nieaktualne / obsłuż / zostaw. Te same opcje w `AskUserQuestion`.
+
+## Akcje → Todoist i Faktury → Rachunki (przez opt-in)
+
+Te same mechanizmy co w `/email-review`, ale **przez podwójne opt-in** — nic bez wyraźnej zgody:
+
+- **Akcje → Todoist** (rulebook „Akcje → Todoist"): dla wątku, który ma dostać `Wymaga działania`/`Wymaga odpowiedzi`, w echo+propozycji pokaż też, że utworzysz **task Todoist** (treść, projekt/sekcja wg konta, priorytet p1..p4, ew. `deadlineDate`) + labelkę `TODO/<id>` + defer. Wykonaj dopiero po „OK". Dojrzałe defery z `TODO/<id>` re-oceniaj wg re-checku (`fetch-object`/`find-completed-tasks` → COMPLETED → `update_thread(status:"done", addLabels:["Nieaktualne"], priority)`; OPEN → re-defer; GONE → zostaw w triażu) — też proponuj, nie rób z marszu.
+- **Faktury → Rachunki** (rulebook „Faktury → folder Rachunki"): gdy faktura trwałego dobra >100 zł, zaproponuj zapis PDF + notatki do `./obsidian/Rachunki/`; zapisuj dopiero po akceptacji.
 
 ## Format wyjścia
 
@@ -113,5 +122,5 @@ Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka. Re
 - **Podwójne opt-in** na każdą zmianę reguły i akcję — patrz sekcja wyżej. Feedback ≠ zgoda.
 - **Nigdy nie wysyłaj** maili — tylko drafty.
 - **Nigdy nie usuwaj** maili/zadań/wydarzeń/notatek.
-- Maile zostają w `AI/Triage` dopóki użytkownik nie zaakceptuje akcji. **Po akceptacji zawsze zdejmij `AI/Triage` i nałóż `AI/Done`** — obsłużony wątek nie może zostać w stercie triażu.
+- Maile zostają w `AI/Triage` dopóki użytkownik nie zaakceptuje akcji. **Po akceptacji zawsze `update_thread(status:"done", …)`** (MCP zdejmie `AI/Triage`) — obsłużony wątek nie może zostać w stercie triażu.
 - Komunikuj po polsku.

@@ -37,8 +37,11 @@
       "mcp__gmail__create_draft",
       "mcp__gmail__list_labels",
       "mcp__gmail__update_thread",
+      "mcp__gmail__defer_thread",
+      "mcp__gmail__create_label",
+      "mcp__gmail__cleanup_defer_labels",
+      "mcp__gmail__get_attachment",
       "mcp__gmail__get_unsubscribe_link",
-      "mcp__gmail__extract_attachment*",
       "mcp__gmail__get_personal_email_style_guide",
 
       "mcp__calendar__list-calendars",
@@ -50,24 +53,28 @@
       "mcp__calendar__get-current-time",
       "mcp__calendar__manage-accounts",
 
-      "mcp__todoist__get_tasks",
-      "mcp__todoist__get_task",
-      "mcp__todoist__get_projects",
-      "mcp__todoist__get_project",
-      "mcp__todoist__get_sections",
-      "mcp__todoist__get_labels",
-      "mcp__todoist__get_comments",
-      "mcp__todoist__search_tasks",
-      "mcp__todoist__create_task",
-      "mcp__todoist__add_task",
+      "mcp__todoist__add-tasks",
+      "mcp__todoist__find-tasks",
+      "mcp__todoist__find-tasks-by-date",
+      "mcp__todoist__find-completed-tasks",
+      "mcp__todoist__find-projects",
+      "mcp__todoist__find-sections",
+      "mcp__todoist__find-labels",
+      "mcp__todoist__find-comments",
+      "mcp__todoist__fetch-object",
+      "mcp__todoist__get-overview",
+      "mcp__todoist__user-info",
 
       "mcp__qmd__*",
       "mcp__obsidian-search__*",
       "Read(./obsidian/*)",
       "Edit(./obsidian/*)",
       "Write(./obsidian/*)",
+      "Write(/tmp/umbra-invoice-*)",
       "Bash(ls ./obsidian/*)",
-      "Bash(cd ./obsidian/*)"
+      "Bash(cd ./obsidian/*)",
+      "Bash(base64 *)",
+      "Bash(rm /tmp/umbra-invoice-*)"
     ],
     "ask": ["mcp__calendar__create-event", "mcp__gmail__unsubscribe"],
     "deny": [
@@ -84,7 +91,7 @@
       "mcp__todoist__complete*",
       "mcp__todoist__close*",
       "mcp__todoist__reopen*",
-      "mcp__todoist__move*",
+      "mcp__todoist__move*"
     ]
   }
 }

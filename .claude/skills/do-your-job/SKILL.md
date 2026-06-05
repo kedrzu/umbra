@@ -30,8 +30,8 @@ Run `/daily-briefing` to create today's dashboard:
 
 ### 2. Email Review
 Run `/email-review` (codzienny autopilot) across all accounts:
-- Classify/label/draft per the EmailWorkflow rulebook, mark `AI/Done`
-- Flag ambiguous threads as `AI/Triage` without blocking
+- Classify/label/draft per the EmailWorkflow rulebook, mark processed via `update_thread(status:"done")`
+- Flag ambiguous threads via `update_thread(status:"triage")` without blocking
 - Save reminders for emails needing follow-up
 - If the `AI/Triage` pile is large, recommend `/email-triage` to resolve it interactively
 
