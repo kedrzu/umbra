@@ -31,8 +31,11 @@ Każdy zapis reguły — i w trybie projektowania, i w trybie łączonym — prz
 | Operacja | Narzędzie |
 |----------|-----------|
 | Pobranie wątków | `mcp__gmail__search_threads` (`filter:"pending"`) |
+| Dojrzałe defery | `mcp__gmail__search_threads` (`filter:"defer-due"`) |
 | Treść wątku | `mcp__gmail__get_thread` |
-| Labele / draft | `mcp__gmail__update_thread`, `mcp__gmail__create_draft` |
+| Labele / draft | `mcp__gmail__update_thread` (opcjonalny `priority: P0..P3`), `mcp__gmail__create_draft` |
+| Tworzenie etykiety-kubełka | `mcp__gmail__create_label` |
+| Odłożenie z datą / nieaktualne / cleanup | `mcp__gmail__defer_thread`, `mcp__gmail__mark_outdated`, `mcp__gmail__cleanup_defer_labels` |
 | Pytania do użytkownika | `AskUserQuestion` |
 | Czytanie/zapis vault | `Read`, `Edit`, `Write` |
 | Szukanie kontaktów | `qmd` (MCP) |
@@ -45,13 +48,22 @@ Na start przeczytaj rulebook konta. Następnie:
 - **Tryb projektowania (cold-start)** — gdy rulebook jest pusty / "Do zdefiniowania" / ma znikomo reguł (np. Work):
   1. Pobierz próbkę (`search_threads`, różne `query`: `in:inbox`, `is:sent`, `is:important`; ~100-200 wątków). Streszczanie próbki możesz zlecić subagentom Sonnet.
   2. Zgrupuj nadawców i typy, pokaż statystyki (top nadawcy, kategorie, wzorce czasowe).
-  3. Zaproponuj **wstępny system labelek + tabelę reguł** dla tego konta.
+  3. Zaproponuj **wstępny system labelek + tabelę reguł** dla tego konta. **Zawsze** włącz priorytety `Priorytet/P0..P3` (P0 krytyczny → P3 szum; sekcja „Priorytety" rulebooka) i zasadę **„archiwizacja tylko z kubełkiem"** — każda reguła zdejmująca INBOX musi wskazywać etykietę użytkownika (nie sam `CATEGORY_*`), a reguła klasyfikująca wątek przychodzący — priorytet.
   4. Zapis tabeli reguł → przez **podwójne opt-in**. Potem możesz przejść do trybu łączonego, żeby zobaczyć reguły w akcji.
 
 - **Tryb łączony** — gdy rulebook jest dojrzały (np. Personal):
-  1. Wejście: `search_threads(query:"(in:inbox OR (in:sent newer_than:30d))", filter:"pending")` (nieukończone, **łącznie ze stertą AI/Triage**).
+  1. Wejście: `search_threads(query:"(in:inbox OR (in:sent newer_than:30d))", filter:"pending")` (nieukończone, **łącznie ze stertą AI/Triage**). Dodatkowo wciągnij **dojrzałe defery**: `search_threads(query:"in:inbox", filter:"defer-due")` — wątki, których data efektywna minęła, do re-oceny (sekcja „Defer i Nieaktualne").
   2. Przetwarzaj batche przez **subagentów Sonnet** (jak `/email-review`): objęte regułą maile subagent obsługuje sam (labele/draft/`AI/Done`); niepewne **tylko streszcza** i zwraca jako kandydatów do triażu. **Wątki z najnowszą wiadomością od użytkownika** (`kedrzu@gmail.com` / `kedrzu@sigma.clinic`) idą **lekką ścieżką jak w `/email-review`** (wiedza + ew. reminder, `AI/Done`, bez klasyfikacji) — nie podlegają triażowi ani nauce reguł.
-  3. Niepewne rozstrzygaj interaktywnie **jak `/email-triage`**: grupuj po wzorcu → `AskUserQuestion` → **podwójne opt-in** → zapis reguły (dopisz/edytuj wiersz `| Typ | Akcja |`, bump daty) + wykonanie akcji na grupie. Po akceptacji na **każdym** obsłużonym wątku **zdejmij `AI/Triage` i nałóż `AI/Done`** (`removeLabels:["AI/Triage"]`, `addLabels:["AI/Done"]`) — sterta triażu ma realnie maleć.
+  3. Niepewne rozstrzygaj interaktywnie **jak `/email-triage`**: grupuj po wzorcu → `AskUserQuestion` → **podwójne opt-in** → zapis reguły (dopisz/edytuj wiersz `| Typ | Akcja |`, bump daty) + wykonanie akcji na grupie. Po akceptacji na **każdym** obsłużonym wątku **zdejmij `AI/Triage` i nałóż `AI/Done`** (`removeLabels:["AI/Triage"]`, `addLabels:["AI/Done"]`) — sterta triażu ma realnie maleć. Przy klasyfikacji **nadaj priorytet** (`priority: P0..P3`); **archiwizując zawsze dołóż etykietę-kubełek** (`create_label`, gdy żadna nie pasuje — MCP odrzuci zdjęcie INBOX bez kubełka). Wśród opcji decyzji uwzględnij **Defer** (`defer_thread(until)`) i **Nieaktualne** (`mark_outdated`), oba bez priorytetu — patrz sekcja „Defer i Nieaktualne". Dojrzałe defery re-oceniaj tak samo (re-defer na nową datę / Nieaktualne / obsłuż / zostaw).
+  4. Na koniec sesji: `cleanup_defer_labels` na koncie (usuwa puste `AI/Defer/<data>`).
+
+## Defer i Nieaktualne (maile z datą ważności)
+
+Dwie labelki dla maili, które tracą aktualność w czasie (jak w `/email-review` i `/email-triage`):
+- **Defer** (`defer_thread(account, threadId, until)`) — odłożenie z **efektywną datą**: MCP nakłada `AI/Defer/<until>` + `AI/Done`, wątek wraca dopiero gdy data minie (`filter:"defer-due"`). Data = event/deadline/ważność oferty; brak konkretnej → +14 dni.
+- **Nieaktualne** (`mark_outdated(account, threadId)`) — stan terminalny: `Nieaktualne` + `AI/Done` + archiwum, czyści `AI/Triage`/`AI/Defer/*`.
+
+W **trybie projektowania** uwzględnij te labelki w proponowanym systemie i regułach (np. „newslettery eventowe → Defer do daty eventu"). Kanoniczny przykład pełnego cyklu: **przesyłki i statusy zamówień** (nadane / w drodze / do odbioru / tracking) → `Defer` do przewidywanej dostawy (brak daty → **+7 dni**) → po dojrzeniu zwykle już dostarczone → `Nieaktualne`; sam stary mail → od razu `Nieaktualne`; paragon/faktura → zachowaj. Słownik akcji w regułach: `Defer:<efektywna data>` i `Nieaktualne + archiwizuj`. **Defer/Nieaktualne tylko wg reguły** — nie zakładaj nieaktualności z góry; niejasne → triaż.
 
 ## Model wykonania
 
@@ -63,7 +75,7 @@ Główny agent orkiestruje + prowadzi interakcję (`AskUserQuestion`, podwójne 
 - **Statystyki** (próbka): liczba maili, top nadawcy, kategorie, wzorce.
 - **Przetworzone**: ile wątków, ile `AI/Done`, ile rozstrzygnięto interaktywnie, ile lekką ścieżką (wysłane).
 - **Nowe/zmienione reguły**: lista (Typ → Akcja).
-- **Akcje na mailach**: labele/drafty/archiwizacje, ile `AI/Triage` → `AI/Done` (zdjęty triage).
+- **Akcje na mailach**: labele/drafty/archiwizacje, priorytety (P0/P1/P2/P3), ile `AI/Triage` → `AI/Done` (zdjęty triage), ile Defer / Nieaktualne, ile pustych labelek defer usuniętych.
 - **Pozostało w triażu**: ile zostało w `AI/Triage` (tylko świadomie odłożone).
 - **Pytania do użytkownika**: otwarte kwestie.
 
@@ -72,6 +84,7 @@ Główny agent orkiestruje + prowadzi interakcję (`AskUserQuestion`, podwójne 
 - **Podwójne opt-in** na każdy zapis reguły i akcję. Feedback ≠ zgoda.
 - **Nigdy nie wysyłaj** maili — tylko drafty. **Nigdy nie usuwaj.**
 - Po obsłużeniu wątku z triażu zawsze zdejmij `AI/Triage` i nałóż `AI/Done`. Maile wysłane → lekka ścieżka, nigdy `AI/Triage`.
+- **Klasyfikowany wątek przychodzący dostaje priorytet** (`Priorytet/P0..P3`); lekka ścieżka i stany terminalne (`Śmieci`/`Nieaktualne`) — bez priorytetu. **Archiwizacja zawsze z kubełkiem** użytkownika (MCP blokuje zdjęcie INBOX bez niej; `CATEGORY_*` to nie kubełek).
 - Bądź interaktywny — pytaj o preferencje, nie narzucaj rozwiązań.
 - To proces iteracyjny, nie jednorazowy.
 - Komunikuj po polsku.

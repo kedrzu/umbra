@@ -30,8 +30,10 @@ Gwarancja: "powiedziałeś X → robię dokładnie X (potwierdzone), nigdy po ci
 | Operacja | Narzędzie |
 |----------|-----------|
 | Pobranie sterty triażu | `mcp__gmail__search_threads` (`filter:"triage"`) |
+| Dojrzałe defery (opcjonalnie) | `mcp__gmail__search_threads` (`filter:"defer-due"`) |
 | Treść wątku | `mcp__gmail__get_thread` |
 | Labele / draft | `mcp__gmail__update_thread`, `mcp__gmail__create_draft` |
+| Odłożenie z datą / nieaktualne | `mcp__gmail__defer_thread` (until=`RRRR-MM-DD`), `mcp__gmail__mark_outdated` |
 | Pytania do użytkownika | `AskUserQuestion` |
 | Czytanie/zapis rulebooka | `Read`, `Edit` |
 | Szukanie kontaktów | `qmd` (MCP) |
@@ -65,12 +67,12 @@ Jeśli digest pokazuje, że użytkownik już zadziałał od czasu triażu (nowa 
 
 ### 4. Pętla triażu (zbieraj i pytaj grupami)
 - Zbierz digesty i **pogrupuj po kluczu, na którym oprze się reguła** (domena nadawcy / nadawca + wzorzec tematu).
-- Dla każdej grupy zadaj **jedno** `AskUserQuestion` o decyzję (opt-in #1): proponowana akcja jako opcja domyślna (ze słownika akcji rulebooka) + "jak szeroko?" (ten nadawca / cała domena / ten typ). Decydując raz dla grupy, ogarniasz wiele maili naraz.
+- Dla każdej grupy zadaj **jedno** `AskUserQuestion` o decyzję (opt-in #1): proponowana akcja jako opcja domyślna (ze słownika akcji rulebooka) + "jak szeroko?" (ten nadawca / cała domena / ten typ). Decydując raz dla grupy, ogarniasz wiele maili naraz. Wśród opcji (gdy pasuje do grupy) uwzględnij: **„Odłóż do <data> (Defer)"** — mail dziś OK, zdezaktualizuje się później (event/deadline/oferta) — oraz **„Oznacz Nieaktualne (+ archiwizuj)"** — mail już całkowicie nieaktualny. Patrz sekcja „Defer i Nieaktualne".
 - Po decyzji → **echo + propozycja** (opt-in #2, sekcja wyżej) i czekaj na wyraźną zgodę.
 
 ### 5. Commit (dopiero po opt-in #2)
 - **Reguła**: dopisz lub **zedytuj w miejscu** pasujący wiersz `| Typ | Akcja |` w `EmailWorkflow-{konto}.md`. Najpierw poszukaj istniejącego wiersza o tym samym wzorcu Typ — jeśli jest, edytuj go (nie duplikuj). Zaktualizuj datę "Ostatnia aktualizacja" na górze pliku. (Bez osobnego dziennika zmian.)
-- **Maile**: nałóż uzgodnioną akcję na **każdy** wątek w grupie — labele/draft/archiwizacja wg reguły — potem **zawsze** `AI/Done` + **zdejmij `AI/Triage`** (`addLabels:["AI/Done"]`, `removeLabels:["AI/Triage"]`). Sterta `AI/Triage` ma realnie maleć po sesji, nie tylko rosnąć rulebook. Masowe nałożenie na grupę możesz zlecić subagentowi Sonnet. Tylko wątki świadomie odłożone (bez decyzji) zostają w `AI/Triage`.
+- **Maile**: nałóż uzgodnioną akcję na **każdy** wątek w grupie — labele/draft/archiwizacja wg reguły — potem **zawsze** `AI/Done` + **zdejmij `AI/Triage`** (`addLabels:["AI/Done"]`, `removeLabels:["AI/Triage"]`). Przy normalnej klasyfikacji **nadaj priorytet** (`priority: P0..P3` w `update_thread`; poziomy → sekcja „Priorytety" rulebooka). **Archiwizując** (`removeLabels:["INBOX"]`) zawsze dołóż etykietę-kubełek użytkownika; jeśli żadna nie pasuje — `create_label` i dodaj (MCP odrzuci zdjęcie INBOX bez kubełka; `CATEGORY_*` się nie liczy). Dla decyzji **Defer** użyj `defer_thread(threadId, until)` (samo nakłada `AI/Defer/<data>` + `AI/Done` i zdejmuje `AI/Triage`); dla **Nieaktualne** użyj `mark_outdated(threadId)` (Nieaktualne + `AI/Done` + archiwum + zdjęcie `AI/Triage`) — Defer i Nieaktualne bez priorytetu. Sterta `AI/Triage` ma realnie maleć po sesji, nie tylko rosnąć rulebook. Masowe nałożenie na grupę możesz zlecić subagentowi Sonnet. Tylko wątki świadomie odłożone (bez decyzji) zostają w `AI/Triage`.
 
 ### 6. Pamięć
 Po sesji skomituj aktualizacje digital twin jak w `/email-review` (kontakty: `ostatni_kontakt` + historia; Projects/Work/Personal/Timeline/Insights gdy maile coś ujawniły).
@@ -83,17 +85,27 @@ Reguły to sekcje `### Kategoria` z tabelą `| Typ | Akcja |`. Akcję buduj ze s
 ### <Kategoria>
 | Typ | Akcja |
 |-----|-------|
-| <wzorzec nadawcy/tematu> | <Label> + [archiwizuj] + [IMPORTANT] + AI/Done |
+| <wzorzec nadawcy/tematu> | <Label> + [archiwizuj] + [Priorytet/P0..P3] + [IMPORTANT] + AI/Done |
 ```
 
-Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka.
+Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka. Reguła klasyfikująca wątek przychodzący powinna wskazywać priorytet (`Priorytet/P0..P3`); reguła archiwizująca (`archiwizuj`) musi wskazywać etykietę-kubełek użytkownika (nie sam `CATEGORY_*`).
+
+**Słownik akcji dla maili z datą ważności** (do reguł i akcji):
+- `Defer:<efektywna data>` — odłóż do daty efektywnej (event/deadline/oferta); brak konkretnej daty → +14 dni. Wykonanie: `defer_thread`.
+- `Nieaktualne + archiwizuj` — mail całkowicie nieaktualny. Wykonanie: `mark_outdated`.
+
+## Defer i Nieaktualne
+
+- **Defer** = odłożenie wątku z **efektywną datą** (`defer_thread`): MCP nakłada `AI/Defer/<data>` + `AI/Done`, wątek wraca do oceny dopiero gdy data minie (przez `filter:"defer-due"`). Daje to regułę typu „ten newsletter eventowy → odłóż do daty eventu".
+- **Nieaktualne** = stan terminalny (`mark_outdated`): mail bez wartości (event minął, stara dostawa) — archiwizujemy.
+- **Dojrzałe defery**: opcjonalnie możesz wciągnąć `filter:"defer-due"` (wątki, których data minęła) i przejść je tak jak stertę triażu — decyzja per grupa: re-defer na nową datę / Nieaktualne / obsłuż / zostaw. Te same opcje w `AskUserQuestion`.
 
 ## Format wyjścia
 
 ### Podsumowanie triażu
 - **Przetworzone:** N wątków w M grupach
 - **Nowe/zmienione reguły:** lista (Typ → Akcja, konto)
-- **Akcje na mailach:** labele/drafty/archiwizacje, ile `AI/Triage` → `AI/Done` (zdjęty triage)
+- **Akcje na mailach:** labele/drafty/archiwizacje, priorytety (P0/P1/P2/P3), ile `AI/Triage` → `AI/Done` (zdjęty triage), ile Defer / Nieaktualne
 - **Pozostało w triażu:** ile wątków zostało w `AI/Triage` (tylko świadomie odłożone)
 
 ## Bezpieczeństwo

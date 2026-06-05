@@ -85,15 +85,6 @@
       "mcp__todoist__close*",
       "mcp__todoist__reopen*",
       "mcp__todoist__move*",
-
-      "Read(../*)",
-      "Edit(../*)",
-      "Write(../*)",
-
-      "Bash(git *)",
-      "Bash(*&& git *)",
-      "Bash(*; git *)",
-      "Bash(*| git *)"
     ]
   }
 }

@@ -416,7 +416,13 @@ Reguły klasyfikacji i zbiór labelek żyją w **rulebookach** (jedyne źródło
 2. `/email-triage` - gdy sterta `AI/Triage` urośnie: przechodzicie ją razem, decyzje → akcje na mailach + nowe reguły w rulebooku (next `/email-review` ogarnia je sam).
 3. `/email-analysis` - kompleksowy przebieg (przetwarzanie + triaż/nauka naraz) albo projektowanie reguł konta od zera.
 
-**Filtrowanie statusu** (AI/Done/AI/Triage) robi MCP przez `search_threads(..., filter:"unprocessed"|"triage"|"pending"|"done")` - skille nie budują `-label:` ręcznie.
+**Filtrowanie statusu** (AI/Done/AI/Triage) robi MCP przez `search_threads(..., filter:"unprocessed"|"triage"|"pending"|"done"|"defer-due")` - skille nie budują `-label:` ręcznie.
+
+**Priorytety** (`Priorytet/P0..P3`): każdy klasyfikowany wątek przychodzący dostaje dokładnie jeden, **rozłączny** priorytet (P0 krytyczny → P3 szum). Mechanikę robi MCP - przekazujesz `priority` w `update_thread`, a MCP nakłada `Priorytet/<P>` i zdejmuje pozostałe. Bez priorytetu zostają: lekka ścieżka (poczta wychodząca) i stany terminalne/odłożone (`mark_outdated`, `defer_thread`). Znaczenia i domyślne poziomy per kategoria są w rulebookach (sekcja „Priorytety").
+
+**Archiwizacja zawsze z kubełkiem**: wątek nigdy nie opuszcza INBOX bez etykiety-kubełka użytkownika (np. `Śmieci`, `Nieaktualne`, `Newsletter`, `Zakupy`), z której da się później coś zrobić. MCP **odrzuca** zdjęcie `INBOX` w `update_thread`, jeśli nie zostaje żadna taka etykieta; kategorie Gmaila (`CATEGORY_*`) się nie liczą. Gdy żadna nie pasuje - agent tworzy nową przez `create_label`. `mark_outdated` (kubełek `Nieaktualne`) i `defer_thread` (nie zdejmuje INBOX) są poza tą regułą.
+
+**Defer i Nieaktualne** (maile z datą ważności): mail dziś OK, ale tracący sens w przyszłości → `defer_thread(threadId, until)` nakłada `AI/Defer/<data>` + `AI/Done`, więc znika z `unprocessed` i wraca dopiero gdy data minie (przez `filter:"defer-due"`). Po dojrzeniu agent re-ocenia: dalej aktualny → re-defer na nową datę, nieaktualny → `mark_outdated` (stan terminalny: `Nieaktualne` + archiwum). Data efektywna z treści maila, brak → +14 dni. Defer/Nieaktualne **tylko wg reguły z rulebooka** (nie z założenia); niejasne → triaż. Puste labelki `AI/Defer/<data>` sprząta `cleanup_defer_labels`.
 
 **Maile wysłane** (wątek, w którym najnowsza wiadomość jest moja) NIE są klasyfikowane ani triażowane. Idą lekką ścieżką: zasilają digital twin i tworzą przypomnienie tylko gdy czekam na odpowiedź lub mam zrobić follow-up; dostają `AI/Done` (znacznik „przejrzane", nie kategoria), nigdy `AI/Triage`.
 

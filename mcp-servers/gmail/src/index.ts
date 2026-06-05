@@ -137,6 +137,107 @@ async function resolveLabelNamesToIds(
 const LABEL_DONE = "AI/Done";
 const LABEL_TRIAGE = "AI/Triage";
 
+// Deferred-email convention. A thread parked until a future "effective date"
+// gets a dated nested label AI/Defer/YYYY-MM-DD (plus AI/Done, so it drops out
+// of the daily "unprocessed" view). It resurfaces only via filter:"defer-due"
+// once that date has arrived. "Nieaktualne" is the terminal label for mail that
+// has gone stale (event passed, deadline gone) - applied after triage, archived.
+const LABEL_DEFER_PREFIX = "AI/Defer";
+const LABEL_OUTDATED = "Nieaktualne";
+const DEFER_LABEL_RE = /^AI\/Defer\/(\d{4}-\d{2}-\d{2})$/;
+
+// Priority convention. Every classified incoming thread gets exactly one
+// mutually-exclusive priority label Priorytet/P0..P3 (P0 = critical, P3 = noise).
+// The MCP owns the disjointness: when update_thread sets a priority it adds the
+// chosen Priorytet/<P> and strips any other Priorytet/* so two priorities can
+// never coexist on a thread. The business meaning lives in the rulebooks; this
+// layer only guarantees the mechanics.
+const LABEL_PRIORITY_PREFIX = "Priorytet";
+const PRIORITY_LABEL_RE = /^Priorytet\/P([0-3])$/;
+
+// Today's date as YYYY-MM-DD in the host's local timezone. Used to decide which
+// deferred threads have "matured" (effective date <= today).
+function todayISO(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+// Find a user label by name (case-insensitive); create it if missing. Gmail
+// auto-creates the parent hierarchy for nested names like "AI/Defer/2026-06-18".
+// This is the only path that creates labels - update_thread stays strict so a
+// typo'd label name errors out instead of silently spawning junk labels.
+async function ensureLabel(email: string, name: string): Promise<string> {
+  const labels = await getLabelsForAccount(email);
+  const existing = labels.find(
+    (l) => l.name.toLowerCase() === name.toLowerCase()
+  );
+  if (existing) return existing.id;
+
+  const gmail = getGmailClient(email);
+  const created = await gmail.users.labels.create({
+    userId: "me",
+    requestBody: {
+      name,
+      labelListVisibility: "labelShow",
+      messageListVisibility: "show",
+    },
+  });
+  const info: LabelInfo = {
+    id: created.data.id || "",
+    name: created.data.name || name,
+    type: created.data.type || "user",
+  };
+  labels.push(info); // keep the cached list in sync
+  return info.id;
+}
+
+// All dated defer labels on the account, parsed into { id, name, date }.
+async function deferLabelsWithDates(
+  email: string
+): Promise<{ id: string; name: string; date: string }[]> {
+  const labels = await getLabelsForAccount(email);
+  const out: { id: string; name: string; date: string }[] = [];
+  for (const l of labels) {
+    const m = l.name.match(DEFER_LABEL_RE);
+    if (m) out.push({ id: l.id, name: l.name, date: m[1] });
+  }
+  return out;
+}
+
+// All priority labels (Priorytet/P0..P3) that already exist on the account,
+// parsed into { id, name, level }. Used by update_thread to strip the other
+// priorities when a new one is set (mutual exclusion).
+async function priorityLabels(
+  email: string
+): Promise<{ id: string; name: string; level: string }[]> {
+  const labels = await getLabelsForAccount(email);
+  const out: { id: string; name: string; level: string }[] = [];
+  for (const l of labels) {
+    const m = l.name.match(PRIORITY_LABEL_RE);
+    if (m) out.push({ id: l.id, name: l.name, level: m[1] });
+  }
+  return out;
+}
+
+// Whether a label name counts as a "bucket" - a real user category the mail
+// lands in so it stays actionable after archiving. A bucket is a user label
+// that is neither an AI/* processing label nor a Priorytet/* label. Gmail's
+// own CATEGORY_* system labels do NOT count: archiving must drop mail into a
+// label the user actually curates, not just a Gmail tab. Used by the archive
+// guard in update_thread so a thread never leaves INBOX without a bucket.
+async function isBucketLabel(email: string, name: string): Promise<boolean> {
+  if (/^AI\//i.test(name)) return false;
+  if (PRIORITY_LABEL_RE.test(name)) return false;
+  const labels = await getLabelsForAccount(email);
+  const label = labels.find(
+    (l) => l.name.toLowerCase() === name.toLowerCase()
+  );
+  return !!label && label.type === "user";
+}
+
 // Translate a high-level processing status into a Gmail search clause. This lets
 // callers ask for a view ("unprocessed", "triage", ...) without hand-writing the
 // -label: clauses, keeping the AI/Done|Triage convention owned by the MCP.
@@ -280,9 +381,9 @@ const tools: Tool[] = [
         },
         filter: {
           type: "string",
-          enum: ["unprocessed", "triage", "pending", "done"],
+          enum: ["unprocessed", "triage", "pending", "done", "defer-due"],
           description:
-            "Optional AI processing status. 'unprocessed' = no AI/Done and no AI/Triage; 'triage' = has AI/Triage; 'pending' = no AI/Done (includes triage); 'done' = has AI/Done. Omit for a raw query.",
+            "Optional AI processing status. 'unprocessed' = no AI/Done and no AI/Triage; 'triage' = has AI/Triage; 'pending' = no AI/Done (includes triage); 'done' = has AI/Done; 'defer-due' = threads deferred via defer_thread whose effective date (encoded in the AI/Defer/<date> label) is today or earlier - i.e. matured defers ready for re-evaluation. Omit for a raw query.",
         },
         maxResults: {
           type: "number",
@@ -399,7 +500,7 @@ const tools: Tool[] = [
   {
     name: "update_thread",
     description:
-      "Update a thread by adding/removing labels. Accepts label NAMES (not IDs) - e.g., 'AI/Done', 'AI/Triage', 'Work/Projects'. System labels: INBOX, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS.",
+      "Update a thread by adding/removing labels. Accepts label NAMES (not IDs) - e.g., 'AI/Done', 'AI/Triage', 'Work/Projects'. System labels: INBOX, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS. Pass 'priority' to set a mutually-exclusive Priorytet/P0..P3 (the MCP swaps any existing priority for you). ARCHIVE GUARD: removing INBOX is rejected unless the thread ends up with a user 'bucket' label (e.g. Śmieci, Nieaktualne, Newsletter, Zakupy) - Gmail CATEGORY_* labels do not count, so create one with create_label if nothing fits.",
     inputSchema: {
       type: "object",
       properties: {
@@ -423,8 +524,76 @@ const tools: Tool[] = [
           description:
             "Label names to remove from the thread (e.g., 'INBOX', 'AI/Triage')",
         },
+        priority: {
+          type: "string",
+          enum: ["P0", "P1", "P2", "P3"],
+          description:
+            "Optional thread priority. The MCP applies Priorytet/<P> and removes any other Priorytet/* (disjointness guaranteed). Set it when classifying an incoming thread (P0 = critical/act today, P3 = noise). Leave unset for the light path (outgoing mail) and terminal states (Śmieci/Nieaktualne).",
+        },
       },
       required: ["account", "threadId"],
+    },
+  },
+  {
+    name: "defer_thread",
+    description:
+      "Park a thread until an effective date. Adds the dated label AI/Defer/<until> plus AI/Done (so it leaves the daily 'unprocessed' view) and strips AI/Triage and any earlier defer date. The thread resurfaces only via search_threads filter:'defer-due' once 'until' has arrived. Use for mail that is fine today but goes stale later (an event, a deadline, an offer's validity).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: { type: "string", description: "Email account" },
+        threadId: { type: "string", description: "Thread ID to defer" },
+        until: {
+          type: "string",
+          description:
+            "Effective date in YYYY-MM-DD (today or later). The thread re-surfaces via filter:'defer-due' on/after this date.",
+        },
+      },
+      required: ["account", "threadId", "until"],
+    },
+  },
+  {
+    name: "mark_outdated",
+    description:
+      "Mark a thread as no longer relevant ('Nieaktualne'): adds the Nieaktualne label + AI/Done, archives it out of INBOX, and clears AI/Triage and any AI/Defer/* labels. The decision that a thread is stale belongs to the caller (rulebook/triage); this tool only performs the action.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: { type: "string", description: "Email account" },
+        threadId: {
+          type: "string",
+          description: "Thread ID to mark outdated",
+        },
+      },
+      required: ["account", "threadId"],
+    },
+  },
+  {
+    name: "cleanup_defer_labels",
+    description:
+      "Delete empty AI/Defer/<date> labels (housekeeping). Only dated defer labels with zero messages are removed; mail content is never touched. Run at the end of an inbox-processing session.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: { type: "string", description: "Email account" },
+      },
+      required: ["account"],
+    },
+  },
+  {
+    name: "create_label",
+    description:
+      "Create a user label (if it doesn't exist) and return its ID. Supports nested names like 'AI/Defer' or 'Work/Projects' - Gmail auto-creates the parent hierarchy. Idempotent: if the label already exists, its existing ID is returned without error. This only creates the label - it does NOT apply it to any thread (use update_thread for that).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: { type: "string", description: "Email account" },
+        name: {
+          type: "string",
+          description: "Label name to create, e.g. 'Work/Faktury'",
+        },
+      },
+      required: ["account", "name"],
     },
   },
   {
@@ -844,47 +1013,87 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "search_threads": {
-        const gmail = getGmailClient(args?.account as string);
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
         const maxResults = (args?.maxResults as number) || 20;
+        const filter = args?.filter as string | undefined;
 
-        // Combine the caller's scope query with the AI-status clause (if any).
-        const clause = filterClause(args?.filter as string | undefined);
-        const q = [args?.query as string, clause].filter(Boolean).join(" ");
-
-        // Filter per-message (Gmail thread-level label negation is unreliable -
-        // a whole conversation disappears from -label:X once any message has X,
-        // so new replies to processed threads would never resurface). We list
-        // messages, then de-duplicate their threadIds. messages.list is returned
-        // in reverse-chronological order, so first-seen order gives threads
-        // sorted by most recent matching message. Page until we have enough
-        // distinct threads (or hit a safety cap).
+        // Candidate thread IDs, de-duplicated, most-recent-matching first.
         const threadIds: string[] = [];
         const seen = new Set<string>();
-        let pageToken: string | undefined = undefined;
         const MAX_PAGES = 5;
 
-        for (
-          let page = 0;
-          page < MAX_PAGES && threadIds.length < maxResults;
-          page++
-        ) {
-          const res: any = await gmail.users.messages.list({
-            userId: "me",
-            q,
-            maxResults: 100,
-            pageToken,
-          });
-
-          for (const m of res.data.messages || []) {
-            if (m.threadId && !seen.has(m.threadId)) {
-              seen.add(m.threadId);
-              threadIds.push(m.threadId);
-              if (threadIds.length >= maxResults) break;
+        if (filter === "defer-due") {
+          // Deferred threads whose effective date has arrived (date <= today).
+          // We query by labelId rather than a label: clause so the "/" in nested
+          // label names needs no escaping. List each due label, merge threads.
+          const today = todayISO();
+          const due = (await deferLabelsWithDates(account)).filter(
+            (l) => l.date <= today
+          );
+          const scope = (args?.query as string) || "";
+          for (const label of due) {
+            if (threadIds.length >= maxResults) break;
+            let pageToken: string | undefined = undefined;
+            for (
+              let page = 0;
+              page < MAX_PAGES && threadIds.length < maxResults;
+              page++
+            ) {
+              const res: any = await gmail.users.messages.list({
+                userId: "me",
+                q: scope || undefined,
+                labelIds: [label.id],
+                maxResults: 100,
+                pageToken,
+              });
+              for (const m of res.data.messages || []) {
+                if (m.threadId && !seen.has(m.threadId)) {
+                  seen.add(m.threadId);
+                  threadIds.push(m.threadId);
+                  if (threadIds.length >= maxResults) break;
+                }
+              }
+              pageToken = res.data.nextPageToken || undefined;
+              if (!pageToken) break;
             }
           }
+        } else {
+          // Combine the caller's scope query with the AI-status clause (if any).
+          const clause = filterClause(filter);
+          const q = [args?.query as string, clause].filter(Boolean).join(" ");
 
-          pageToken = res.data.nextPageToken || undefined;
-          if (!pageToken) break;
+          // Filter per-message (Gmail thread-level label negation is unreliable
+          // - a whole conversation disappears from -label:X once any message has
+          // X, so new replies to processed threads would never resurface). We
+          // list messages, then de-duplicate their threadIds. messages.list is
+          // returned in reverse-chronological order, so first-seen order gives
+          // threads sorted by most recent matching message. Page until we have
+          // enough distinct threads (or hit a safety cap).
+          let pageToken: string | undefined = undefined;
+          for (
+            let page = 0;
+            page < MAX_PAGES && threadIds.length < maxResults;
+            page++
+          ) {
+            const res: any = await gmail.users.messages.list({
+              userId: "me",
+              q,
+              maxResults: 100,
+              pageToken,
+            });
+
+            for (const m of res.data.messages || []) {
+              if (m.threadId && !seen.has(m.threadId)) {
+                seen.add(m.threadId);
+                threadIds.push(m.threadId);
+                if (threadIds.length >= maxResults) break;
+              }
+            }
+
+            pageToken = res.data.nextPageToken || undefined;
+            if (!pageToken) break;
+          }
         }
 
         const threads = await Promise.all(
@@ -1101,8 +1310,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const threadId = args?.threadId as string;
         const addLabels = (args?.addLabels as string[]) || [];
         const removeLabels = (args?.removeLabels as string[]) || [];
+        const priority = args?.priority as string | undefined;
 
-        if (addLabels.length === 0 && removeLabels.length === 0) {
+        if (addLabels.length === 0 && removeLabels.length === 0 && !priority) {
           return {
             content: [
               {
@@ -1123,6 +1333,67 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ? await resolveLabelNamesToIds(account, removeLabels)
             : [];
 
+        // Priority: add the chosen Priorytet/<P> and strip every other
+        // Priorytet/* so a thread carries exactly one priority at a time.
+        let priorityName: string | undefined;
+        if (priority) {
+          if (!/^P[0-3]$/.test(priority)) {
+            throw new Error(
+              `Invalid priority "${priority}". Expected one of P0, P1, P2, P3.`
+            );
+          }
+          priorityName = `${LABEL_PRIORITY_PREFIX}/${priority}`;
+          const priorityId = await ensureLabel(account, priorityName);
+          if (!addLabelIds.includes(priorityId)) addLabelIds.push(priorityId);
+          const others = (await priorityLabels(account))
+            .filter((l) => l.name !== priorityName)
+            .map((l) => l.id);
+          for (const id of others) {
+            if (!removeLabelIds.includes(id)) removeLabelIds.push(id);
+          }
+        }
+
+        // Archive guard: removing INBOX must leave the thread in a user bucket
+        // so it stays actionable. Compute the resulting user-label set (current
+        // labels ∪ addLabels − removeLabels) and require at least one bucket.
+        const archiving = removeLabels.some(
+          (l) => l.toUpperCase() === "INBOX"
+        );
+        if (archiving) {
+          const meta = await gmail.users.threads.get({
+            userId: "me",
+            id: threadId,
+            format: "metadata",
+          });
+          const allLabels = await getLabelsForAccount(account);
+          const idToName = new Map(allLabels.map((l) => [l.id, l.name]));
+          const removeLower = new Set(
+            removeLabels.map((l) => l.toLowerCase())
+          );
+          const resulting = new Set<string>();
+          for (const msg of meta.data.messages || []) {
+            for (const id of msg.labelIds || []) {
+              const name = idToName.get(id) || id;
+              if (!removeLower.has(name.toLowerCase())) resulting.add(name);
+            }
+          }
+          for (const name of addLabels) {
+            if (!removeLower.has(name.toLowerCase())) resulting.add(name);
+          }
+          let hasBucket = false;
+          for (const name of resulting) {
+            if (await isBucketLabel(account, name)) {
+              hasBucket = true;
+              break;
+            }
+          }
+          if (!hasBucket) {
+            throw new Error(
+              `Archiving thread ${threadId} (removing INBOX) requires a user "bucket" label so it stays actionable. Add a fitting category in addLabels (e.g. Śmieci, Nieaktualne, Newsletter, Zakupy, Finanse); if none fits, create one with create_label first and add it here. Gmail CATEGORY_* labels do not count as a bucket.`
+            );
+          }
+        }
+
         await gmail.users.threads.modify({
           userId: "me",
           id: threadId,
@@ -1137,6 +1408,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (addLabels.length > 0) {
           changes.push(`added: ${addLabels.join(", ")}`);
         }
+        if (priorityName) {
+          changes.push(`priority: ${priorityName}`);
+        }
         if (removeLabels.length > 0) {
           changes.push(`removed: ${removeLabels.join(", ")}`);
         }
@@ -1146,6 +1420,167 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: `Updated thread ${threadId}: ${changes.join("; ")}`,
+            },
+          ],
+        };
+      }
+
+      case "defer_thread": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+        const threadId = args?.threadId as string;
+        const until = args?.until as string;
+
+        if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) {
+          throw new Error(
+            `Invalid 'until' date "${until}". Expected YYYY-MM-DD.`
+          );
+        }
+        if (until < todayISO()) {
+          throw new Error(
+            `'until' date ${until} is in the past (today is ${todayISO()}). Defer dates must be today or later.`
+          );
+        }
+
+        // Add the dated defer label + AI/Done; strip AI/Triage and any other
+        // (stale) defer label so the thread carries exactly one effective date.
+        const deferName = `${LABEL_DEFER_PREFIX}/${until}`;
+        const deferId = await ensureLabel(account, deferName);
+        const doneId = await resolveLabelNameToId(account, LABEL_DONE);
+
+        const others = (await deferLabelsWithDates(account))
+          .filter((l) => l.name !== deferName)
+          .map((l) => l.id);
+        let triageId: string | undefined;
+        try {
+          triageId = await resolveLabelNameToId(account, LABEL_TRIAGE);
+        } catch {
+          triageId = undefined;
+        }
+        const removeLabelIds = [
+          ...others,
+          ...(triageId ? [triageId] : []),
+        ];
+
+        await gmail.users.threads.modify({
+          userId: "me",
+          id: threadId,
+          requestBody: {
+            addLabelIds: [deferId, doneId],
+            removeLabelIds:
+              removeLabelIds.length > 0 ? removeLabelIds : undefined,
+          },
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Deferred thread ${threadId} until ${until} (+${deferName}, +${LABEL_DONE}; resurfaces via filter:"defer-due" on/after ${until}).`,
+            },
+          ],
+        };
+      }
+
+      case "mark_outdated": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+        const threadId = args?.threadId as string;
+
+        // Terminal "stale" state: Nieaktualne + AI/Done, archived (out of INBOX),
+        // with AI/Triage and any defer labels cleared.
+        const outId = await ensureLabel(account, LABEL_OUTDATED);
+        const doneId = await resolveLabelNameToId(account, LABEL_DONE);
+
+        const deferIds = (await deferLabelsWithDates(account)).map((l) => l.id);
+        let triageId: string | undefined;
+        try {
+          triageId = await resolveLabelNameToId(account, LABEL_TRIAGE);
+        } catch {
+          triageId = undefined;
+        }
+        const removeLabelIds = [
+          "INBOX",
+          ...deferIds,
+          ...(triageId ? [triageId] : []),
+        ];
+
+        await gmail.users.threads.modify({
+          userId: "me",
+          id: threadId,
+          requestBody: {
+            addLabelIds: [outId, doneId],
+            removeLabelIds,
+          },
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Marked thread ${threadId} as ${LABEL_OUTDATED} (archived from INBOX, +${LABEL_DONE}).`,
+            },
+          ],
+        };
+      }
+
+      case "cleanup_defer_labels": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+
+        // Delete empty AI/Defer/<date> labels (housekeeping only - scoped to
+        // dated defer labels with zero messages; never touches mail content).
+        const defers = await deferLabelsWithDates(account);
+        const deleted: string[] = [];
+        for (const label of defers) {
+          const info: any = await gmail.users.labels.get({
+            userId: "me",
+            id: label.id,
+          });
+          if ((info.data.messagesTotal || 0) === 0) {
+            await gmail.users.labels.delete({ userId: "me", id: label.id });
+            deleted.push(label.name);
+            // Drop it from the cached label list.
+            const cached = labelCache.get(account);
+            if (cached) {
+              const idx = cached.findIndex((l) => l.id === label.id);
+              if (idx >= 0) cached.splice(idx, 1);
+            }
+          }
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                { deleted, count: deleted.length },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      }
+
+      case "create_label": {
+        const account = args?.account as string;
+        const name = (args?.name as string)?.trim();
+        if (!name) throw new Error("Label name is required");
+
+        // Detect prior existence so the caller knows created vs. already-there.
+        const existing = (await getLabelsForAccount(account)).find(
+          (l) => l.name.toLowerCase() === name.toLowerCase()
+        );
+        // ensureLabel creates via the API and keeps labelCache in sync, so a
+        // following update_thread/resolveLabelNameToId finds it without restart.
+        const id = await ensureLabel(account, name);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({ id, name, created: !existing }, null, 2),
             },
           ],
         };
