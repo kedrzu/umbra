@@ -25,7 +25,7 @@ Multi-account Gmail MCP server with read-only access (no sending).
 | `create_draft`   | Create email draft                                                          |
 | `list_labels`    | List all labels in an account                                               |
 | `update_thread`  | Add/remove labels (archive, read/unread, star, important, categories, etc.) |
-| `get_attachment` | Get attachment content as base64                                            |
+| `save_attachment`| Save attachment to disk (.context/attachments), return its path             |
 
 ### Multi-Account Usage
 

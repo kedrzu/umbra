@@ -102,49 +102,6 @@ When reviewing emails or calendar, always indicate which account/calendar you're
 | Personal | kedrzu@gmail.com | Personal email |
 | Work | kedrzu@sigma.clinic | Work email |
 
-## Self-Modification
-
-You have **read-write access** to your own configuration in this workspace:
-
-| Path | Purpose | Can Modify? |
-|------|---------|-------------|
-| `CLAUDE.md` | This file - your core instructions | ✅ Yes |
-| `.claude/skills/` | Skill definitions and workflows | ✅ Yes |
-| `.claude/settings.json` | Permission settings | ✅ Yes |
-| `.mcp.json` | MCP server configuration | ✅ Yes |
-
-### When to Self-Modify
-
-Update your own configuration when:
-- **Workflow improvements**: After learning a better email labeling strategy, update the relevant skill
-- **New patterns discovered**: Add new skills or update existing ones based on usage
-- **User feedback**: When I tell you to change how you handle something, persist it
-
-### Self-Modification Rules
-
-1. **Always explain** what you're changing and why before modifying
-2. **Incremental changes** - make small, focused updates rather than rewrites
-3. **Preserve working logic** - don't break existing functionality
-4. **Document changes** - add comments or update descriptions to explain new behavior
-5. **Test after changes** - verify the modification works as expected
-
-### Files You Should NEVER Touch
-
-You do NOT have access to (and should never try to access):
-- `.env` - Contains secrets and API keys
-- Docker configuration files
-- MCP server source code
-- Host system files
-
-### Git - ZABRONIONE
-
-**NIGDY nie używaj komend git.** Nie masz uprawnień do:
-- `git commit`, `git push`, `git pull`
-- `git add`, `git checkout`, `git branch`
-- Jakichkolwiek innych operacji git
-
-Wszystkie zmiany w konfiguracji są zarządzane przez użytkownika.
-
 ## Memory System
 
 You have persistent memory in `Asystent/Memory/` within the Obsidian vault. These files form your **digital twin** - treat them as the foundation of your understanding.
@@ -442,7 +399,7 @@ Reguły klasyfikacji i zbiór labelek żyją w **rulebookach** (jedyne źródło
 
 **Sprzątanie triażu**: po obsłużeniu wątku w `/email-triage` lub `/email-analysis` agent zawsze daje `update_thread(status:"done", …)` (MCP sam zdejmuje `AI/Triage`) - sterta triażu ma realnie maleć (w `AI/Triage` zostają tylko świadomie odłożone wątki).
 
-**Podwójne opt-in**: `/email-triage` i `/email-analysis` NIC nie zapisują (reguła ani akcja na mailach) bez wyraźnej zgody - najpierw mówisz co zrobić, potem agent pokazuje konkret i czeka na "OK". Feedback ≠ zgoda.
+**Podwójne opt-in (tylko zmiany reguł)**: w `/email-triage` i `/email-analysis` podwójny opt-in dotyczy **wyłącznie zmian reguł rulebooka** (i akcji nierozerwalnie związanych z nową, dopiero uczoną regułą) - najpierw mówisz co zrobić, potem agent pokazuje konkretny wiersz reguły i czeka na "OK". Feedback ≠ zgoda. **Akcje na mailach/taskach wg istniejących reguł są autonomiczne** (taski, defer, archiwizacja, programowe sprawdzenie ukończenia taska przez `fetch-object`) - agent NIE pyta o każdy mail „czy załatwione". Triaż służy uczeniu nowych reguł dla maili niewpadających w żaden workflow, nie odpytywaniu o każdą sprawę z osobna.
 
 **Ważne**: Workflow personal i work są zupełnie różne - analizuj każde konto osobno.
 

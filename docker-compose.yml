@@ -19,9 +19,14 @@ services:
         target: /config/credentials.json
         read_only: true
       - gmail-tokens:/config/tokens
+      - type: bind
+        source: ./.context/attachments
+        target: /attachments
     environment:
       - GMAIL_CREDENTIALS_PATH=/config/credentials.json
       - GMAIL_TOKENS_PATH=/config/tokens
+      - GMAIL_ATTACHMENTS_DIR=/attachments
+      - GMAIL_ATTACHMENTS_RETURN_BASE=.context/attachments
       - MCP_PORT=4002
       - MCP_TRANSPORT=http
     healthcheck:

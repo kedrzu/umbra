@@ -638,9 +638,9 @@ const tools: Tool[] = [
     },
   },
   {
-    name: "get_attachment",
+    name: "save_attachment",
     description:
-      "Get the content of an email attachment as base64-encoded data. Use get_message first to get the attachmentId.",
+      "Download an email attachment, save it to disk under .context/attachments and return its file path (NOT base64). The binary file never passes through the model context. Use get_message first to get the attachmentId; then move or read the saved file via the returned path.",
     inputSchema: {
       type: "object",
       properties: {
@@ -1653,7 +1653,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
-      case "get_attachment": {
+      case "save_attachment": {
         const gmail = getGmailClient(args?.account as string);
         const messageId = args?.messageId as string;
         const attachmentId = args?.attachmentId as string;
@@ -1683,17 +1683,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ? attachment.data.data.replace(/-/g, "+").replace(/_/g, "/")
           : "";
 
+        // Save the decoded file to disk and return its path - the binary
+        // never goes through the model context (avoids huge base64 blobs).
+        const ATT_DIR = process.env.GMAIL_ATTACHMENTS_DIR || "/attachments";
+        const RET_BASE =
+          process.env.GMAIL_ATTACHMENTS_RETURN_BASE || ".context/attachments";
+        const rawName = attachmentInfo?.filename || "attachment";
+        // Gmail filenames can contain slashes/illegal chars (e.g. "2025-FP/I/27707.pdf")
+        const safeName = rawName.replace(/[\/\\:*?"<>|]/g, "_");
+        const destDir = path.join(ATT_DIR, messageId);
+        await fs.mkdir(destDir, { recursive: true });
+        const buffer = Buffer.from(base64Data, "base64");
+        await fs.writeFile(path.join(destDir, safeName), buffer);
+        const returnedPath = path.join(RET_BASE, messageId, safeName);
+
         return {
           content: [
             {
               type: "text",
               text: JSON.stringify(
                 {
-                  filename: attachmentInfo?.filename || "attachment",
+                  filename: safeName,
+                  originalFilename: rawName,
                   mimeType:
                     attachmentInfo?.mimeType || "application/octet-stream",
                   size: attachment.data.size,
-                  data: base64Data,
+                  path: returnedPath,
                 },
                 null,
                 2

@@ -15,15 +15,17 @@ Interaktywne czyszczenie sterty `AI/Triage` — maili, których `/email-review` 
 
 Mechanikę nakładania labelek/draftów stosuj jak w `/email-review`. Status `AI/Done`/`AI/Triage` ustawiasz **wyłącznie** parametrem `status: "done"|"triage"` w `update_thread` (rozłączne; MCP zdejmuje przeciwny status i `AI/Defer/*`) — nigdy ręcznie przez addLabels/removeLabels (MCP odrzuci).
 
-## ⚠️ Podwójne opt-in — NIC nie zapisuj bez wyraźnej zgody
+## ⚠️ Podwójne opt-in — TYLKO na zmianę reguły rulebooka
 
-To jest najważniejsza zasada tego skilla. Żadna zmiana reguły ani akcja na mailach nie dzieje się "z marszu":
+Opt-in dotyczy **wyłącznie zapisu/edycji reguły** w rulebooku (i akcji nierozerwalnie związanej z tą nową, dopiero uczoną regułą). **Akcje na mailach objętych istniejącymi regułami są autonomiczne** — nakładaj labele, twórz taski, deferuj, archiwizuj i sprawdzaj ukończenie tasków (programowo przez `fetch-object`/`find-completed-tasks`) **bez pytania**. Triaż służy **uczeniu nowych reguł** dla maili, które nie wpadają w żaden sensowny workflow — **nie** odpytywaniu użytkownika o każdy mail „czy załatwione".
 
-1. **Opt-in #1 — decyzja.** Użytkownik mówi, co zrobić z grupą (wybór w `AskUserQuestion` lub własnymi słowami).
-2. **Echo + propozycja.** Powtórz **konkretnie, co zrozumiałeś**: dokładny wiersz reguły do dodania/edycji ORAZ dokładne akcje na mailach (które labele na które wątki, ew. draft, archiwizacja, `status:"done"` — MCP sam zdejmie `AI/Triage`). **Zakończ turę i czekaj — nic nie zapisuj.**
-3. **Opt-in #2 — wyraźna akceptacja.** Zapisz regułę i wykonaj akcje **tylko** gdy użytkownik wyraźnie zaakceptuje ("OK / akceptuję / rób tak"). **Każda inna odpowiedź to feedback, nie zgoda** — nanieś poprawki, przedstaw propozycję ponownie (krok 2) i znów czekaj. Pętla aż do wyraźnego "tak".
+Gdy mail **nie pasuje** do żadnej reguły i chcesz nauczyć nową:
 
-Gwarancja: "powiedziałeś X → robię dokładnie X (potwierdzone), nigdy po cichu Y". Feedback ≠ koniec.
+1. **Opt-in #1 — decyzja.** Użytkownik mówi, jak obsłużyć grupę (wybór w `AskUserQuestion` lub własnymi słowami).
+2. **Echo + propozycja reguły.** Powtórz **konkretnie**: dokładny wiersz reguły do dodania/edycji oraz jak zostanie zastosowana do grupy. **Zakończ turę i czekaj — reguły nie zapisuj.**
+3. **Opt-in #2 — wyraźna akceptacja.** Zapisz regułę (i wykonaj akcje na grupie) **tylko** gdy użytkownik wyraźnie zaakceptuje ("OK / akceptuję / rób tak"). **Każda inna odpowiedź to feedback, nie zgoda** — nanieś poprawki, przedstaw ponownie (krok 2) i znów czekaj.
+
+Gwarancja: zmiana **reguły** = "powiedziałeś X → zapisuję dokładnie X (potwierdzone)". Feedback ≠ koniec. Sama akcja na mailu wg istniejącej reguły zgody nie wymaga.
 
 ## Narzędzia
 
@@ -59,15 +61,18 @@ Tylko sterta `AI/Triage` — ten skill **nie** przetwarza świeżych nieprzetwor
 - (Best-effort) `Asystent/Memory/InboxReviewState.md` — tabela Priority/Triage Emails zawiera **powód triażu** zapisany przez `/email-review`; użyj go, żeby nie zgadywać od zera.
 
 ### 2. Digest sterty (subagenci Sonnet, read-only)
-Podziel stertę na batche (~5-8 wątków) i zleć **subagentom na Sonnecie** *tylko odczyt i streszczenie*. Subagent dla każdego wątku zwraca: `{nadawca, krótkie streszczenie, proponowana akcja wg rulebooka, czemu niepewne, klucz grupy (domena/nadawca+wzorzec tematu), czy użytkownik już ręcznie obsłużył}`. **Subagent niczego nie modyfikuje.**
+Podziel stertę na batche (~5-8 wątków) i zleć **subagentom na Sonnecie** *tylko odczyt i streszczenie*. Subagent dla każdego wątku zwraca: `{nadawca, krótkie streszczenie, proponowana akcja wg rulebooka, **czy pasuje do istniejącej reguły**, czemu niepewne, klucz grupy (domena/nadawca+wzorzec tematu), czy użytkownik już ręcznie obsłużył}`. **Subagent niczego nie modyfikuje.**
 
-### 3. Wątki już obsłużone ręcznie
-Jeśli digest pokazuje, że użytkownik już zadziałał od czasu triażu (nowa wiadomość wysłana przez niego / wątek opuścił INBOX / dodany nie-AI label):
-- Posprzątaj status: `update_thread(status:"done", priority: …)` — MCP zdejmie `AI/Triage`.
-- Z tego, co użytkownik zrobił, **zaproponuj regułę** — ale przez **podwójne opt-in** (to nadal sugestia, nie auto-zapis).
+### 3. Obsłuż autonomicznie to, co da się obsłużyć (bez pytania)
+Zanim zaczniesz pytać użytkownika, ogarnij sam wszystko, co **nie wymaga** uczenia nowej reguły:
+- **Wątek pasuje do istniejącej reguły** (digest tak wskazuje) → zastosuj ją od razu: labele/task/defer/archiwizacja + `update_thread(status:"done", priority)`. Bez opt-in.
+- **Użytkownik już zadziałał ręcznie** (nowa wiadomość wysłana przez niego / wątek opuścił INBOX / dodany nie-AI label) → posprzątaj status: `update_thread(status:"done", priority: …)` (MCP zdejmie `AI/Triage`). Jeśli z tego, co zrobił, **wyłania się nowa reguła** → zaproponuj ją przez podwójne opt-in (krok 4); sam zapis statusu jest autonomiczny.
+- **Task `TODO/<id>` powiązany z wątkiem** → sprawdź ukończenie **programowo** (`fetch-object(type:"task")`/`find-completed-tasks`), nie pytaj: COMPLETED → `update_thread(status:"done", addLabels:["Nieaktualne"], priority)`; OPEN → re-defer; GONE → zostaw w triażu z notką.
 
-### 4. Pętla triażu (zbieraj i pytaj grupami)
-- Zbierz digesty i **pogrupuj po kluczu, na którym oprze się reguła** (domena nadawcy / nadawca + wzorzec tematu).
+Do kroku 4 trafiają **tylko** wątki, które nie pasują do żadnej reguły — bo to dla nich uczymy nową regułę.
+
+### 4. Pętla nauki reguł (zbieraj i pytaj grupami — tylko wątki bez reguły)
+- Zbierz pozostałe digesty i **pogrupuj po kluczu, na którym oprze się reguła** (domena nadawcy / nadawca + wzorzec tematu).
 - Dla każdej grupy zadaj **jedno** `AskUserQuestion` o decyzję (opt-in #1): proponowana akcja jako opcja domyślna (ze słownika akcji rulebooka) + "jak szeroko?" (ten nadawca / cała domena / ten typ). Decydując raz dla grupy, ogarniasz wiele maili naraz. Wśród opcji (gdy pasuje do grupy) uwzględnij: **„Odłóż do <data> (Defer)"** — mail dziś OK, zdezaktualizuje się później (event/deadline/oferta) — **„Oznacz Nieaktualne (archiwizuj, zostaw do referencji)"**, **„Śmieci (archiwizuj, bezpieczny do usunięcia)"** oraz **„Nieaktualne + Śmieci"** (nieaktualny i bezwartościowy). Patrz sekcja „Defer i Nieaktualne".
 - Po decyzji → **echo + propozycja** (opt-in #2, sekcja wyżej) i czekaj na wyraźną zgodę.
 
@@ -102,12 +107,12 @@ Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka. Re
 - **Nieaktualne** = stan terminalny (`update_thread` z `addLabels:["Nieaktualne", …]`): mail stracił aktualność — archiwizujemy (MCP zdejmuje INBOX); zostawiamy do referencji, a jeśli też bezwartościowy → dodaj `Śmieci`.
 - **Dojrzałe defery**: opcjonalnie możesz wciągnąć `filter:"defer-due"` (wątki, których data minęła) i przejść je tak jak stertę triażu — decyzja per grupa: re-defer na nową datę / Nieaktualne / obsłuż / zostaw. Te same opcje w `AskUserQuestion`.
 
-## Akcje → Todoist i Faktury → Rachunki (przez opt-in)
+## Akcje → Todoist i Faktury → Rachunki (autonomicznie wg reguł)
 
-Te same mechanizmy co w `/email-review`, ale **przez podwójne opt-in** — nic bez wyraźnej zgody:
+Te same mechanizmy co w `/email-review` i **tak samo autonomiczne** — gdy wątek pasuje do reguły, wykonaj od razu, bez pytania (to nie jest zmiana reguły). Opt-in pojawia się **tylko** gdy przy okazji uczysz **nowej** reguły dla tej grupy:
 
-- **Akcje → Todoist** (rulebook „Akcje → Todoist"): dla wątku, który ma dostać `Wymaga działania`/`Wymaga odpowiedzi`, w echo+propozycji pokaż też, że utworzysz **task Todoist** (treść, projekt/sekcja wg konta, priorytet p1..p4, ew. `deadlineDate`) + labelkę `TODO/<id>` + defer. Wykonaj dopiero po „OK". Dojrzałe defery z `TODO/<id>` re-oceniaj wg re-checku (`fetch-object`/`find-completed-tasks` → COMPLETED → `update_thread(status:"done", addLabels:["Nieaktualne"], priority)`; OPEN → re-defer; GONE → zostaw w triażu) — też proponuj, nie rób z marszu.
-- **Faktury → Rachunki** (rulebook „Faktury → folder Rachunki"): gdy faktura trwałego dobra >100 zł, zaproponuj zapis PDF + notatki do `./obsidian/Rachunki/`; zapisuj dopiero po akceptacji.
+- **Akcje → Todoist** (rulebook „Akcje → Todoist"): wątek, który wg reguły dostaje `Wymaga działania`/`Wymaga odpowiedzi`, dostaje **autonomicznie** task Todoist (treść, projekt/sekcja wg konta, priorytet p1..p4, ew. `deadlineDate`) + labelkę `TODO/<id>` + defer (idempotencja: sprawdź istniejące `TODO/*`/task z threadId). Dojrzałe defery z `TODO/<id>` re-oceniaj **programowo** (`fetch-object`/`find-completed-tasks` → COMPLETED → `update_thread(status:"done", addLabels:["Nieaktualne"], priority)`; OPEN → re-defer; GONE → zostaw w triażu) — bez pytania użytkownika.
+- **Faktury → Rachunki** (rulebook „Faktury → folder Rachunki"): faktura/paragon → przeskanuj treść (za co); zakup → `Zakupy` (nie `Finanse`/`Księgowość`); trwałe dobro >100 zł → **autonomicznie** zapisz PDF + notatkę do `./obsidian/Rachunki/`. Bez pytania.
 
 ## Format wyjścia
 
@@ -119,8 +124,8 @@ Te same mechanizmy co w `/email-review`, ale **przez podwójne opt-in** — nic 
 
 ## Bezpieczeństwo
 
-- **Podwójne opt-in** na każdą zmianę reguły i akcję — patrz sekcja wyżej. Feedback ≠ zgoda.
+- **Podwójne opt-in TYLKO na zmianę reguły** rulebooka (patrz sekcja wyżej). Akcje na mailach/taskach wg istniejących reguł są autonomiczne — nie pytaj o każdy mail. Feedback ≠ zgoda (dla reguł).
 - **Nigdy nie wysyłaj** maili — tylko drafty.
-- **Nigdy nie usuwaj** maili/zadań/wydarzeń/notatek.
-- Maile zostają w `AI/Triage` dopóki użytkownik nie zaakceptuje akcji. **Po akceptacji zawsze `update_thread(status:"done", …)`** (MCP zdejmie `AI/Triage`) — obsłużony wątek nie może zostać w stercie triażu.
+- **Nigdy nie usuwaj** maili/zadań/wydarzeń/notatek; **nie** modyfikuj ani **nie** ukańczaj istniejących tasków (to robi użytkownik).
+- Po obsłużeniu wątku **zawsze `update_thread(status:"done", …)`** (MCP zdejmie `AI/Triage`) — obsłużony wątek nie może zostać w stercie triażu. W `AI/Triage` zostają **tylko** wątki, dla których czekasz na zgodę na nową regułę, lub świadomie odłożone.
 - Komunikuj po polsku.
