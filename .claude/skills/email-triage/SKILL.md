@@ -33,9 +33,10 @@ Gwarancja: zmiana **reguły** = "powiedziałeś X → zapisuję dokładnie X (po
 |----------|-----------|
 | Pobranie sterty triażu | `mcp__gmail__search_threads` (`filter:"triage"`) |
 | Dojrzałe defery (opcjonalnie) | `mcp__gmail__search_threads` (`filter:"defer-due"`) |
-| Treść wątku | `mcp__gmail__get_thread` |
+| Treść wątku (labelki jako nazwy) | `mcp__gmail__get_thread` |
+| Wyszukiwanie referencyjne (cała poczta) | `mcp__gmail__search_threads` **bez** `filter` (inbox + archiwum + `AI/Done`) |
 | Status (AI/Done\|AI/Triage) / labele / draft | `mcp__gmail__update_thread` (status: "done"\|"triage" dla statusu; addLabels/removeLabels dla kategorii), `mcp__gmail__create_draft` |
-| Odłożenie z datą | `mcp__gmail__defer_thread` (until=`RRRR-MM-DD`) |
+| Odłożenie z datą | `mcp__gmail__update_thread` (`deferUntil`=`RRRR-MM-DD`, `priority`) |
 | Archiwizacja (Śmieci/Nieaktualne) | `mcp__gmail__update_thread` z `addLabels:["Nieaktualne"\|"Śmieci", …]` — MCP zdejmuje INBOX |
 | Pytania do użytkownika | `AskUserQuestion` |
 | Czytanie/zapis rulebooka | `Read`, `Edit` |
@@ -78,7 +79,7 @@ Do kroku 4 trafiają **tylko** wątki, które nie pasują do żadnej reguły —
 
 ### 5. Commit (dopiero po opt-in #2)
 - **Reguła**: dopisz lub **zedytuj w miejscu** pasujący wiersz `| Typ | Akcja |` w `EmailWorkflow-{konto}.md`. Najpierw poszukaj istniejącego wiersza o tym samym wzorcu Typ — jeśli jest, edytuj go (nie duplikuj). Zaktualizuj datę "Ostatnia aktualizacja" na górze pliku. (Bez osobnego dziennika zmian.)
-- **Maile**: nałóż uzgodnioną akcję na **każdy** wątek w grupie — labele kategorii/draft/archiwizacja wg reguły — potem **zawsze** oznacz jako done przez `update_thread(status:"done", priority: …)` (MCP nakłada `AI/Done` i **sam zdejmuje `AI/Triage`** oraz `AI/Defer/*`; nie podawaj tych labelek ręcznie — odrzuci). **Zawsze nadaj priorytet** — `priority: P0..P3` (poziomy → sekcja „Priorytety" rulebooka). MCP **wymaga** priorytetu przy każdym `AI/Done`. **Archiwizacja**: wątek opuszcza INBOX **wyłącznie** gdy dostaje marker `Śmieci` i/lub `Nieaktualne` w `addLabels` — MCP sam zdejmuje INBOX. Markery nakładaj na kategorię (np. `Zakupy`+`Śmieci`); sama kategoria nie archiwizuje (MCP odrzuci `removeLabels:["INBOX"]` bez markera). Dla decyzji **Defer** użyj `defer_thread(threadId, until, priority)` (nakłada `AI/Defer/<data>` + `AI/Done` + `P/<n>`, zdejmuje `AI/Triage`); dla **Nieaktualne** użyj `update_thread(status:"done", addLabels:["Nieaktualne", …kategoria; +"Śmieci" jeśli reguła], priority)` (Nieaktualne + `AI/Done` + `P/<n>` + archiwum + zdjęcie `AI/Triage`) — **oba wymagają priorytetu** (śmieci/Nieaktualne zwykle P3). Sterta `AI/Triage` ma realnie maleć po sesji, nie tylko rosnąć rulebook. Masowe nałożenie na grupę możesz zlecić subagentowi Sonnet. Tylko wątki świadomie odłożone (bez decyzji) zostają w `AI/Triage`.
+- **Maile**: nałóż uzgodnioną akcję na **każdy** wątek w grupie — labele kategorii/draft/archiwizacja wg reguły — potem **zawsze** oznacz jako done przez `update_thread(status:"done", priority: …)` (MCP nakłada `AI/Done` i **sam zdejmuje `AI/Triage`** oraz `AI/Defer/*`; nie podawaj tych labelek ręcznie — odrzuci). **Zawsze nadaj priorytet** — `priority: P0..P3` (poziomy → sekcja „Priorytety" rulebooka). MCP **wymaga** priorytetu przy każdym `AI/Done`. **Archiwizacja**: wątek opuszcza INBOX **wyłącznie** gdy dostaje marker `Śmieci` i/lub `Nieaktualne` w `addLabels` — MCP sam zdejmuje INBOX. Markery nakładaj na kategorię (np. `Zakupy`+`Śmieci`); sama kategoria nie archiwizuje (MCP odrzuci `removeLabels:["INBOX"]` bez markera). Dla decyzji **Defer** użyj `update_thread(threadId, deferUntil:"<data>", priority)` (nakłada `AI/Defer/<data>` + `AI/Done` + `P/<n>`, zdejmuje `AI/Triage`); dla **Nieaktualne** użyj `update_thread(status:"done", addLabels:["Nieaktualne", …kategoria; +"Śmieci" jeśli reguła], priority)` (Nieaktualne + `AI/Done` + `P/<n>` + archiwum + zdjęcie `AI/Triage`) — **oba wymagają priorytetu** (śmieci/Nieaktualne zwykle P3). Sterta `AI/Triage` ma realnie maleć po sesji, nie tylko rosnąć rulebook. Masowe nałożenie na grupę możesz zlecić subagentowi Sonnet. Tylko wątki świadomie odłożone (bez decyzji) zostają w `AI/Triage`.
 
 ### 6. Pamięć
 Po sesji skomituj aktualizacje digital twin jak w `/email-review` (kontakty: `ostatni_kontakt` + historia; Projects/Work/Personal/Timeline/Insights gdy maile coś ujawniły).
@@ -97,13 +98,13 @@ Reguły to sekcje `### Kategoria` z tabelą `| Typ | Akcja |`. Akcję buduj ze s
 Trzymaj się istniejących nazw labelek i konwencji akcji z danego rulebooka. Reguła klasyfikująca wątek przychodzący powinna wskazywać priorytet (`P/0..P/3`); reguła archiwizująca (`archiwizuj`) musi wskazywać etykietę-kubełek użytkownika (nie sam `CATEGORY_*`).
 
 **Słownik akcji dla maili z datą ważności** (do reguł i akcji):
-- `Defer:<efektywna data>` — odłóż do daty efektywnej (event/deadline/oferta); brak konkretnej daty → +14 dni. Wykonanie: `defer_thread`.
+- `Defer:<efektywna data>` — odłóż do daty efektywnej (event/deadline/oferta); brak konkretnej daty → +14 dni. Wykonanie: `update_thread(deferUntil, priority)`.
 - `Nieaktualne [+ Śmieci] + archiwizuj` — mail nieaktualny (zostaw do referencji) lub nieaktualny i bezpieczny do usunięcia (+`Śmieci`). Wykonanie: `update_thread(status:"done", addLabels:[…], priority)` — MCP archiwizuje.
 - `Śmieci + archiwizuj` — bezpieczny do usunięcia, bez wartości na przyszłość (marker, nie usuwamy). Wykonanie: `update_thread(status:"done", addLabels:["Śmieci", …kategoria], priority)`.
 
 ## Defer i Nieaktualne
 
-- **Defer** = odłożenie wątku z **efektywną datą** (`defer_thread`): MCP nakłada `AI/Defer/<data>` + `AI/Done`, wątek wraca do oceny dopiero gdy data minie (przez `filter:"defer-due"`). Daje to regułę typu „ten newsletter eventowy → odłóż do daty eventu".
+- **Defer** = odłożenie wątku z **efektywną datą** (`update_thread(deferUntil)`): MCP nakłada `AI/Defer/<data>` + `AI/Done`, wątek wraca do oceny dopiero gdy data minie (przez `filter:"defer-due"`). Daje to regułę typu „ten newsletter eventowy → odłóż do daty eventu".
 - **Nieaktualne** = stan terminalny (`update_thread` z `addLabels:["Nieaktualne", …]`): mail stracił aktualność — archiwizujemy (MCP zdejmuje INBOX); zostawiamy do referencji, a jeśli też bezwartościowy → dodaj `Śmieci`.
 - **Dojrzałe defery**: opcjonalnie możesz wciągnąć `filter:"defer-due"` (wątki, których data minęła) i przejść je tak jak stertę triażu — decyzja per grupa: re-defer na nową datę / Nieaktualne / obsłuż / zostaw. Te same opcje w `AskUserQuestion`.
 

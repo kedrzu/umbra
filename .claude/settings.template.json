@@ -37,7 +37,6 @@
       "mcp__gmail__create_draft",
       "mcp__gmail__list_labels",
       "mcp__gmail__update_thread",
-      "mcp__gmail__defer_thread",
       "mcp__gmail__create_label",
       "mcp__gmail__cleanup_defer_labels",
       "mcp__gmail__save_attachment",

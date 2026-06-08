@@ -19,12 +19,13 @@ Multi-account Gmail MCP server with read-only access (no sending).
 | Tool             | Description                                                                 |
 | ---------------- | --------------------------------------------------------------------------- |
 | `list_accounts`  | List all authenticated Gmail accounts                                       |
-| `search_threads` | Search emails with Gmail query syntax                                       |
-| `get_thread`     | Get full thread with all messages                                           |
-| `get_message`    | Get single message details                                                  |
+| `search_threads` | Search emails with Gmail query syntax; omit `filter` for free-form search across all mail (incl. archived/processed) |
+| `get_thread`     | Get full thread with all messages (label names included)                    |
+| `get_message`    | Get single message details (label names included)                           |
 | `create_draft`   | Create email draft                                                          |
 | `list_labels`    | List all labels in an account                                               |
-| `update_thread`  | Add/remove labels (archive, read/unread, star, important, categories, etc.) |
+| `update_thread`  | Atomic thread changes in one call: AI status, defer (`deferUntil`), priority, labels (archive, categories, etc.) |
+| `cleanup_defer_labels` | Delete empty `AI/Defer/<date>` labels (housekeeping)                  |
 | `save_attachment`| Save attachment to disk (.context/attachments), return its path             |
 
 ### Multi-Account Usage

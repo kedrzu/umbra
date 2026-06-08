@@ -233,9 +233,9 @@ async function priorityLabels(
 // Resolve the label ops for setting a thread's priority: the id of the chosen
 // P/<n> (created if missing) plus the ids of every OTHER existing
 // P/* to strip, so the thread ends up with exactly one priority.
-// Shared by update_thread and defer_thread - every path that marks a thread
-// AI/Done also stamps it with a priority (the invariant: a processed thread is
-// always filterable by importance).
+// Used by update_thread - every path that marks a thread AI/Done also stamps it
+// with a priority (the invariant: a processed thread is always filterable by
+// importance).
 async function priorityOps(
   email: string,
   priority: string
@@ -257,12 +257,12 @@ async function priorityOps(
 
 // Resolve the label ops for setting a thread's AI status. A processed thread
 // carries exactly one status: AI/Done (handled) XOR AI/Triage (needs human).
-// AI/Defer/* is the parked form of done and is owned solely by defer_thread, so
-// setting a status via update_thread strips the opposite status AND any
-// AI/Defer/* (a thread marked plain done/triage is no longer parked). The MCP
-// owns this disjointness exactly like priorityOps owns the P/* one, so
-// the agent never hand-toggles AI/Done vs AI/Triage. Done can still co-occur
-// with defer (set together by defer_thread), but never with triage.
+// AI/Defer/* is the parked form of done (set via update_thread's 'deferUntil'),
+// so setting a plain status strips the opposite status AND any AI/Defer/* (a
+// thread marked plain done/triage is no longer parked). The MCP owns this
+// disjointness exactly like priorityOps owns the P/* one, so the agent never
+// hand-toggles AI/Done vs AI/Triage. Done can still co-occur with defer (set
+// together by deferUntil), but never with triage.
 async function statusOps(
   email: string,
   status: string
@@ -281,6 +281,40 @@ async function statusOps(
   }
   for (const l of await deferLabelsWithDates(email)) removeIds.push(l.id);
   return { name: target, addId, removeIds };
+}
+
+// Resolve the label ops for parking a thread until an effective date. The dated
+// label AI/Defer/<until> rides alongside AI/Done (so the thread drops out of the
+// daily "unprocessed" view yet stays filterable), and we strip AI/Triage plus any
+// earlier defer date so the thread carries exactly one effective date. The chosen
+// priority is applied separately by update_thread's priority block (deferred mail
+// ends up AI/Done, so the priority guard requires one). Used exclusively by
+// update_thread's 'deferUntil' param - the single atomic knob for thread changes.
+async function deferOps(
+  email: string,
+  until: string
+): Promise<{ name: string; addIds: string[]; removeIds: string[] }> {
+  if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) {
+    throw new Error(`Invalid 'deferUntil' date "${until}". Expected YYYY-MM-DD.`);
+  }
+  if (until < todayISO()) {
+    throw new Error(
+      `'deferUntil' date ${until} is in the past (today is ${todayISO()}). Defer dates must be today or later.`
+    );
+  }
+  const deferName = `${LABEL_DEFER_PREFIX}/${until}`;
+  const deferId = await ensureLabel(email, deferName);
+  const doneId = await ensureLabel(email, LABEL_DONE);
+  const removeIds: string[] = [];
+  for (const l of await deferLabelsWithDates(email)) {
+    if (l.name !== deferName) removeIds.push(l.id);
+  }
+  try {
+    removeIds.push(await resolveLabelNameToId(email, LABEL_TRIAGE));
+  } catch {
+    // AI/Triage label doesn't exist yet - nothing to strip
+  }
+  return { name: deferName, addIds: [deferId, doneId], removeIds };
 }
 
 // Translate a high-level processing status into a Gmail search clause. This lets
@@ -411,7 +445,7 @@ const tools: Tool[] = [
   {
     name: "search_threads",
     description:
-      "Search for email threads using Gmail search syntax. Filtering runs per-message under the hood (Gmail thread-level label negation is unreliable), then results are de-duplicated into threads. A thread is returned if ANY of its messages matches the query - so a new reply still surfaces its thread even when older messages carry labels you are excluding (e.g. -label:AI/Done). Threads are ordered by most recent matching message. Pass the optional 'filter' to restrict by AI processing status (the MCP appends the right AI/Done|AI/Triage clause) instead of writing -label: clauses yourself.",
+      "Search for email threads using Gmail search syntax. Filtering runs per-message under the hood (Gmail thread-level label negation is unreliable), then results are de-duplicated into threads. A thread is returned if ANY of its messages matches the query - so a new reply still surfaces its thread even when older messages carry labels you are excluding (e.g. -label:AI/Done). Threads are ordered by most recent matching message. Pass the optional 'filter' to restrict by AI processing status (the MCP appends the right AI/Done|AI/Triage clause) instead of writing -label: clauses yourself. OMIT 'filter' to run your raw 'query' verbatim across ALL mail - inbox, archived, and already-processed (AI/Done) threads alike. This free-form mode is fully supported and is the sanctioned way to look up ANY historical email for reference (e.g. 'from:bank subject:invoice older_than:1y'), independent of the processing pipeline.",
     inputSchema: {
       type: "object",
       properties: {
@@ -422,13 +456,13 @@ const tools: Tool[] = [
         query: {
           type: "string",
           description:
-            "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com', 'subject:meeting'). Acts as the scope; combined with 'filter' if provided.",
+            "Gmail search query (e.g., 'is:unread', 'from:example@gmail.com', 'subject:meeting', 'older_than:1y'). When 'filter' is provided it acts as the scope, ANDed with the pipeline clause; when 'filter' is omitted it runs verbatim across all mail.",
         },
         filter: {
           type: "string",
           enum: ["unprocessed", "triage", "pending", "done", "defer-due"],
           description:
-            "Optional AI processing status. 'unprocessed' = no AI/Done and no AI/Triage; 'triage' = has AI/Triage; 'pending' = no AI/Done (includes triage); 'done' = has AI/Done; 'defer-due' = threads deferred via defer_thread whose effective date (encoded in the AI/Defer/<date> label) is today or earlier - i.e. matured defers ready for re-evaluation. Omit for a raw query.",
+            "Optional AI processing status. 'unprocessed' = no AI/Done and no AI/Triage; 'triage' = has AI/Triage; 'pending' = no AI/Done (includes triage); 'done' = has AI/Done; 'defer-due' = deferred threads (via update_thread deferUntil) whose effective date (encoded in the AI/Defer/<date> label) is today or earlier - i.e. matured defers ready for re-evaluation. OMIT to search ALL mail (inbox + archived + AI/Done) with the raw 'query' unchanged - the sanctioned path for free-form historical/reference lookup.",
         },
         maxResults: {
           type: "number",
@@ -441,7 +475,7 @@ const tools: Tool[] = [
   {
     name: "get_message",
     description:
-      "Get full details of a specific email message. Returns processed markdown with quotes/signatures stripped by default.",
+      "Get full details of a specific email message. Returns processed markdown with quotes/signatures stripped by default, plus the message's label NAMES (e.g. AI/Done, AI/Defer/<date>, P/<n>, categories) so you can see its current state before correcting it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -465,7 +499,7 @@ const tools: Tool[] = [
   {
     name: "get_thread",
     description:
-      "Get all messages in a thread. Returns processed markdown with quotes/signatures stripped by default.",
+      "Get all messages in a thread. Returns processed markdown with quotes/signatures stripped by default, plus each message's label NAMES (e.g. AI/Done, AI/Defer/<date>, P/<n>, categories) so you can see the thread's current state before correcting it.",
     inputSchema: {
       type: "object",
       properties: {
@@ -545,7 +579,7 @@ const tools: Tool[] = [
   {
     name: "update_thread",
     description:
-      "Update a thread by adding/removing labels. Accepts label NAMES (not IDs) - e.g., 'Work/Projects', 'Newsletter'. System labels: INBOX, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS. STATUS: set the thread's AI status via the 'status' param (done|triage), NOT via addLabels/removeLabels - the MCP applies AI/Done XOR AI/Triage and strips the opposite plus any AI/Defer/*. Passing AI/Done, AI/Triage or AI/Defer/* in addLabels/removeLabels is rejected (use defer_thread for AI/Defer). Pass 'priority' to set a mutually-exclusive P/0..P/3 (the MCP swaps any existing priority for you). PRIORITY GUARD: if this call marks the thread AI/Done (status:'done'), a priority is required (pass 'priority' here, or the thread must already carry one) - every processed thread, incl. junk and sent mail, stays filterable by importance. ARCHIVING: the two archival markers 'Nieaktualne' (stale, keep for reference) and 'Śmieci' (safe to delete - a marker only, never deleted) are the ONLY way a thread leaves INBOX. Add one/both in addLabels and the MCP removes INBOX for you; they are orthogonal and combine, and layer on top of a category bucket (Zakupy, Finanse, ...). A plain category alone only tags the thread, leaving it in INBOX; removing INBOX without a marker is rejected.",
+      "The single atomic knob for thread changes: set AI status, defer, priority and labels in ONE call. Accepts label NAMES (not IDs) - e.g., 'Work/Projects', 'Newsletter'. System labels: INBOX, UNREAD, STARRED, IMPORTANT, CATEGORY_PERSONAL, CATEGORY_SOCIAL, CATEGORY_PROMOTIONS, CATEGORY_UPDATES, CATEGORY_FORUMS. STATUS: set the thread's AI status via 'status' (done|triage) or 'deferUntil' (park until a date), NOT via addLabels/removeLabels - the MCP owns AI/Done XOR AI/Triage and strips the opposite plus any AI/Defer/*. Passing AI/Done, AI/Triage or AI/Defer/* in addLabels/removeLabels is rejected (use 'status' / 'deferUntil'). RE-PROCESSING: to redo an already-processed thread, just overwrite it with its correct target state in one call (status/deferUntil + add/removeLabels + priority); there is no separate 'reset' - status/deferUntil already strip the opposite status and stale defers. Pass 'priority' to set a mutually-exclusive P/0..P/3 (the MCP swaps any existing priority for you). PRIORITY GUARD: if this call leaves the thread AI/Done (status:'done' or deferUntil), a priority is required (pass 'priority' here, or the thread must already carry one) - every processed thread, incl. junk and sent mail, stays filterable by importance. ARCHIVING: the two archival markers 'Nieaktualne' (stale, keep for reference) and 'Śmieci' (safe to delete - a marker only, never deleted) are the ONLY way a thread leaves INBOX. Add one/both in addLabels and the MCP removes INBOX for you; they are orthogonal and combine, and layer on top of a category bucket (Zakupy, Finanse, ...). A plain category alone only tags the thread, leaving it in INBOX; removing INBOX without a marker is rejected.",
     inputSchema: {
       type: "object",
       properties: {
@@ -561,52 +595,33 @@ const tools: Tool[] = [
           type: "array",
           items: { type: "string" },
           description:
-            "Label names to add to the thread (e.g., 'Newsletter', 'Zakupy'). Do NOT pass AI/Done, AI/Triage or AI/Defer/* here - use the 'status' param / defer_thread instead (rejected otherwise). Adding the archival marker 'Nieaktualne' and/or 'Śmieci' makes the MCP archive the thread (removes INBOX automatically).",
+            "Label names to add to the thread (e.g., 'Newsletter', 'Zakupy'). Do NOT pass AI/Done, AI/Triage or AI/Defer/* here - use the 'status' / 'deferUntil' params instead (rejected otherwise). Adding the archival marker 'Nieaktualne' and/or 'Śmieci' makes the MCP archive the thread (removes INBOX automatically).",
         },
         removeLabels: {
           type: "array",
           items: { type: "string" },
           description:
-            "Label names to remove from the thread (e.g., 'INBOX', 'Newsletter'). Do NOT pass AI/Done, AI/Triage or AI/Defer/* here - the MCP swaps AI status for you via the 'status' param (rejected otherwise).",
+            "Label names to remove from the thread (e.g., 'INBOX', 'Newsletter'). Do NOT pass AI/Done, AI/Triage or AI/Defer/* here - the MCP swaps AI status for you via the 'status' / 'deferUntil' params (rejected otherwise).",
         },
         status: {
           type: "string",
           enum: ["done", "triage"],
           description:
-            "Thread AI status. 'done' applies AI/Done (processed); 'triage' applies AI/Triage (needs human, stays in INBOX). The MCP makes them mutually exclusive: it adds the chosen one and strips the opposite plus any AI/Defer/*. status:'done' triggers the PRIORITY GUARD (a priority is then required). This is the ONLY way to set AI/Done/AI/Triage.",
+            "Thread AI status. 'done' applies AI/Done (processed); 'triage' applies AI/Triage (needs human, stays in INBOX). The MCP makes them mutually exclusive: it adds the chosen one and strips the opposite plus any AI/Defer/*. status:'done' triggers the PRIORITY GUARD (a priority is then required). This (or 'deferUntil') is the ONLY way to set AI/Done/AI/Triage. Cannot be combined with 'deferUntil' (which sets the status itself).",
+        },
+        deferUntil: {
+          type: "string",
+          description:
+            "Park the thread until an effective date YYYY-MM-DD (today or later). Adds AI/Defer/<date> + AI/Done and strips AI/Triage and any earlier defer date, so the thread leaves the daily 'unprocessed' view and resurfaces only via search_threads filter:'defer-due' once the date arrives. Combines atomically with addLabels/removeLabels/priority. Triggers the PRIORITY GUARD (a priority is required). Does NOT remove INBOX. Use for mail that is fine today but goes stale later (an event, deadline, offer validity). Cannot be combined with 'status' (deferUntil sets the AI status itself).",
         },
         priority: {
           type: "string",
           enum: ["P0", "P1", "P2", "P3"],
           description:
-            "Thread priority. The MCP applies P/<n> and removes any other P/* (disjointness guaranteed). REQUIRED whenever this call marks the thread AI/Done (status:'done') - including junk (Śmieci) and sent mail - unless the thread already carries a priority. P0 = critical/act today, P1 = high/days, P2 = normal/FYI, P3 = noise.",
+            "Thread priority. The MCP applies P/<n> and removes any other P/* (disjointness guaranteed). REQUIRED whenever this call leaves the thread AI/Done (status:'done' or deferUntil) - including junk (Śmieci) and sent mail - unless the thread already carries a priority. P0 = critical/act today, P1 = high/days, P2 = normal/FYI, P3 = noise.",
         },
       },
       required: ["account", "threadId"],
-    },
-  },
-  {
-    name: "defer_thread",
-    description:
-      "Park a thread until an effective date. Adds the dated label AI/Defer/<until> plus AI/Done and the chosen P/<n> (so it leaves the daily 'unprocessed' view yet stays filterable by importance) and strips AI/Triage, any earlier defer date and any other priority. The thread resurfaces only via search_threads filter:'defer-due' once 'until' has arrived. Use for mail that is fine today but goes stale later (an event, a deadline, an offer's validity).",
-    inputSchema: {
-      type: "object",
-      properties: {
-        account: { type: "string", description: "Email account" },
-        threadId: { type: "string", description: "Thread ID to defer" },
-        until: {
-          type: "string",
-          description:
-            "Effective date in YYYY-MM-DD (today or later). The thread re-surfaces via filter:'defer-due' on/after this date.",
-        },
-        priority: {
-          type: "string",
-          enum: ["P0", "P1", "P2", "P3"],
-          description:
-            "Required thread priority (P0 = critical … P3 = noise). A deferred thread is marked AI/Done, so it must carry a priority like every processed thread; it can be re-evaluated when the defer matures.",
-        },
-      },
-      required: ["account", "threadId", "until", "priority"],
     },
   },
   {
@@ -1188,6 +1203,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           rawBody
         );
 
+        // Map raw labelIds to names (AI/Done, AI/Defer/<date>, P/<n>, …) so the
+        // caller sees the message's actual state, not opaque "Label_xx" ids.
+        const msgLabels = await getLabelsForAccount(args?.account as string);
+        const msgIdToName = new Map(msgLabels.map((l) => [l.id, l.name]));
+
         return {
           content: [
             {
@@ -1201,7 +1221,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   to: getHeader(headers, "To"),
                   cc: getHeader(headers, "Cc"),
                   date: getHeader(headers, "Date"),
-                  labels: message.data.labelIds,
+                  labels: (message.data.labelIds || []).map(
+                    (id) => msgIdToName.get(id) || id
+                  ),
                   snippet: message.data.snippet,
                   body,
                   attachments:
@@ -1233,6 +1255,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           format: "full",
         });
 
+        // Map raw labelIds to names (AI/Done, AI/Defer/<date>, P/<n>, …) so the
+        // caller sees the thread's actual state, not opaque "Label_xx" ids.
+        const threadLabels = await getLabelsForAccount(args?.account as string);
+        const threadIdToName = new Map(threadLabels.map((l) => [l.id, l.name]));
+
         const messages = (thread.data.messages || []).map((msg) => {
           const headers = msg.payload?.headers;
           const subject = getHeader(headers, "Subject");
@@ -1244,7 +1271,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           return {
             id: msg.id,
-            labels: msg.labelIds,
+            labels: (msg.labelIds || []).map(
+              (id) => threadIdToName.get(id) || id
+            ),
             from: getHeader(headers, "From"),
             to: getHeader(headers, "To"),
             date: getHeader(headers, "Date"),
@@ -1353,12 +1382,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const removeLabels = (args?.removeLabels as string[]) || [];
         const priority = args?.priority as string | undefined;
         const status = args?.status as string | undefined;
+        const deferUntil = args?.deferUntil as string | undefined;
 
         // AI status labels are owned by the MCP, not the caller: AI/Done and
-        // AI/Triage are mutually exclusive and AI/Defer/* is set only by
-        // defer_thread. Let them through addLabels/removeLabels and a caller
-        // could leave a thread with both Done and Triage (or strip a defer by
-        // hand). Reject them and point to the right knob instead.
+        // AI/Triage are mutually exclusive and AI/Defer/* rides with AI/Done.
+        // Let them through addLabels/removeLabels and a caller could leave a
+        // thread with both Done and Triage (or strip a defer by hand). Reject
+        // them and point to the right knob ('status' / 'deferUntil') instead.
         const isManagedAiLabel = (n: string) =>
           /^AI\/(Done|Triage|Defer)(\/|$)/i.test(n);
         const offending = [...addLabels, ...removeLabels].filter(
@@ -1368,7 +1398,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           throw new Error(
             `Labels ${offending.join(
               ", "
-            )} are managed by the MCP, not addLabels/removeLabels. Set AI/Done or AI/Triage via the 'status' param (done|triage); use defer_thread for AI/Defer. To archive a thread add the bucket 'Nieaktualne' and/or 'Śmieci' in addLabels - the MCP removes INBOX for you.`
+            )} are managed by the MCP, not addLabels/removeLabels. Set AI/Done or AI/Triage via the 'status' param (done|triage), or AI/Defer via 'deferUntil'. To archive a thread add the bucket 'Nieaktualne' and/or 'Śmieci' in addLabels - the MCP removes INBOX for you.`
+          );
+        }
+
+        // deferUntil sets the thread's AI status itself (AI/Done + AI/Defer), so
+        // it can't ride alongside an explicit 'status' (done would be redundant,
+        // triage contradictory).
+        if (deferUntil && status) {
+          throw new Error(
+            `'deferUntil' already sets the thread's AI status (AI/Done + AI/Defer) - don't also pass 'status'. Use deferUntil alone to park the thread, or 'status' (done|triage) without deferUntil.`
           );
         }
 
@@ -1376,7 +1415,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           addLabels.length === 0 &&
           removeLabels.length === 0 &&
           !priority &&
-          !status
+          !status &&
+          !deferUntil
         ) {
           return {
             content: [
@@ -1411,13 +1451,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         // Status: add the chosen AI/Done|AI/Triage and strip the opposite plus
-        // any AI/Defer/* so the thread carries exactly one AI status (defer is
-        // re-applied only by defer_thread). Same shape as the priority block.
+        // any AI/Defer/* so the thread carries exactly one AI status. Same shape
+        // as the priority block.
         let statusName: string | undefined;
         if (status) {
           const ops = await statusOps(account, status);
           statusName = ops.name;
           if (!addLabelIds.includes(ops.addId)) addLabelIds.push(ops.addId);
+          for (const id of ops.removeIds) {
+            if (!removeLabelIds.includes(id)) removeLabelIds.push(id);
+          }
+        }
+
+        // Defer: park the thread until a date - adds AI/Defer/<date> + AI/Done
+        // and strips AI/Triage + any earlier defer date. Rides on AI/Done, so
+        // the priority guard below requires a priority just like status:'done'.
+        let deferName: string | undefined;
+        if (deferUntil) {
+          const ops = await deferOps(account, deferUntil);
+          deferName = ops.name;
+          for (const id of ops.addIds) {
+            if (!addLabelIds.includes(id)) addLabelIds.push(id);
+          }
           for (const id of ops.removeIds) {
             if (!removeLabelIds.includes(id)) removeLabelIds.push(id);
           }
@@ -1439,7 +1494,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           n.toLowerCase() === LABEL_JUNK.toLowerCase();
         const archiving = removeLabels.some((l) => l.toUpperCase() === "INBOX");
         const addingMarker = addLabels.some(isArchivalMarker);
-        const addingDone = status === "done";
+        const addingDone = status === "done" || !!deferUntil;
         if (archiving || addingDone || addingMarker) {
           const meta = await gmail.users.threads.get({
             userId: "me",
@@ -1461,6 +1516,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
           if (priorityName) resulting.add(priorityName);
           if (statusName) resulting.add(statusName);
+          // Deferring lands the thread on AI/Done (+ the dated defer label), so
+          // the priority guard treats it like any other processed thread.
+          if (deferName) {
+            resulting.add(LABEL_DONE);
+            resulting.add(deferName);
+          }
 
           const resultingHasMarker = [...resulting].some(isArchivalMarker);
           if (resultingHasMarker) {
@@ -1505,6 +1566,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         if (statusName) {
           changes.push(`status: ${statusName}`);
         }
+        if (deferName) {
+          changes.push(`deferred until ${deferUntil} (${LABEL_DONE} +${deferName})`);
+        }
         if (addLabels.length > 0) {
           changes.push(`added: ${addLabels.join(", ")}`);
         }
@@ -1520,72 +1584,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: "text",
               text: `Updated thread ${threadId}: ${changes.join("; ")}`,
-            },
-          ],
-        };
-      }
-
-      case "defer_thread": {
-        const account = args?.account as string;
-        const gmail = getGmailClient(account);
-        const threadId = args?.threadId as string;
-        const until = args?.until as string;
-        const priority = args?.priority as string;
-
-        if (!until || !/^\d{4}-\d{2}-\d{2}$/.test(until)) {
-          throw new Error(
-            `Invalid 'until' date "${until}". Expected YYYY-MM-DD.`
-          );
-        }
-        if (until < todayISO()) {
-          throw new Error(
-            `'until' date ${until} is in the past (today is ${todayISO()}). Defer dates must be today or later.`
-          );
-        }
-        if (!priority) {
-          throw new Error(
-            `defer_thread requires 'priority' (P0..P3). A deferred thread is marked ${LABEL_DONE}, so it must carry a priority like every processed thread.`
-          );
-        }
-
-        // Add the dated defer label + AI/Done + the chosen priority; strip
-        // AI/Triage, any other (stale) defer label and any other P/* so
-        // the thread carries exactly one effective date and one priority.
-        const deferName = `${LABEL_DEFER_PREFIX}/${until}`;
-        const deferId = await ensureLabel(account, deferName);
-        const doneId = await resolveLabelNameToId(account, LABEL_DONE);
-        const prio = await priorityOps(account, priority);
-
-        const others = (await deferLabelsWithDates(account))
-          .filter((l) => l.name !== deferName)
-          .map((l) => l.id);
-        let triageId: string | undefined;
-        try {
-          triageId = await resolveLabelNameToId(account, LABEL_TRIAGE);
-        } catch {
-          triageId = undefined;
-        }
-        const removeLabelIds = [
-          ...others,
-          ...(triageId ? [triageId] : []),
-          ...prio.removeIds,
-        ];
-
-        await gmail.users.threads.modify({
-          userId: "me",
-          id: threadId,
-          requestBody: {
-            addLabelIds: [deferId, doneId, prio.addId],
-            removeLabelIds:
-              removeLabelIds.length > 0 ? removeLabelIds : undefined,
-          },
-        });
-
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Deferred thread ${threadId} until ${until} (+${deferName}, +${LABEL_DONE}, ${prio.name}; resurfaces via filter:"defer-due" on/after ${until}).`,
             },
           ],
         };
