@@ -1276,6 +1276,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ),
             from: getHeader(headers, "From"),
             to: getHeader(headers, "To"),
+            cc: getHeader(headers, "Cc"),
             date: getHeader(headers, "Date"),
             subject,
             snippet: msg.snippet,

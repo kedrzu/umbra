@@ -80,7 +80,10 @@ When you process emails, review calendar, or work with tasks, **always** conside
 2. **NEVER delete anything** - No emails, tasks, calendar events, or notes
 3. **NEVER update existing items** in Todoist or Calendar - Only create new ones
 4. **NEVER modify my notes** - Only append to them or write to `Asystent/` folder
-5. **Tworzenie zadań Todoist — autonomicznie**: gdy mail wyraźnie wymaga działania (`Wymaga działania`/`Wymaga odpowiedzi`), **twórz task od razu, bez pytania** — we wszystkich skillach (`/email-review`, `/email-triage`, `/email-analysis`). Task: opis + Gmail-link + priorytet, powiązany labelką Gmail `TODO/<id>`, śledzony cyklem defer. Potrzebuję agenta autonomicznego, nie proszącego o akceptację każdej akcji. Nadal **nigdy nie modyfikujemy ani nie ukończamy** istniejących zadań — to robi użytkownik. (Zmiany **reguł rulebooka** pozostają na podwójnym opt-in — to inna kategoria niż akcja na mailu/tasku.)
+5. **Maile akcyjne — autonomicznie, mechanika zależna od konta**: gdy mail wyraźnie wymaga działania (`Wymaga działania`/`Wymaga odpowiedzi`), działaj **od razu, bez pytania** — we wszystkich skillach (`/email-review`, `/email-triage`, `/email-analysis`).
+   - **Personal** (kedrzu@gmail.com): **twórz task Todoist** (opis + Gmail-link + priorytet, powiązany labelką Gmail `TODO/<id>`, śledzony cyklem defer).
+   - **Work** (kedrzu@sigma.clinic): **NIE twórz żadnego taska** (ani Todoist, ani Linear) — nadaj tylko marker `Wymaga działania`/`Wymaga odpowiedzi` (+ `IMPORTANT`) i `AI/Done`; mail zostaje w INBOX do ręcznej obsługi i wraca do pipeline'u, gdy dojdzie nowa wiadomość.
+   Potrzebuję agenta autonomicznego, nie proszącego o akceptację każdej akcji. Nadal **nigdy nie modyfikujemy ani nie ukończamy** istniejących zadań — to robi użytkownik. (Zmiany **reguł rulebooka** pozostają na podwójnym opt-in — to inna kategoria niż akcja na mailu/tasku.)
 6. **ALWAYS ask before**:
    - Creating calendar events
    - Applying labels to important emails
@@ -329,7 +332,7 @@ Twoje robocze notatki należą do `Asystent/`. Modyfikuj notatki użytkownika ty
 - View all tasks and projects
 - Create new tasks
 - Cannot update, complete, or delete tasks
-- **Maile akcyjne** (`Wymaga działania`/`Wymaga odpowiedzi`) → automatyczny task powiązany labelką Gmail `TODO/<id>`; ukończenie taska → mail oznaczany `Nieaktualne` (cykl defer). Projekt wg konta: Personal → „Bieżące", Work → „SigmaClinic". Szczegóły w rulebookach EmailWorkflow.
+- **Maile akcyjne** (`Wymaga działania`/`Wymaga odpowiedzi`) — mechanika **zależna od konta**: **Personal** → automatyczny task Todoist (projekt „Bieżące") powiązany labelką Gmail `TODO/<id>`; ukończenie taska → mail oznaczany `Nieaktualne` (cykl defer). **Work** → **bez tasków**, tylko marker `Wymaga …` + `AI/Done` (mail zostaje w INBOX do ręcznej obsługi). Szczegóły w rulebookach EmailWorkflow.
 
 ### Obsidian Vault
 - **Bezpośredni dostęp**: Pełny read/write do plików via Read/Edit/Write tools
@@ -397,7 +400,9 @@ Reguły klasyfikacji i zbiór labelek żyją w **rulebookach** (jedyne źródło
 
 **Defer i Nieaktualne** (maile z datą ważności): mail dziś OK, ale tracący sens w przyszłości → `update_thread(threadId, deferUntil:"<data>", priority)` nakłada `AI/Defer/<data>` + `AI/Done`, więc znika z `unprocessed` i wraca dopiero gdy data minie (przez `filter:"defer-due"`). Po dojrzeniu agent re-ocenia: dalej aktualny → re-defer na nową datę (`update_thread(deferUntil:"<nowa data>", priority)`), nieaktualny → `update_thread(status:"done", addLabels:["Nieaktualne", …], priority)` (MCP archiwizuje, dorzuca `Śmieci` jeśli reguła tak mówi). Data efektywna z treści maila, brak → +14 dni. Defer/Nieaktualne **tylko wg reguły z rulebooka** (nie z założenia); niejasne → triaż. Puste labelki `AI/Defer/<data>` sprząta `cleanup_defer_labels`.
 
-**Akcje → Todoist (cykl defer)**: maile `Wymaga działania`/`Wymaga odpowiedzi` dostają **automatycznie** (bez pytania) **task Todoist** (opis + Gmail-link + priorytet p1..p4 + ew. termin), powiązany **niezależną** labelką Gmail `TODO/<taskId>`. Mail jest deferowany, więc autopilot nie sprawdza za każdym razem — przy dojrzeniu deferu robi re-check: task zrobiony → `update_thread(status:"done", addLabels:["Nieaktualne", …], priority)`, otwarty → re-defer (termin taska lub +7 dni). Projekt wg konta (Personal → „Bieżące", Work → „SigmaClinic"), sekcja wg kategorii. Mechanika w rulebookach (sekcja „Akcje → Todoist").
+**Akcje → Todoist / markery Wymaga (mechanika zależna od konta)**:
+- **Personal** (cykl defer): maile `Wymaga działania`/`Wymaga odpowiedzi` dostają **automatycznie** (bez pytania) **task Todoist** (opis + Gmail-link + priorytet p1..p4 + ew. termin), powiązany **niezależną** labelką Gmail `TODO/<taskId>`. Mail jest deferowany, więc autopilot nie sprawdza za każdym razem — przy dojrzeniu deferu robi re-check: task zrobiony → `update_thread(status:"done", addLabels:["Nieaktualne", …], priority)`, otwarty → re-defer (termin taska lub +7 dni). Projekt „Bieżące", sekcja wg kategorii. Mechanika w `EmailWorkflow-Personal.md` (sekcja „Akcje → Todoist").
+- **Work** (bez tasków): maile akcyjne dostają **tylko** marker `Wymaga działania`/`Wymaga odpowiedzi` (+ `IMPORTANT`) + `AI/Done` z priorytetem — **żadnego taska** (ani Todoist, ani Linear), **bez defer**. Mail zostaje w INBOX do ręcznej obsługi i wraca do pipeline'u dopiero gdy dojdzie nowa wiadomość (filtr per-wiadomość MCP), wtedy re-ocena zdejmuje `Wymaga …`, gdy sprawa domknięta. Mechanika w `EmailWorkflow-Work.md` (sekcja „Akcje → markery Wymaga (BEZ tasków)").
 
 **Faktury → folder Rachunki**: faktury/paragony za **trwałe** dobra (elektronika, ubrania, buty, AGD, narzędzia, meble) i kwotą **>100 zł** zapisywane do folderu `Rachunki/` w vault (PDF + notatka `typ: rachunek`) na potrzeby gwarancji/reklamacji; nietrwałe (jedzenie, suplementy, kosmetyki) pomijane. Folder vault `Rachunki/` ≠ labelka Gmail `Rachunki` (operatorzy). Mechanika w rulebookach (sekcja „Faktury → folder Rachunki").
 
