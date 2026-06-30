@@ -497,7 +497,7 @@ When generating the daily briefing (`Inbox/Dashboard-YYYY-MM-DD.md`):
 ### YYYY-MM-DD (Dzień tygodnia)
 - [ ] **[Konto]** Temat emaila
   - Od: sender@example.com
-  - Link: [Otwórz w Gmail](https://mail.google.com/mail/u/EMAIL/#inbox/THREAD_ID)
+  - Link: [Otwórz w Gmail](https://mail.google.com/mail/?authuser=EMAIL#inbox/THREAD_ID)
   - Kontekst: Dlaczego wymaga follow-up
   - Dodano: YYYY-MM-DD
 
@@ -508,5 +508,5 @@ When generating the daily briefing (`Inbox/Dashboard-YYYY-MM-DD.md`):
 ```
 
 Linki Gmail:
-- Personal: `https://mail.google.com/mail/u/kedrzu@gmail.com/#inbox/{threadId}`
-- Work: `https://mail.google.com/mail/u/kedrzu@sigma.clinic/#inbox/{threadId}`
+- Personal: `https://mail.google.com/mail/?authuser=kedrzu@gmail.com#inbox/{threadId}`
+- Work: `https://mail.google.com/mail/?authuser=kedrzu@sigma.clinic#inbox/{threadId}`

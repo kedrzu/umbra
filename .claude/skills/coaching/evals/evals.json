@@ -1,0 +1,26 @@
+{
+  "skill_name": "coaching",
+  "evals": [
+    {
+      "id": 0,
+      "name": "otwarcie-sesji",
+      "prompt": "zrób mi sesję coachingu",
+      "expected_output": "Cicha faza przygotowania (czyta Dziennik od ostatniej sesji + AnalizaCzasu + pamięć), potem zgrabne otwarcie: rozliczenie poprzednich zobowiązań jeśli były, 2-3 propozycje tematu z dowodem (cytat/dane), otwarte drzwi na inny temat, i JEDNO pierwsze pytanie na koniec — bez zalewania raportem, bez serii pytań, bez pisania plików.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "konkretny-temat",
+      "prompt": "pomóż mi się zastanowić, czemu ciągle odkładam pracę na popołudnie i przez to nic nie robię rano",
+      "expected_output": "Przygotowanie + otwarcie skupione na temacie zgłoszonym przez użytkownika (a nie własnych propozycjach), ustalenie celu sesji, pierwsze potężne pytanie, stop.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "utknalem",
+      "prompt": "czuję że kręcę się w kółko ostatnio, pogadajmy",
+      "expected_output": "Empatyczne otwarcie, użycie kontekstu z dziennika jako lustra (delikatnie), ustalenie o czym chce rozmawiać, jedno pytanie, stop.",
+      "files": []
+    }
+  ]
+}
