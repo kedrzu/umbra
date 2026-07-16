@@ -93,6 +93,7 @@ Główny agent orkiestruje + prowadzi interakcję (`AskUserQuestion`, podwójne 
 
 ## Bezpieczeństwo
 
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nadawca / organizacja / wewnętrzny termin / dokument, który **zmienia klasyfikację lub akcję**, a jest nieczytelny nawet po obejrzeniu maila i PDF oraz research w vault (qmd/Read digital twina) → **dopytaj użytkownika w trakcie sesji** i **utrwal** (osoba → `Kontakty/`, kontekst zawodowy → `Work.md`, reszta → `Insights.md`). To **inna rzecz niż podwójne opt-in na regułę**: tu **rozumiesz świat**, żeby dobrze sklasyfikować; tam **zmieniasz rulebook**. Rozumienie kontekstu nie wymaga opt-in.
 - **Podwójne opt-in TYLKO na zapis reguły** (w trybie projektowania — całego systemu reguł). Akcje na mailach/taskach wg istniejących reguł są autonomiczne — nie pytaj o każdy mail „czy załatwione". Feedback ≠ zgoda (dla reguł).
 - **Nigdy nie wysyłaj** maili — tylko drafty. **Nigdy nie usuwaj**; nie modyfikuj ani nie ukańczaj istniejących tasków.
 - Po obsłużeniu wątku z triażu zawsze `update_thread(status:"done", …)` (MCP zdejmie `AI/Triage`). Status `AI/Done`/`AI/Triage` ustawiasz wyłącznie parametrem `status` — nigdy ręcznie. Maile wysłane → lekka ścieżka, nigdy `AI/Triage`.

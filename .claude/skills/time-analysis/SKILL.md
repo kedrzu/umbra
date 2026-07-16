@@ -122,11 +122,13 @@ Reguły pól (skrypt je egzekwuje):
 
 ## Proces
 
-1. **Ustal zakres.**
-   - Jeśli użytkownik podał zakres (np. `2026-06-10..2026-06-17` albo „ostatni tydzień") — użyj go.
-   - **Domyślnie — przyrostowo:** `ls ./obsidian/Asystent/AnalizaCzasu/`, znajdź najnowszy raport, odczytaj z jego frontmatter pole `zakres`. Analizuj **od dnia po końcu tego zakresu → do najnowszego dnia w Dzienniku**.
-   - **Pierwszy przebieg** (folder pusty/nie istnieje) — cały dostępny Dziennik.
-   - Pobierz realny timestamp uruchomienia: `Bash(date "+%Y%m%d-%H%M")` i `Bash(date "+%Y-%m-%dT%H:%M:%S")`.
+1. **Ustal zakres.** Pobierz najpierw „dzisiaj": `Bash(date "+%Y-%m-%d")` oraz timestamp uruchomienia: `Bash(date "+%Y%m%d-%H%M")` i `Bash(date "+%Y-%m-%dT%H:%M:%S")`.
+   - **Analizuj wyłącznie pełne (zakończone) dni — koniec zakresu to najpóźniej WCZORAJ.** Dzień `>= dzisiaj` jest poza zakresem: dzień się jeszcze nie skończył, Dziennik ma wpisy tylko do bieżącej chwili, więc alokacja luk czasowych (serce Etapu 1) nie miałaby pełnego budżetu doby. Co gorsza — gdybyś policzył dziś niepełny dzień, **kursor przyrostowy przesunie się za niego i pełna wersja nigdy nie zostanie doanalizowana**. Dlatego dzisiaj zawsze czeka na jutro. Nie komentuj „dzień X niepełny" — po prostu go nie bierz.
+   - **Domyślnie — przyrostowo:** `ls ./obsidian/Asystent/AnalizaCzasu/`. Kursor wyznacz po analizie o **najpóźniejszym `zakres` (end)** w frontmatterze (NIE po najnowszym `run` — backfill o starszym/równym zakresie nie może cofać kursora). Start = dzień po tym `end`. Koniec = **min(najnowszy dzień w Dzienniku, wczoraj)**.
+   - **Self-heal starych analiz:** jeśli wybrana analiza ma `zakres.end >= data(run)` (czyli liczyła własny, wtedy-niepełny dzień), **włącz ten `end` ponownie** do nowego zakresu (start = `end`, nie `end + 1`) — był niepełny, gdy go policzono, więc należy mu się uczciwa, całodniowa analiza.
+   - **Brak nowych pełnych dni** (start > koniec — wszystko do wczoraj już przeliczone): zakończ grzecznie komunikatem „brak nowych pełnych dni — najnowszy pełny dzień (`<data>`) już przeanalizowany". Nie analizuj dzisiaj „na zapas".
+   - **Jawny zakres od użytkownika wygrywa** nad regułą „do wczoraj". Jeśli obejmuje dzisiaj — wykonaj, ale dopisz w raporcie notkę, że ostatni dzień jest niepełny (świadomy wybór użytkownika).
+   - **Pierwszy przebieg** (folder pusty/nie istnieje) — cały dostępny Dziennik **do wczoraj włącznie**.
 
 2. **Wylistuj i wczytaj dni.** `ls ./obsidian/Dziennik/`, ustal które pliki wpadają w zakres. Brakujące dni → do `warnings` (nie interpoluj!). Każdy dzień `Read`.
 
@@ -261,7 +263,9 @@ Tracked łącznie: **X h** · Untracked: **Y min** · Pokrycie: **Z%**
 - **Nie wymyślaj minut.** Nieznane → `type: untracked`. Brak danych za dzień → `warnings`, nie interpolacja.
 - **Kotwice w tekście są miękkie**, nagłówek `## HH:MM` jest twardy (transkrypcja myli zegar).
 - **Kategorie wyłaniaj z danych** w Etapie 2 — nie narzucaj gotowej taksonomii.
+- **Analizuj wyłącznie zakończone dni** — domyślnie kończ na wczoraj, dzisiejszy dzień pomijaj (niepełny + paliłby się w kursorze przyrostowym). Wyjątek: użytkownik jawnie poprosił o zakres obejmujący dziś.
 - **Zachowuj wszystkie pliki** (timestamp w nazwie) — stare analizy zostają do porównań, niczego nie nadpisuj.
 - **Każdy wiersz** ma `evidence` (cytat) i `confidence`.
 - Jeśli skrypt zwróci kod ≠ 0 lub poważne flagi — popraw log i odpal ponownie, zanim napiszesz raport.
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznana czynność / osoba / miejsce / kryptonim we wpisie, której nie umiesz skategoryzować → najpierw `grep` po Dzienniku i `qmd` po vault. Jeśli dalej ślepo i to realnie utrudnia kategoryzację — **zbierz niejasności i zapytaj zbiorczo** (na końcu, nie przerywaj rekonstrukcji per wpis), potem **utrwal** (osoba → `Kontakty/`, reszta → `Insights.md`). Read-only Dziennika to nie zmienia — piszesz tylko do pamięci i `AnalizaCzasu/`.
 - To analiza **read-only** Dziennika — nie edytujesz wpisów użytkownika, piszesz wyłącznie do `Asystent/AnalizaCzasu/`.

@@ -128,6 +128,7 @@ Te same mechanizmy co w `/email-review` i **tak samo autonomiczne** — gdy wąt
 
 ## Bezpieczeństwo
 
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nadawca / organizacja / wewnętrzny termin / dokument, który **zmienia klasyfikację lub akcję**, a jest nieczytelny nawet po obejrzeniu maila i PDF oraz research w vault (qmd/Read digital twina) → **dopytaj użytkownika w trakcie sesji** (i tak jesteście w dialogu) i **utrwal** (osoba → `Kontakty/`, kontekst zawodowy → `Work.md`, reszta → `Insights.md`). To **inna rzecz niż podwójne opt-in na regułę**: tu **rozumiesz świat**, żeby dobrze sklasyfikować; tam **zmieniasz rulebook**. Rozumienie kontekstu nie wymaga opt-in — zmiana reguły wymaga.
 - **Podwójne opt-in TYLKO na zmianę reguły** rulebooka (patrz sekcja wyżej). Akcje na mailach/taskach wg istniejących reguł są autonomiczne — nie pytaj o każdy mail. Feedback ≠ zgoda (dla reguł).
 - **Nigdy nie wysyłaj** maili — tylko drafty.
 - **Nigdy nie usuwaj** maili/zadań/wydarzeń/notatek; **nie** modyfikuj ani **nie** ukańczaj istniejących tasków (to robi użytkownik).

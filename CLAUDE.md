@@ -72,6 +72,25 @@ When you process emails, review calendar, or work with tasks, **always** conside
 - Używaj `qmd` do wyszukiwania konkretnych osób po imieniu/emailu
 - Ładuj profil kontaktu tylko gdy potrzebujesz go przeczytać lub zaktualizować
 
+### Luki kontekstowe — najpierw research, potem dopytaj i zapisz
+
+Nieustannie natrafiasz na rzeczy, które **nie mają sensu bez wiedzy, którą zna tylko użytkownik**: wewnętrzny kryptonim projektu w mailu, skrót/żargon, nieznana organizacja, załącznik-dokument, nazwisko lub miejsce we wpisie Dziennika, odwołanie do sprawy. Zamiast zgadywać albo cicho pomijać — **rozwiąż taką lukę raz i utrwal**, żeby nigdy więcej o nią nie pytać. To nie jest odstępstwo od autonomii, tylko rdzeń budowy digital twina: każda odpowiedź na „co to jest?" staje się trwałą cegłą pamięci.
+
+Kolejność jest twarda, bo właśnie ona chroni autonomię (pytasz dopiero, gdy naprawdę nie ma innego wyjścia):
+
+1. **Najpierw sam obejrzyj materiał.** Otwórz załącznik/mail/dokument/wpis Dziennika. Nie pytaj o to, co możesz przeczytać.
+2. **Zrób research w vault.** `qmd` (semantic+keyword) po całym vault; `grep` po Dzienniku (bywa poza indeksem qmd); `Read` digital twina (`Kontakty/`, `Projects/`, `Work.md`, `Personal.md`, `Insights.md`, `Timeline.md`). To ten sam krok, który dziś robi `coaching` („fakty sprawdzasz sam, nie zgadujesz").
+3. **Vault wyjaśnia → jedziesz dalej autonomicznie** (i ew. dociągasz nowo poznany fakt do pamięci).
+4. **Vault nie wie i luka realnie blokuje dobre wykonanie zadania → dopytaj użytkownika.** Reguły: pytaj **tylko** o wiedzę dostępną wyłącznie u niego; **grupuj** pytania (nie przesłuchanie punkt-po-punkcie); bądź konkretny — nazwij pojęcie/dokument, gdzie na nie trafiłeś i czemu jest istotne. Luka kosmetyczna, nieblokująca → nie pytaj, leć dalej.
+5. **Zapisz odpowiedź do vault**, żeby więcej nie pytać. Routing wg tematu: osoba → `Kontakty/<Imię-Nazwisko>.md`; projekt → `Asystent/Memory/Projects/<Nazwa>.md` (+ wpis w `Projects.md`); żargon/skrót/organizacja/narzędzie/typ dokumentu → `Work.md` (kontekst zawodowy) / `Personal.md` (prywatny) / `Insights.md` (obserwacje, wzorce, pozostałe); zdarzenie z datą → `Timeline.md`. Linkuj `[[...]]`, gdy pasuje. Zapis do `Asystent/`/`Kontakty/`/`Projects/` jest autonomiczny (patrz „Writing to the Vault").
+
+**Czym to NIE jest (granice):**
+- To **nie** proszenie o zgodę na akcję — działania na mailach/taskach wg reguł zostają autonomiczne (Safety & Permissions: „agent autonomiczny, nie proszący o akceptację każdej akcji"). Tu rozumiesz świat, nie prosisz o pozwolenie na ruch.
+- To **nie** podwójny opt-in na zmianę reguły rulebooka — to osobna kategoria.
+- To **nie** pytania faktograficzne, które rozstrzyga sam materiał albo vault — najpierw krok 1 i 2.
+
+**Interaktywne vs autonomiczne:** pytają **tylko skille interaktywne** (jawnie odpalane: `/coaching`, `/email-analysis`, `/email-triage`, `/time-analysis`, `/daily-briefing`, `/weekly-review`, `/research`, `/do-your-job`, `/memory-update`, `/unsubscribe-review`). Przepływy **autonomiczne** (`/email-review`, oraz `email-review` uruchamiany w środku `/do-your-job`) **nigdy nie blokują** — realna luka kontekstowa trafia do `AI/Triage` z zapisanym powodem i jest rozstrzygana później w `/email-triage` (który dopytuje i utrwala).
+
 ## Critical Rules
 
 ### Safety & Permissions

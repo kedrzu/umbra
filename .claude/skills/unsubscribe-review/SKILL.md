@@ -96,3 +96,4 @@ Find and clean up unwanted email subscriptions across all accounts.
 - Don't unsubscribe from anything work-related without explicit approval
 - Keep a record of unsubscribed senders in Asystent/Memory
 - Label processed emails for tracking
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nadawca z pogranicza, gdzie nie wiesz, czy subskrypcja jest chciana (a `qmd`/`Read` pamięci nie rozstrzyga) → dopytaj (skill i tak pyta o zgodę) i **utrwal** rozstrzygnięcie jako preferencję (`Preferences.md`/`Insights.md`), żeby następnym razem nie pytać.

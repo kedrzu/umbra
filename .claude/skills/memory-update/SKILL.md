@@ -63,6 +63,7 @@ Kontakty/               # Osobny folder w vault (Obsidian Bases)
      - Email workflow strategy → `EmailWorkflow-Personal.md` or `EmailWorkflow-Work.md`
    - Is this new or an update to existing?
    - Does this connect to other information? (cross-reference!)
+   - **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): jeśli zapisywana informacja odwołuje się do czegoś niejasnego (osoba, kryptonim, skrót, dokument), którego nie rozumiesz — **najpierw research** (`qmd`/`Read` digital twina), a gdy vault milczy i to blokuje sensowny zapis — **dopytaj użytkownika**. Lokalizację docelową i tak wybierasz wg routingu wyżej (osoba → `Kontakty/`, projekt → `Projects/`, reszta → `Work.md`/`Personal.md`/`Insights.md`).
 
 2. **For People (Kontakty)**
 

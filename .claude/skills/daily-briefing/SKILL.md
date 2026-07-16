@@ -212,3 +212,4 @@ Gdy użytkownik wskaże które przypomnienia są załatwione:
 - Przypomnienia weryfikuj zbiorczo, nie pojedynczo
 - Zawsze twórz notatkę Dashboard w Obsidian
 - Aktualizuj Digital Twin Memory przy każdym uruchomieniu
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznany uczestnik spotkania / projekt / skrót w kalendarzu, zadaniach lub mailu → najpierw `qmd`/`Read` digital twina. Jeśli dalej niejasne i blokuje sensowny briefing — dopytaj (zbiorczo, przy prezentacji) i **utrwal** (osoba → `Kontakty/`, projekt → `Projects.md`, reszta → `Insights.md`).

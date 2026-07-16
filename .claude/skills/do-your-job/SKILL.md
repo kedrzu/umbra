@@ -136,4 +136,5 @@ Based on your day, I suggest:
 - Adapt based on time of day (morning vs afternoon)
 - Be proactive but not overwhelming
 - Ask permission before creating tasks/events
+- **Luki kontekstowe** wg protokołu CLAUDE.md „Luki kontekstowe": kroki interaktywne (briefing, przegląd) mogą dopytać o niejasny kontekst i **utrwalić** go w pamięci; ale gdy wewnątrz rutyny odpalasz `email-review`, ta część zostaje **autonomiczna** — luka nie blokuje, tylko → `AI/Triage` z powodem (rozstrzygnie `/email-triage`).
 - Update memory with anything significant learned

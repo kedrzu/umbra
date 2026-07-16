@@ -91,3 +91,4 @@ Foldery w vault:
 - If nothing found in vault, say so clearly
 - Suggest external research if vault doesn't have the answer
 - Create research note only for substantial findings
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): gdy odpowiedź zależy od kontekstu, którego **nie ma w vault** (kryptonim, skrót, osoba, dokument), nie poprzestawaj na raportowaniu tego w „Gaps" — **dopytaj użytkownika** i **utrwal** odpowiedź (osoba → `Kontakty/`, reszta → `Insights.md`/temat), żeby kolejny research już to miał. Najpierw jednak wyczerp `qmd`/`Read` — pytasz dopiero, gdy vault milczy.

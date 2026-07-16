@@ -123,6 +123,8 @@ Status nakładasz **wyłącznie** parametrem `status` w `update_thread` — nigd
 
 Jeśli wątek był wcześniej `AI/Triage`, a teraz jest w pełni obsłużony: po prostu `update_thread(status:"done", priority: …)` — MCP sam zdejmie `AI/Triage`. `update_thread` nakłada label na wszystkie wiadomości wątku.
 
+**Luka kontekstowa = prawidłowy powód `AI/Triage`** (autopilot **nie pyta** — protokół CLAUDE.md „Luki kontekstowe" dla przepływów autonomicznych): nadawca/termin/dokument nieczytelny nawet po obejrzeniu treści+PDF i research w vault → `status:"triage"` + zapisany powód, leć dalej. Rozstrzygnie i utrwali to interaktywny `/email-triage`. Nie blokuj i nie zgaduj.
+
 ## Priorytety (P/0..P/3)
 
 **Każdy przetwarzany wątek dostaje dokładnie jeden priorytet** — bez wyjątków. Dotyczy klasyfikacji, **śmieci, Nieaktualne, deferów i poczty wysłanej** (lekka ścieżka). MCP **wymusza** to twardo: każde nałożenie `AI/Done` (przez `update_thread`, też przy `deferUntil`) wymaga priorytetu, a etykiety są **rozłączne** — MCP sam zdejmuje poprzedni `P/*`. Priorytet podajesz parametrem `priority` z wartością **`P0`/`P1`/`P2`/`P3`** (MCP mapuje ją na label `P/0`…`P/3`), nie ręcznym labelem.

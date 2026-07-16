@@ -134,3 +134,4 @@ Items that need attention:
 - Ask about stalled projects
 - Help identify what to drop or delegate
 - Be honest about overcommitment if observed
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznany projekt / osoba / zobowiązanie wyłonione z tygodnia → najpierw research w vault (`qmd`/`Read`). Jeśli dalej niejasne i blokuje przegląd — dopytaj w interaktywnej rozmowie i **utrwal w kroku „Digital Twin Memory Update"** (osoba → `Kontakty/`, projekt → `Projects.md`, reszta → `Insights.md`/`Work.md`).
