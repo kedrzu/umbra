@@ -23,7 +23,18 @@
         "127.0.0.1",
         "ai.todoist.net",
         "todoist.net",
-        "*.anthropic.com"
+        "*.anthropic.com",
+        "*.google.com",
+        "*.gstatic.com",
+        "*.googleapis.com",
+        "*.skyscanner.net",
+        "*.skyscanner.pl",
+        "*.skyscanner.com",
+        "*.booking.com",
+        "*.airbnb.pl",
+        "*.airbnb.com",
+        "*.kayak.pl",
+        "*.kayak.com"
       ],
       "allowLocalBinding": false
     }
@@ -66,6 +77,7 @@
 
       "mcp__qmd__*",
       "mcp__obsidian-search__*",
+      "mcp__playwright__*",
       "Read(./obsidian/*)",
       "Edit(./obsidian/*)",
       "Write(./obsidian/*)",
