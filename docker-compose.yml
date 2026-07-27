@@ -9,6 +9,7 @@ services:
       context: ./mcp-servers/gmail
       dockerfile: Dockerfile
     container_name: umbra-gmail
+    restart: unless-stopped
     networks:
       - mcp-network
     ports:
@@ -39,11 +40,19 @@ services:
   # ==========================
   # Google Calendar MCP Server
   # ==========================
+  # UWAGA: klienci MCP łączą się z tym serwerem przez **stdio**
+  # (`docker exec -i -e TRANSPORT=stdio umbra-calendar node build/index.js`, patrz .mcp.json),
+  # a nie przez HTTP. Transport HTTP w @cocal/google-calendar-mcp 2.6.2 obsługuje tylko
+  # PIERWSZY request w cyklu życia procesu - kolejne zwracają puste HTTP 500 (regresja
+  # z @modelcontextprotocol/sdk 1.27.1, gdzie StreamableHTTPServerTransport to wrapper
+  # na @hono/node-server). Port 4003 zostaje wystawiony dla webowego UI zarządzania
+  # kontami Google (http://localhost:4003/) i healthchecku.
   calendar:
     build:
       context: ./mcp-servers/calendar
       dockerfile: Dockerfile
     container_name: umbra-calendar
+    restart: unless-stopped
     networks:
       - mcp-network
     ports:

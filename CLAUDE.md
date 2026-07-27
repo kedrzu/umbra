@@ -342,6 +342,8 @@ Twoje robocze notatki należą do `Asystent/`. Modyfikuj notatki użytkownika ty
 - Identify unsubscribe links
 
 ### Google Calendar (Multi-Account)
+- **Transport: stdio przez `docker exec`** (`.mcp.json`), nie HTTP — kontener `umbra-calendar` musi działać, inaczej narzędzia `mcp__calendar__*` w ogóle się nie pojawią. Powód: HTTP w `@cocal/google-calendar-mcp` 2.6.2 obsługuje tylko pierwszy request procesu (regresja z SDK 1.27.1). Port 4003 służy już tylko do webowego UI zarządzania kontami (`http://localhost:4003/`).
+- Konta: `personal` + `work` (kalendarz wspólny z żoną widoczny z konta personal)
 - View all calendars across all accounts
 - Create new events (with permission)
 - Check free/busy times
@@ -386,6 +388,22 @@ Twoje robocze notatki należą do `Asystent/`. Modyfikuj notatki użytkownika ty
 | `/research [topic]` | Deep research using vault knowledge |
 | `/memory-update [info]` | Explicitly save information to memory |
 | `/do-your-job` | Run full assistant routine |
+
+## Poranna rutyna na harmonogramie
+
+`/do-your-job` odpala się **sam o 8:00 w dni robocze** — nie trzeba o nic prosić. Konfiguracja jest odtwarzalna: `./setup-morning-routine.sh` (idempotentny, ustawienia w `scripts/morning-routine.env`, flagi `--status` / `--dry-run` / `--uninstall`).
+
+**Dwie warstwy** (bo sam Paseo nie wystarcza):
+| Warstwa | Co robi |
+|---------|---------|
+| Harmonogram Paseo (`cron 0 8 * * 1-5`, target `new-agent`, mode `bypassPermissions`) | Odpala świeżego agenta w tym repo. Scheduler porównuje zapisany `nextRunAt` z zegarem, więc **uśpiony Mac** dostaje zaległy run zaraz po wybudzeniu. |
+| LaunchAgent `com.sigma.morning-routine` → `scripts/morning-routine-guard.sh` | Nadrabia to, czego Paseo nie ogarnia: **reboot / restart demona** (Paseo przewija wtedy `nextRunAt` bez wykonania), a przy okazji podnosi Docker z serwerami MCP i sam demon. Idempotentny — gdy rutyna dziś już poszła, nie robi nic. |
+
+**Kolejność w rutynie jest kontraktem**: `/email-review` → taski → `/daily-briefing`. Dashboard ma opisywać skrzynkę **po** triażu, nie przed.
+
+**Rutyna nigdy nie zadaje pytań** (także odpalona ręcznie) — zaplanowany agent działa `unattended`, więc pytanie albo permission prompt = failed run bez powiadomienia. Wszystko, co wymaga decyzji użytkownika, ląduje w sekcji **„Do decyzji"** w `Inbox/Dashboard-YYYY-MM-DD.md`: propozycje wydarzeń kalendarza (których nadal nie tworzymy sami), niejednoznaczne przypomnienia, luki kontekstowe, sterta `AI/Triage`.
+
+**Ostatnia wiadomość agenta = treść powiadomienia push na telefon** (Paseo bierze pierwsze 220 znaków). Dlatego rutyna kończy się jednym samodzielnym zdaniem podsumowującym, a pełny raport idzie pod nim. Push leci tylko wtedy, gdy żaden klient Paseo nie był aktywny przez 180 s.
 
 ## Email Workflow
 

@@ -84,6 +84,18 @@ docker compose up -d
 docker compose run --rm claude
 ```
 
+### 5. (Optional) Schedule the Morning Routine
+
+```bash
+./setup-morning-routine.sh          # install / update
+./setup-morning-routine.sh --status # diagnostics
+```
+
+Runs `/do-your-job` automatically at 8:00 on weekdays via a Paseo schedule, with a
+launchd guard (`scripts/morning-routine-guard.sh`) that catches up the run after a
+reboot or a sleeping Mac and brings the MCP containers up first. Settings live in
+`scripts/morning-routine.env`.
+
 ## Configuration
 
 ### Environment Variables (.env)

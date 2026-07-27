@@ -171,8 +171,8 @@ Część maili jest dziś OK, ale **zdezaktualizuje się w przyszłości** (even
 ### Faza 1: Sesja i stan
 
 1. Przeczytaj `Asystent/Memory/InboxReviewState.md` (`Read`).
-   - Status `in_progress` < 1h temu → zapytaj: "Znaleziono niedokończoną sesję (X/Y). Kontynuować czy od nowa?"
-   - Brak / stary / `completed` → nowa sesja.
+   - Status `in_progress` < 1h temu → **kontynuuj automatycznie** (bez pytania), pomijając wątki z "Processed Thread IDs"; odnotuj w logu sesji "wznowiono sesję z <timestamp> (X/Y)".
+   - Brak / stary (≥ 1h) / `completed` → nowa sesja.
 2. Pobierz wejście dla obu kont, policz total/batche, zainicjuj stan (format niżej). Dwa buckety:
    - **nieprzetworzone**: `search_threads(filter:"unprocessed")`;
    - **dojrzałe defery**: `search_threads(query:"in:inbox", filter:"defer-due")` — wątki, których data efektywna minęła i wracają do re-oceny (sekcja „Defer i Nieaktualne"). Pusto → pomiń.
@@ -256,7 +256,7 @@ Dla każdego batcha:
 
 - **Nigdy nie wysyłaj** maili — tylko drafty (`create_draft`).
 - **Nigdy nie usuwaj** maili/zadań/wydarzeń/notatek.
-- **Pytaj przed** nałożeniem labela na wątek `IMPORTANT` / ważny.
+- **Nigdy nie pytaj** — autopilot bywa uruchamiany z harmonogramu (`/do-your-job`, 8:00 pon-pt), gdzie nikogo nie ma po drugiej stronie; pytanie = zawieszony run. Wątek `IMPORTANT` / ważny, którego rulebook **nie** pokrywa jednoznacznie → `update_thread(status:"triage")` z powodem zamiast pytania (zgodnie z CLAUDE.md #6 nie labelujemy ważnych maili „na czuja"; rozstrzygnie `/email-triage`). Gdy reguła pokrywa go wprost — działaj normalnie, autonomicznie.
 - **Maile akcyjne** (`Wymaga działania`/`Wymaga odpowiedzi`) obsługiwane **autonomicznie, bez pytania** **i tylko gdy brama adresatów wskazała „akcja moja"** (akcja jasno cudza → bez markera; niejasna → `AI/Triage`). Mechanika **zależy od konta**: **Personal** → task Todoist powiązany `TODO/<id>` + cykl defer (sekcja „Akcje → Todoist" rulebooka Personal); **Work** → **BEZ taska**, tylko marker `Wymaga …` + `status:"done"` (sekcja „Akcje → markery Wymaga" rulebooka Work). Nadal **nie** modyfikujemy ani **nie ukończamy** istniejących tasków — to robi użytkownik.
 - **Faktury trwałych dóbr >100 zł** zapisywane są do `./obsidian/Rachunki/` (PDF + notatka) automatycznie wg rulebooka; to zapis lokalny, niczego nie wysyła.
 - **Nigdy nie blokuj**: niejasne → `AI/Triage` + powód, leć dalej.

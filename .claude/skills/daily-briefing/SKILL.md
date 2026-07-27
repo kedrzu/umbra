@@ -56,11 +56,12 @@ Foldery w vault:
    - Liczba nieprzeczytanych per konto
    - Pilne/ważne do uwagi
 
-6. **Przegląd przypomnień emailowych**
+6. **Przegląd przypomnień emailowych** (rozstrzygasz sam, nie pytasz)
    - Znajdź przypomnienia z `EmailReminders.md` gdzie data <= dziś
    - Dla zaległych (data < dziś):
-     - Sprawdź czy wątek ma nową aktywność (użyj `get_thread`)
-     - Oznacz jako "do weryfikacji"
+     - Sprawdź wątek (`get_thread`) - czy poszła odpowiedź, czy sprawa się domknęła
+     - **Jednoznaczny dowód załatwienia** (moja odpowiedź w wątku / druga strona potwierdziła / powiązany task ukończony) → **sam** przenieś do "Rozwiązane" w `EmailReminders.md`
+     - **Niejednoznaczne** → zostaw jako oczekujące, wypisz w "Do decyzji" z jednozdaniowym stanem wątku
    - Dla dzisiejszych:
      - Uwzględnij w sekcji "Na dziś"
 
@@ -138,10 +139,22 @@ Foldery w vault:
 ### Do weryfikacji (z poprzednich dni)
 - [ ] [Reminder zaległy] - ustawione [data] - [Link](url)
 
+### Rozwiązane dziś (automatycznie)
+- [x] [Reminder] - powód: [np. odpowiedź wysłana 2026-07-26]
+
 ## Na czym się skupić
 
 1. **[Obszar 1]**: [uzasadnienie]
 2. **[Obszar 2]**: [uzasadnienie]
+
+## Do decyzji
+
+> Rzeczy, których nie wolno mi było rozstrzygnąć autonomicznie. Nic tu nie czeka na odpowiedź w czacie - to lista do Twojego przejrzenia.
+
+- [ ] [Propozycja wydarzenia w kalendarzu: termin + kontekst - do ręcznego utworzenia]
+- [ ] [Niejednoznaczne przypomnienie: stan wątku + co bym zrobił]
+- [ ] [Sterta AI/Triage: X wątków → `/email-triage`]
+- [ ] [Luka kontekstowa: pojęcie/dokument, gdzie na nie trafiłem, czemu jest istotne]
 
 ---
 *Wygenerowano: [timestamp]*
@@ -172,16 +185,20 @@ Foldery w vault:
 **Na dziś:**
 - [Temat] - [kontekst] - [Link](url)
 
-[Jeśli są zaległe przypomnienia:]
+[Jeśli sam oznaczyłem coś jako rozwiązane:]
+**Zamknięte automatycznie:** [Temat] - [powód, np. odpowiedź poszła 26.07]
+
+[Jeśli zostały niejednoznaczne zaległe:]
 **Do weryfikacji z poprzednich dni:**
 1. **[Temat]** (z [data]) - [krótki kontekst]
-   → Sprawdziłem wątek: [status - czy jest nowa aktywność]
-
-Które możemy oznaczyć jako załatwione? (np. "1 i 3" / "wszystkie" / "żadne")
+   → Sprawdziłem wątek: [status - czy jest nowa aktywność] → zostawiam otwarte, jest w „Do decyzji"
 
 #### Sugerowane obszary fokusowe
 1. **[Obszar 1]** - [uzasadnienie]
 2. **[Obszar 2]** - [uzasadnienie]
+
+#### Do decyzji
+- [Otwarte kwestie - bez pytań, do przejrzenia]
 
 ---
 *Dashboard zapisany: `Inbox/Dashboard-[date].md`*
@@ -189,13 +206,23 @@ Które możemy oznaczyć jako załatwione? (np. "1 i 3" / "wszystkie" / "żadne"
 
 ## Obsługa przypomnień
 
-### Oznaczanie jako rozwiązane
+### Oznaczanie jako rozwiązane (autonomicznie, bez pytania)
 
-Gdy użytkownik wskaże które przypomnienia są załatwione:
+Briefing **nie pyta** „które oznaczyć jako załatwione" - nikt nie musi odpowiadać, bo rutyna bywa uruchamiana z harmonogramu. Decydujesz sam, na podstawie sprawdzonego wątku:
+
+**Zamykasz przypomnienie**, gdy dowód jest jednoznaczny:
+- w wątku jest moja odpowiedź wysłana po dacie przypomnienia,
+- druga strona potwierdziła załatwienie sprawy,
+- powiązany task Todoist jest ukończony (`fetch-object`),
+- wątek ma już `Nieaktualne`.
+
+Wtedy:
 1. Przeczytaj `Asystent/Memory/EmailReminders.md`
-2. Przenieś wskazane przypomnienia do sekcji "Rozwiązane"
-3. Dodaj datę rozwiązania i przekreślenie
+2. Przenieś przypomnienie do sekcji "Rozwiązane"
+3. Dodaj datę rozwiązania, przekreślenie i **powód** ("odpowiedź wysłana 2026-07-26")
 4. Zapisz zaktualizowany plik
+
+**Zostawiasz otwarte** (i wypisujesz w "Do decyzji"), gdy dowodu brak albo jest niejednoznaczny. Nigdy nie zamykaj przypomnienia „bo minęło dużo czasu".
 
 ### Format rozwiązanego przypomnienia
 
@@ -212,4 +239,5 @@ Gdy użytkownik wskaże które przypomnienia są załatwione:
 - Przypomnienia weryfikuj zbiorczo, nie pojedynczo
 - Zawsze twórz notatkę Dashboard w Obsidian
 - Aktualizuj Digital Twin Memory przy każdym uruchomieniu
-- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznany uczestnik spotkania / projekt / skrót w kalendarzu, zadaniach lub mailu → najpierw `qmd`/`Read` digital twina. Jeśli dalej niejasne i blokuje sensowny briefing — dopytaj (zbiorczo, przy prezentacji) i **utrwal** (osoba → `Kontakty/`, projekt → `Projects.md`, reszta → `Insights.md`).
+- **Nie zadawaj pytań i nie czekaj na odpowiedź** - briefing bywa uruchamiany z harmonogramu (`/do-your-job`, 8:00 pon-pt), gdzie nikogo nie ma po drugiej stronie. Wszystko otwarte → sekcja **„Do decyzji"** w Dashboardzie.
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznany uczestnik spotkania / projekt / skrót w kalendarzu, zadaniach lub mailu → najpierw `qmd`/`Read` digital twina. Jeśli dalej niejasne — **nie blokuj briefingu**: zapisz do pamięci to, co już wiadomo, a samą lukę wypisz w „Do decyzji" (nazwij pojęcie/dokument, gdzie na nie trafiłeś i czemu jest istotne), żeby dało się ją domknąć przy najbliższej interaktywnej sesji.

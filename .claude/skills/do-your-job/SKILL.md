@@ -1,6 +1,6 @@
 ---
 name: do-your-job
-description: Run the full assistant routine. Reviews inbox, generates daily dashboard, checks tasks, and provides comprehensive daily assistance. The "magic button" for full assistant mode.
+description: Run the full assistant routine. Processes the inbox first, then generates the daily dashboard, checks tasks, and provides comprehensive daily assistance. The "magic button" for full assistant mode.
 ---
 
 # Full Assistant Routine
@@ -16,36 +16,60 @@ Foldery w vault:
 - `./obsidian/Asystent/Memory/` - pamięć systemowa
 - `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
 
+## Tryb nienadzorowany (ZAWSZE)
+
+Ta rutyna **nigdy nie zadaje pytań i nigdy nie czeka na odpowiedź** - także gdy odpalasz ją ręcznie. Powód: głównym trybem uruchomienia jest harmonogram (Paseo, 8:00 pon-pt, `./setup-morning-routine.sh`), gdzie nie ma nikogo po drugiej stronie, a agent zatrzymany na pytaniu = **failed run bez powiadomienia**.
+
+Zasady:
+- **Zero pytań w trakcie i na końcu.** Wszystko, co wymagałoby decyzji użytkownika, ląduje w sekcji **„Do decyzji"** dzisiejszego Dashboardu (i w podsumowaniu).
+- **Argument `unattended`** jest akceptowany (tak odpala harmonogram) i nic nie zmienia - to zachowanie domyślne.
+- **Luka kontekstowa nie blokuje**: mail → `AI/Triage` z zapisanym powodem (rozstrzygnie `/email-triage`); wszystko inne → „Do decyzji" + zapis tego, co już wiadomo, do pamięci.
+- **Co robisz autonomicznie**: taski Todoist wg reguł CLAUDE.md/rulebooków, labelki i statusy maili wg rulebooka, drafty, zapisy do vault (`Asystent/`, `Kontakty/`, `Inbox/`, `Rachunki/`), oznaczanie rozwiązanych przypomnień przy jednoznacznym dowodzie.
+- **Czego NIE robisz nigdy**: nie tworzysz wydarzeń kalendarza (CLAUDE.md #6) - propozycja terminu idzie do „Do decyzji"; nie wysyłasz maili; nie modyfikujesz ani nie ukańczasz istniejących tasków; nie labelujesz „na czuja" maili ważnych/`IMPORTANT` - takie idą do `AI/Triage`.
+
+### Kontrakt ostatniej wiadomości (powiadomienie push)
+
+Paseo wysyła na telefon **pierwsze 220 znaków ostatniej wiadomości agenta**. Dlatego ostatnia wiadomość **zaczyna się od jednego samodzielnego zdania podsumowującego**, a dopiero pod nim idzie pełny raport. Przykład pierwszej linii:
+
+> `Rutyna 8:00: 4 spotkania, 7 zadań na dziś (2 zaległe), 18 maili przetworzonych, 3 do decyzji → Inbox/Dashboard-2026-07-27.md`
+
+Bez markdownu w tym zdaniu (push i tak go usuwa), bez „Cześć!", bez pytań.
+
 ## Default Routine (Morning)
 
-When run without arguments or with `all`:
+When run without arguments, with `all` or with `unattended`:
 
-### 1. Daily Briefing
-Run `/daily-briefing` to create today's dashboard:
-- Gather calendar events across all accounts
-- Pull priority tasks from Todoist
-- Check email counts and priorities
-- Review email reminders from `Asystent/Memory/EmailReminders.md`
-- Write to `Inbox/Dashboard-[date].md`
-
-### 2. Email Review
+### 1. Email Review (NAJPIERW)
 Run `/email-review` (codzienny autopilot) across all accounts:
 - Classify/label/draft per the EmailWorkflow rulebook, mark processed via `update_thread(status:"done")`
 - Flag ambiguous threads via `update_thread(status:"triage")` without blocking
 - Save reminders for emails needing follow-up
-- If the `AI/Triage` pile is large, recommend `/email-triage` to resolve it interactively
+- Faktury trwałych dóbr >100 zł → `Rachunki/` w vault
 
-### 3. Task Check
-Review Todoist status:
+**Kolejność jest istotna**: skrzynka musi być przetworzona **przed** budowaniem Dashboardu, żeby dashboard opisywał realny stan po triażu (świeże taski, świeże przypomnienia, aktualna sterta `AI/Triage`), a nie surowy inbox sprzed rutyny.
+
+### 2. Task Check
+Review Todoist status (już z taskami utworzonymi w kroku 1):
 - Overdue tasks
 - Due today
 - High priority items
+
+### 3. Daily Briefing
+Run `/daily-briefing` to create today's dashboard:
+- Gather calendar events across all accounts
+- Pull priority tasks from Todoist
+- Podsumuj wynik kroku 1 (ile przetworzone, co wymaga uwagi, jak duża jest sterta `AI/Triage`)
+- Review email reminders from `Asystent/Memory/EmailReminders.md`
+- Write to `Inbox/Dashboard-[date].md` (z sekcją „Do decyzji")
+
+Jeśli sterta `AI/Triage` urosła - odnotuj w „Do decyzji" rekomendację `/email-triage` (nie odpalaj go sam, jest interaktywny).
 
 ### 4. Present Unified Summary
 Combine all findings into actionable summary:
 - Top 3 priorities for the day
 - Urgent items needing attention
 - Suggested focus areas
+- „Do decyzji" - to, czego nie wolno było rozstrzygnąć autonomicznie
 
 ### 5. Digital Twin Memory Update (CRITICAL)
 Update AI Memory with ALL new context learned. This is essential to being a useful assistant:
@@ -69,6 +93,7 @@ Pass arguments to focus on specific areas:
 | Argument | What it does |
 |----------|--------------|
 | `all` | Full routine (default) |
+| `unattended` | To samo co `all` - argument harmonogramu, zachowanie i tak jest bezpytaniowe |
 | `email` | Focus on inbox review only |
 | `calendar` | Focus on schedule only |
 | `tasks` | Focus on Todoist only |
@@ -77,15 +102,19 @@ Pass arguments to focus on specific areas:
 
 ## Output Format
 
+Pierwsza linia ostatniej wiadomości = jednozdaniowe podsumowanie (patrz „Kontrakt ostatniej wiadomości"), poniżej:
+
 ### Assistant Report - [Date]
 
-#### Dashboard
-Created: `Inbox/Dashboard-[date].md`
+#### Email Summary
+| Account | Przetworzone | Do triażu | Wymaga działania |
+|---------|--------------|-----------|------------------|
+| Personal | X | Y | Z |
+| Work | X | Y | Z |
 
-#### Schedule Summary
-- [X] events today
-- [Key events with times]
-- [Any conflicts or tight transitions]
+**Needs attention**:
+- [Priority email 1]
+- [Priority email 2]
 
 #### Task Summary
 - [X] due today, [Y] overdue
@@ -94,15 +123,13 @@ Created: `Inbox/Dashboard-[date].md`
   2. [Task 2]
   3. [Task 3]
 
-#### Email Summary
-| Account | Unread | Priority |
-|---------|--------|----------|
-| Personal | X | Y |
-| Work | X | Y |
+#### Dashboard
+Created: `Inbox/Dashboard-[date].md`
 
-**Needs attention**:
-- [Priority email 1]
-- [Priority email 2]
+#### Schedule Summary
+- [X] events today
+- [Key events with times]
+- [Any conflicts or tight transitions]
 
 #### Focus Recommendations
 
@@ -119,12 +146,15 @@ Based on your day, I suggest:
    - Why: [reasoning]
 
 #### Actions Taken
+- [x] Skrzynka przetworzona ([X] wątków)
 - [x] Dashboard created
 - [x] [Drafts created, if any]
 - [x] Memory updated with [what]
 
-#### Questions
-- [Any clarifying questions for the user]
+#### Do decyzji
+- [Kwestia, której nie wolno było rozstrzygnąć autonomicznie - co to jest, gdzie na to trafiłeś, jakie są opcje]
+- [Propozycja wydarzenia w kalendarzu - termin + kontekst, do ręcznego utworzenia]
+- [Sterta AI/Triage: X wątków → `/email-triage`]
 
 ---
 
@@ -133,8 +163,9 @@ Based on your day, I suggest:
 ## Important Notes
 
 - This is the "main" skill - orchestrates everything
+- Kolejność jest częścią kontraktu: **email-review → taski → briefing**
 - Adapt based on time of day (morning vs afternoon)
 - Be proactive but not overwhelming
-- Ask permission before creating tasks/events
-- **Luki kontekstowe** wg protokołu CLAUDE.md „Luki kontekstowe": kroki interaktywne (briefing, przegląd) mogą dopytać o niejasny kontekst i **utrwalić** go w pamięci; ale gdy wewnątrz rutyny odpalasz `email-review`, ta część zostaje **autonomiczna** — luka nie blokuje, tylko → `AI/Triage` z powodem (rozstrzygnie `/email-triage`).
+- **Nigdy nie zadawaj pytań** - patrz „Tryb nienadzorowany (ZAWSZE)"; otwarte kwestie → „Do decyzji"
+- **Luki kontekstowe** wg protokołu CLAUDE.md „Luki kontekstowe", ale w tej rutynie **nic nie blokuje**: najpierw sam sprawdź materiał i vault (`qmd`, `Read` digital twina), a gdy dalej niejasne - mail → `AI/Triage` z powodem, reszta → „Do decyzji"
 - Update memory with anything significant learned

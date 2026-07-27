@@ -5,8 +5,8 @@
       "url": "http://localhost:${MCP_GMAIL_PORT}/mcp"
     },
     "calendar": {
-      "type": "http",
-      "url": "http://localhost:${MCP_CALENDAR_PORT}/mcp"
+      "command": "/usr/local/bin/docker",
+      "args": ["exec", "-i", "-e", "TRANSPORT=stdio", "umbra-calendar", "node", "build/index.js"]
     },
     "todoist": {
       "type": "http",
