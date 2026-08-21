@@ -13,7 +13,8 @@ Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, EmailReminders.md, etc.)
+- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, Work.md, etc.)
+- `./obsidian/Asystent/Memory/Ledger/` - rejestr otwartych spraw; **wyłącznie przez `scripts/ledger.py`** (`docs/ledger.md`), nigdy Read/Edit na plikach
 - `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
 
 ## MCP Tools Used
@@ -24,7 +25,7 @@ Foldery w vault:
 | Search contacts/notes | `qmd` (MCP) - NIE Glob! |
 | List files in vault | `Bash(ls ./obsidian/...)` - NIE Glob! |
 | Calendar events | `list-events` |
-| Tasks | Todoist tools |
+| Tasks | `Bash(python3 scripts/todoist.py tasks …)` - odczyt z lustra, **nie ma MCP Todoista** |
 | Email scan | `search_threads` |
 | Create dashboard | `Write` |
 | Update memory | `Edit` |
@@ -37,7 +38,7 @@ Foldery w vault:
 
 2. **Przeczytaj AI Memory**
    - `./obsidian/Asystent/Memory/Projects.md` - aktywne projekty
-   - `./obsidian/Asystent/Memory/EmailReminders.md` - przypomnienia do przeglądu
+   - `python3 scripts/ledger.py due` - dojrzałe sprawy i przypomnienia do przeglądu
    - `./obsidian/Asystent/Memory/Insights.md` - wzorce i preferencje
 
    **NIE ładuj listy kontaktów** - jeśli potrzebujesz info o uczestniku spotkania, użyj `qmd` do wyszukania po imieniu
@@ -47,21 +48,21 @@ Foldery w vault:
    - Grupuj: Praca / Osobiste / Wspólne
    - Wykryj konflikty i ciasne przejścia między spotkaniami
 
-4. **Pobierz zadania** z Todoist
-   - Due today + overdue
-   - Priorytet P1, P2
-   - Sortuj wg priorytetu
+4. **Pobierz zadania** z Todoist — `Bash: python3 scripts/todoist.py tasks --today --overdue --select id,title,due,data.priority`
+   - Czyta **z lokalnego lustra**, nie z API: nie wymaga sieci ani autoryzacji i nie wciąga setek zadań do kontekstu. Lustro odświeża `todoist.py sync` (robi to `/email-review` na starcie rutyny).
+   - Priorytety są w konwencji UI (`p1` = najpilniejszy).
+   - Sortowanie po terminie i priorytecie robi już samo narzędzie.
 
 5. **Skanuj emaile** (szybki przegląd)
    - Liczba nieprzeczytanych per konto
    - Pilne/ważne do uwagi
 
-6. **Przegląd przypomnień emailowych** (rozstrzygasz sam, nie pytasz)
-   - Znajdź przypomnienia z `EmailReminders.md` gdzie data <= dziś
+6. **Przegląd dojrzałych spraw z rejestru** (rozstrzygasz sam, nie pytasz)
+   - `Bash: python3 scripts/ledger.py due --select id,title,due,reason,refs` — sprawy z datą powrotu <= dziś (odłożone maile, przypomnienia o follow-upie, sprawy z zadaniami). Kontrakt: `docs/ledger.md`.
    - Dla zaległych (data < dziś):
      - Sprawdź wątek (`get_thread`) - czy poszła odpowiedź, czy sprawa się domknęła
-     - **Jednoznaczny dowód załatwienia** (moja odpowiedź w wątku / druga strona potwierdziła / powiązany task ukończony) → **sam** przenieś do "Rozwiązane" w `EmailReminders.md`
-     - **Niejednoznaczne** → zostaw jako oczekujące, wypisz w "Do decyzji" z jednozdaniowym stanem wątku
+     - **Jednoznaczny dowód załatwienia** (moja odpowiedź w wątku / druga strona potwierdziła / zadanie ukończone wg `todoist.py sync`) → **sam** `ledger close --outcome completed --reason "…"`
+     - **Niejednoznaczne** → zostaw otwarte, wypisz w "Do decyzji" z jednozdaniowym stanem wątku
    - Dla dzisiejszych:
      - Uwzględnij w sekcji "Na dziś"
 
@@ -210,28 +211,19 @@ Foldery w vault:
 
 Briefing **nie pyta** „które oznaczyć jako załatwione" - nikt nie musi odpowiadać, bo rutyna bywa uruchamiana z harmonogramu. Decydujesz sam, na podstawie sprawdzonego wątku:
 
-**Zamykasz przypomnienie**, gdy dowód jest jednoznaczny:
+**Zamykasz sprawę**, gdy dowód jest jednoznaczny:
 - w wątku jest moja odpowiedź wysłana po dacie przypomnienia,
 - druga strona potwierdziła załatwienie sprawy,
-- powiązany task Todoist jest ukończony (`fetch-object`),
+- powiązane zadanie Todoist jest ukończone (`todoist.py sync` → `completed`/`stale_links`),
 - wątek ma już `Nieaktualne`.
 
-Wtedy:
-1. Przeczytaj `Asystent/Memory/EmailReminders.md`
-2. Przenieś przypomnienie do sekcji "Rozwiązane"
-3. Dodaj datę rozwiązania, przekreślenie i **powód** ("odpowiedź wysłana 2026-07-26")
-4. Zapisz zaktualizowany plik
-
-**Zostawiasz otwarte** (i wypisujesz w "Do decyzji"), gdy dowodu brak albo jest niejednoznaczny. Nigdy nie zamykaj przypomnienia „bo minęło dużo czasu".
-
-### Format rozwiązanego przypomnienia
-
-```markdown
-## Rozwiązane
-
-### Luty 2025
-- [x] ~~**[Praca]** Re: Umowa z XYZ Corp~~ - Rozwiązane 2025-02-03
+Wtedy jedno wywołanie:
+```bash
+python3 scripts/ledger.py close --id <sprawa> --outcome completed --reason "odpowiedź wysłana 2026-07-26"
 ```
+Rekord ląduje w archiwum, a `Otwarte.md` regeneruje się sam.
+
+**Zostawiasz otwarte** (i wypisujesz w "Do decyzji"), gdy dowodu brak albo jest niejednoznaczny. Nigdy nie zamykaj sprawy „bo minęło dużo czasu" — zamiast tego przesuń `due` (`ledger upsert`) z powodem w `history`.
 
 ## Important Rules
 

@@ -24,8 +24,8 @@ Multi-account Gmail MCP server with read-only access (no sending).
 | `get_message`    | Get single message details (label names included)                           |
 | `create_draft`   | Create email draft                                                          |
 | `list_labels`    | List all labels in an account                                               |
-| `update_thread`  | Atomic thread changes in one call: AI status, defer (`deferUntil`), priority, labels (archive, categories, etc.) |
-| `cleanup_defer_labels` | Delete empty `AI/Defer/<date>` labels (housekeeping)                  |
+| `update_thread`  | Atomic thread changes in one call: AI status, priority, labels (archive, categories, etc.) |
+| `cleanup_labels` | Delete user labels by prefix (housekeeping; empty-only by default, mail untouched)    |
 | `save_attachment`| Save attachment to disk (.context/attachments), return its path             |
 
 ### Multi-Account Usage

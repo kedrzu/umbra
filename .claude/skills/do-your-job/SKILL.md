@@ -24,8 +24,8 @@ Zasady:
 - **Zero pytań w trakcie i na końcu.** Wszystko, co wymagałoby decyzji użytkownika, ląduje w sekcji **„Do decyzji"** dzisiejszego Dashboardu (i w podsumowaniu).
 - **Argument `unattended`** jest akceptowany (tak odpala harmonogram) i nic nie zmienia - to zachowanie domyślne.
 - **Luka kontekstowa nie blokuje**: mail → `AI/Triage` z zapisanym powodem (rozstrzygnie `/email-triage`); wszystko inne → „Do decyzji" + zapis tego, co już wiadomo, do pamięci.
-- **Co robisz autonomicznie**: taski Todoist wg reguł CLAUDE.md/rulebooków, labelki i statusy maili wg rulebooka, drafty, zapisy do vault (`Asystent/`, `Kontakty/`, `Inbox/`, `Rachunki/`), oznaczanie rozwiązanych przypomnień przy jednoznacznym dowodzie.
-- **Czego NIE robisz nigdy**: nie tworzysz wydarzeń kalendarza (CLAUDE.md #6) - propozycja terminu idzie do „Do decyzji"; nie wysyłasz maili; nie modyfikujesz ani nie ukańczasz istniejących tasków; nie labelujesz „na czuja" maili ważnych/`IMPORTANT` - takie idą do `AI/Triage`.
+- **Co robisz autonomicznie**: zadania Todoist wg reguł CLAUDE.md/rulebooków — **tworzenie nowych oraz aktualizowanie istniejących** (termin, priorytet, treść, komentarz), gdy przychodzi kolejny mail w tej samej sprawie; labelki i statusy maili wg rulebooka; drafty; zapisy do vault (`Asystent/`, `Kontakty/`, `Inbox/`, `Rachunki/`); prowadzenie rejestru spraw (`scripts/ledger.py`) i zamykanie spraw przy jednoznacznym dowodzie.
+- **Czego NIE robisz nigdy**: nie tworzysz wydarzeń kalendarza (CLAUDE.md #6) - propozycja terminu idzie do „Do decyzji"; nie wysyłasz maili; **nie ukańczasz i nie kasujesz** zadań (to robi użytkownik, a rejestr to zauważa); nie labelujesz „na czuja" maili ważnych/`IMPORTANT` - takie idą do `AI/Triage`.
 
 ### Kontrakt ostatniej wiadomości (powiadomienie push)
 
@@ -40,7 +40,7 @@ Bez markdownu w tym zdaniu (push i tak go usuwa), bez „Cześć!", bez pytań.
 When run without arguments, with `all` or with `unattended`:
 
 ### 1. Email Review (NAJPIERW)
-Run `/email-review` (codzienny autopilot) across all accounts:
+Run `/email-review` (codzienny autopilot) across all accounts. Zaczyna od **uzgodnienia z Todoistem** (`python3 scripts/todoist.py sync` → diff): zadania, które ukończyłeś, domykają swoje maile, zanim cokolwiek innego się wydarzy. Dalej:
 - Classify/label/draft per the EmailWorkflow rulebook, mark processed via `update_thread(status:"done")`
 - Flag ambiguous threads via `update_thread(status:"triage")` without blocking
 - Save reminders for emails needing follow-up
@@ -49,7 +49,7 @@ Run `/email-review` (codzienny autopilot) across all accounts:
 **Kolejność jest istotna**: skrzynka musi być przetworzona **przed** budowaniem Dashboardu, żeby dashboard opisywał realny stan po triażu (świeże taski, świeże przypomnienia, aktualna sterta `AI/Triage`), a nie surowy inbox sprzed rutyny.
 
 ### 2. Task Check
-Review Todoist status (już z taskami utworzonymi w kroku 1):
+`python3 scripts/todoist.py tasks --today --overdue --select id,title,due,data.priority` (odczyt z lustra odświeżonego w kroku 1, bez wywołań API):
 - Overdue tasks
 - Due today
 - High priority items
@@ -59,7 +59,7 @@ Run `/daily-briefing` to create today's dashboard:
 - Gather calendar events across all accounts
 - Pull priority tasks from Todoist
 - Podsumuj wynik kroku 1 (ile przetworzone, co wymaga uwagi, jak duża jest sterta `AI/Triage`)
-- Review email reminders from `Asystent/Memory/EmailReminders.md`
+- Review matured cases and reminders: `python3 scripts/ledger.py due`
 - Write to `Inbox/Dashboard-[date].md` (z sekcją „Do decyzji")
 
 Jeśli sterta `AI/Triage` urosła - odnotuj w „Do decyzji" rekomendację `/email-triage` (nie odpalaj go sam, jest interaktywny).

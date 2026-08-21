@@ -8,10 +8,6 @@
       "command": "/usr/local/bin/docker",
       "args": ["exec", "-i", "-e", "TRANSPORT=stdio", "umbra-calendar", "node", "build/index.js"]
     },
-    "todoist": {
-      "type": "http",
-      "url": "https://ai.todoist.net/mcp"
-    },
     "qmd": {
       "command": "${QMD_PATH}",
       "args": ["mcp"],

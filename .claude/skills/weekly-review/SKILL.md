@@ -24,10 +24,10 @@ Foldery w vault:
    - Count: meetings attended, hours in meetings
    - Note any cancelled/rescheduled events
 
-2. **Task Review**
-   - Completed tasks (from Todoist)
-   - Overdue tasks that weren't completed
-   - Tasks created during the week
+2. **Task Review** (`scripts/todoist.py` - nie ma MCP Todoista)
+   - Completed tasks: `python3 scripts/todoist.py completed --since today-7 --until today`
+   - Overdue tasks that weren't completed: `python3 scripts/todoist.py tasks --overdue` (czyta z lustra, bez API)
+   - Tasks created during the week: z diffów `todoist.py sync` zebranych w ciągu tygodnia
 
 3. **Email Review**
    - Emails sent/received volume (approximate)

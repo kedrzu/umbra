@@ -33,3 +33,7 @@ npm-debug.log*
 
 # Context directory (Conductor workspace)
 .context/
+
+# Python bytecode (scripts/)
+__pycache__/
+*.pyc
