@@ -18,7 +18,7 @@ set -e
 #   ./setup-morning-routine.sh --uninstall
 
 # This script lives at the project root; resolve it regardless of the caller's cwd.
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -43,7 +43,7 @@ for arg in "$@"; do
         --uninstall) MODE_ACTION="uninstall" ;;
         --dry-run)   DRY_RUN=1 ;;
         -h|--help)
-            sed -n '3,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+            sed -n '3,20p' "${BASH_SOURCE[0]:-$0}" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)

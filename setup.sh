@@ -5,7 +5,7 @@ set -e
 # Idempotent script that sets up everything needed to run the assistant
 
 # This script lives at the project root; resolve it regardless of the caller's cwd.
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Colors for output
 RED='\033[0;31m'

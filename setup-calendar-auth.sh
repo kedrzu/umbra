@@ -6,7 +6,7 @@ set -e
 # (The calendar MCP auth server only binds to localhost, so Docker doesn't work)
 
 # This script lives at the project root; resolve it regardless of the caller's cwd.
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Colors
 RED='\033[0;31m'

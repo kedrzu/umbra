@@ -5,7 +5,7 @@ set -e
 # Run this to authenticate Gmail accounts
 
 # This script lives at the project root; resolve it regardless of the caller's cwd.
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 # Colors
 RED='\033[0;31m'
