@@ -33,7 +33,10 @@
         "*.airbnb.pl",
         "*.airbnb.com",
         "*.kayak.pl",
-        "*.kayak.com"
+        "*.kayak.com",
+        "r.jina.ai",
+        "*.ceneo.pl",
+        "*.pepper.pl"
       ],
       "allowLocalBinding": false
     }
@@ -63,6 +66,7 @@
       "mcp__qmd__*",
       "mcp__obsidian-search__*",
       "mcp__playwright__*",
+      "mcp__exa__*",
       "Read(./obsidian/*)",
       "Edit(./obsidian/*)",
       "Write(./obsidian/*)",

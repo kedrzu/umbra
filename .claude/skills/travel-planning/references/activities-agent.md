@@ -17,7 +17,8 @@ Sens: dostarczyć **bogaty, pogrupowany geograficznie** zestaw rzeczy do zrobien
 >
 > **Jak pracować:**
 > - `WebSearch`/`WebFetch` (`ToolSearch` `select:WebSearch,WebFetch`) — przewodniki, blogi podróżnicze (PL + EN), „top things to do", „[miasto] with kids", listy restauracji (lokalne, nie tylko turystyczne pułapki), Reddit/fora, oficjalne strony atrakcji (godziny, bilety). Przeglądarka (Playwright) pomocna do stron biletowych, które nie renderują się w `WebFetch`.
-> - **Limit ~8 wyszukiwań.** Blokującą/wolną stronę pomiń. Pola nieustalone → „b.d.".
+> - **Budżet ~20 akcji (sufit ~35); kryterium końca to pokrycie, nie licznik:** ≥2 niezależne przewodniki + oficjalna strona atrakcji. **Reguła anty-wiszenia:** pobranie > ~15 s albo 403/CAPTCHA → pomijasz natychmiast, bez ponawiania. Pola nieustalone → „b.d.".
+> - **Godziny otwarcia, dni zamknięcia i wymóg rezerwacji bierzesz wyłącznie ze strony oficjalnej** — blog sprzed dwóch lat to nie jest źródło pierwotne. Jeśli oficjalnej strony nie ma, napisz „do potwierdzenia na miejscu", nie zgaduj.
 > - Dobieraj **pod styl, skład i porę roku** — inne rzeczy dla rodziny z małym dzieckiem, inne dla pary na city break kulinarnym; sprawdź, co jest czynne/sensowne w danym sezonie (upał, pora deszczowa, zima).
 >
 > **Dla każdej pozycji ustal:** czym jest i dla kogo, **rejon/dzielnica** (do grupowania geograficznego), **czas trwania**, orientacyjna **cena biletu/wstępu**, **czy wymaga rezerwacji z wyprzedzeniem** (i jak bardzo), **godziny/dni otwarcia** (uwaga na dzień zamknięcia w tygodniu), sezonowość.

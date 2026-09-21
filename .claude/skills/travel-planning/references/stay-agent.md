@@ -19,7 +19,8 @@ Sens: **najpierw rejon, potem obiekt.** Zły rejon psuje najlepszy hotel (hałas
 > **Jak pracować (kolejność narzędzi):**
 > - **Najpierw przeglądarka — Playwright MCP** (`browser_navigate` + `browser_snapshot`; `ToolSearch` `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot`). Otwieraj pre-filled URL-e **Booking, Airbnb, Google Hotels** z wpisanymi datami/składem, poczekaj na wyniki i **odczytaj żywe ceny i oceny ze snapshotu**.
 > - **Gdy blokada / CAPTCHA / 403 / brak serwera** → `WebSearch`/`WebFetch`: ceny/oceny orientacyjne, artykuły „gdzie się zatrzymać w [miasto]", „best area to stay", fora/Reddit. Oznacz jako niezweryfikowane bezpośrednio.
-> - **Limit ~8 akcji.** Blokującą stronę pomiń. Pola nieustalone → „b.d.".
+> - **Budżet ~20 akcji (sufit ~35); kryterium końca to pokrycie, nie licznik:** ≥2 rejony, ≥3 obiekty, ≥1 odczyt żywej ceny. **Reguła anty-wiszenia:** pobranie > ~15 s albo 403/CAPTCHA → pomijasz natychmiast, bez ponawiania. Pola nieustalone → „b.d.".
+> - **Negatyw o obiekcie** („nie ma parkingu / kuchni / klimatyzacji") bierzesz ze **strony obiektu**, nie z filtra Bookinga — filtr mówi o tym, co hotel wypełnił w agregatorze. Bez tego piszesz „nie znalazłem informacji".
 >
 > **Krok 1 — Rejony/dzielnice (najpierw!):** wskaż 2–4 rejony sensowne dla tego stylu i planu. Dla każdego: dla kogo, plusy, minusy, jak daleko do głównych atrakcji / centrum / lotniska, bezpieczeństwo, charakter (imprezowy/spokojny/rodzinny), orientacyjny poziom cen. To najważniejsza część — bez tego wybór obiektu jest ślepy.
 >

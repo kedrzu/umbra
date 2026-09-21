@@ -15,7 +15,7 @@ Sens: wyłapać rzeczy, które **wywracają wyjazd, jeśli się je przeoczy** (n
 > **Kontekst:** [styl wyjazdu, czy z autem, skąd przylot]
 >
 > **Jak pracować:**
-> - `WebSearch`/`WebFetch` (`ToolSearch` `select:WebSearch,WebFetch`) — oficjalne źródła gdy się da (gov.pl/MSZ, ambasady, IATA Travel, oficjalny transport miejski), plus przewodniki. **Limit ~8 wyszukiwań.** Nieustalone → „b.d.".
+> - `WebSearch`/`WebFetch` (`ToolSearch` `select:WebSearch,WebFetch`) — oficjalne źródła gdy się da (gov.pl/MSZ, ambasady, IATA Travel, oficjalny transport miejski), plus przewodniki. **Budżet ~20 akcji (sufit ~35); kryterium końca to pokrycie, nie licznik:** oficjalne źródło dla dokumentów/wiz + oficjalny przewoźnik miejski. **Reguła anty-wiszenia:** pobranie > ~15 s albo 403/CAPTCHA → pomijasz natychmiast. Nieustalone → „b.d.". **Negatyw o wizie lub wymogach wjazdowych orzekasz wyłącznie ze źródła rządowego** — nigdy z bloga ani forum.
 > - **Zakotwicz się w dacie wyjazdu** — pogoda, sezon i wymogi wjazdowe są zależne od terminu i się zmieniają; oznacz świeżość i wskaż, żeby użytkownik potwierdził wizę/wjazd u oficjalnego źródła przed wyjazdem.
 >
 > **Pokryj:**

@@ -24,12 +24,23 @@ Modele językowe planujące podróż mają kilka silnych, kosztownych odruchów.
 Ceny i dostępność zdobywasz **dwutorowo**, z jasną kolejnością:
 
 1. **Najpierw przeglądarka — Playwright MCP** (`mcp__playwright__*`). Otwórz pre-filled URL (Google Flights / Skyscanner / Booking / Airbnb / Google Hotels), poczekaj na załadowanie wyników i **odczytaj żywą cenę** przez `browser_snapshot` (drzewo dostępności) — nie zgaduj z pamięci. Narzędzia załaduj przez `ToolSearch` zapytaniem `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot` (i w razie potrzeby `browser_click`, `browser_type`, `browser_wait_for`).
-2. **Gdy przeglądarka zawodzi** — blokada/CAPTCHA/403, strona się wiesza, albo serwer Playwright niedostępny → **fallback `WebSearch`/`WebFetch`** (`ToolSearch` `select:WebSearch,WebFetch`): cena **orientacyjna** z widełek/artykułów, wyraźnie oznaczona jako niezweryfikowana bezpośrednio, z datą.
+2. **Gdy przeglądarka zawodzi** — blokada/CAPTCHA/403, strona się wiesza, albo serwer Playwright niedostępny → **najpierw Exa** (`ToolSearch` `select:mcp__exa__web_search_exa,mcp__exa__web_fetch_exa`): semantyczna, zwraca treść strony, a nie sam link, więc wyciąga rozkłady, warunki taryf i opisy obiektów z miejsc, których `WebSearch` nie znajduje. Opisuj idealną stronę pełnym zdaniem, `objective` jest wymagany.
+3. **Na końcu `WebSearch`/`WebFetch`** (`ToolSearch` `select:WebSearch,WebFetch`): cena **orientacyjna** z widełek/artykułów, wyraźnie oznaczona jako niezweryfikowana bezpośrednio, z datą.
 
 **Zasady warstwy danych:**
 - **Zawsze dołączaj pre-filled deep-link**, nawet gdy udało się odczytać żywą cenę — użytkownik i tak klika, żeby zarezerwować, a ceny mogą się zmienić między researchem a rezerwacją.
-- **Limit ~8 akcji/wyszukiwań na subagenta.** Nie zawieszaj się na jednej stronie; strona wiszące/blokująca → pomiń i idź dalej. Priorytet: zwrócić kompletne dossier; pola nieustalone oznacz „b.d.".
+- **Budżet zamiast licznika zapytań.** Nie dawaj subagentom limitu „~8 akcji" — model czyta go jako „po ósmym wyciągnij wniosek" i zwraca werdykt z tego, co zdążył zobaczyć (w skillu zakupowym tak powstał fałszywy negatyw o produkcie, który istniał). Sesji nie zabija liczba zapytań, tylko **jedno pobranie, które wisi**. Dlatego: miękki budżet ~20 akcji, sufit ~35, kryterium zakończenia = **pokrycie z kontraktu**, a przed watchdogiem (~10 min) chroni **reguła anty-wiszenia**: żadne pobranie > ~15 s, 403/CAPTCHA/pusta strona → pomijasz natychmiast i nie ponawiasz. Pola nieustalone → „b.d." + wpis w „Lukach".
 - **Nie loguj się, nie wypełniaj danych osobowych/płatności, nie klikaj „rezerwuj".** Przeglądarka służy **tylko** do odczytu cen/dostępności i zbudowania linku.
+
+### Higiena zapytań i orzeczenia negatywne
+
+*(skrócona adaptacja `shopping-research/references/web-research-protocol.md` — pełna wersja, z sondą katalogową, jest tam; zmieniając jedno, sprawdź drugie)*
+
+- **Gdy coś nie wychodzi — zmień silnik, nie sformułowanie.** Dwa zapytania pod rząd z tymi samymi domenami → przejdź na Exę, na `site:` strony przewoźnika/hotelu/atrakcji, na `filetype:pdf` (rozkłady, cenniki), na oficjalną stronę lotniska, albo na inny język. Trzecie przeformułowanie tego samego zapytania to zmarnowany budżet.
+- **W `WebSearch`: 2–5 słów kluczowych, nie zdania.** Serwis przez `site:` (`site:ryanair.com WAW BCN rozkład`), nie jako słowo. Nazwa własna (hotel, lotnisko, atrakcja) w cudzysłowie. **W Exie odwrotnie** — tam opisujesz idealną stronę pełnym zdaniem.
+- **Szukaj w języku rynku.** Rozkłady, godziny otwarcia i remonty są po lokalnemu, nie po polsku ani angielsku.
+- **„Nie znalazłem" ≠ „nie istnieje".** Tak samo asymetryczne jak w researchu zakupowym: „nie znalazłem połączenia" jest odwracalne i tanie, „nie ma bezpośredniego połączenia" jest nieodwracalne i drogie — użytkownik na tej podstawie kupi gorszy wariant albo zmieni kierunek. Zanim orzekniesz brak, **dotknij źródła pierwotnego**: lista tras na stronie przewoźnika lub lotniska, oficjalny rozkład, strona obiektu/atrakcji. Pustka w Skyscannerze czy Bookingu mówi o **agregatorze**, nie o świecie. Bez źródła pierwotnego piszesz „nie znalazłem w [gdzie], stan na [data]".
+- **PDF-y (rozkłady, cenniki) przez `WebFetch` zwracają binarny śmieć** — użyj `curl -s https://r.jina.ai/<url>` albo `curl -o "$TMPDIR/x.pdf"` + `pdftotext -layout`. `Bash` chodzi przez proxy z allowlistą domen: podaj `allowed_domains`, a gdy połączenie i tak zostaje odrzucone, zapisz to jako lukę zamiast szukać obejścia.
 
 ### Szablony pre-filled linków (wstaw kody lotnisk/miasto/daty/pax)
 

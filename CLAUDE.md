@@ -416,9 +416,28 @@ Instalacja/diagnostyka: `./setup-publishing.sh` (`--status`, `--dry-run`, `--uni
 | `/unsubscribe-review` | Find and clean up newsletter subscriptions |
 | `/daily-briefing` | Poranny briefing - kalendarz, zadania, emaile, przypomnienia |
 | `/weekly-review` | Weekly review and planning |
-| `/research [topic]` | Deep research using vault knowledge |
+| `/research [topic]` | Deep research using vault knowledge (tylko vault — **nie** internet) |
+| `/shopping-research` | Research zakupowy: ranking produktów wg kryteriów, z realną ceną do zdobycia |
+| `/travel-planning` | Planowanie podróży: transport, nocleg, atrakcje, plan dnia |
+| `/publish` | Publikacja dokumentu w internecie + link do wysłania |
+| `/coaching`, `/time-analysis` | Sesja rozwojowa / analiza czasu z Dziennika |
 | `/memory-update [info]` | Explicitly save information to memory |
 | `/do-your-job` | Run full assistant routine |
+
+`/shopping-research` i `/travel-planning` są **interaktywne** — mają twardą bramkę akceptacji specyfikacji przed startem kosztownego researchu.
+
+## Research w internecie
+
+Cztery silniki, każdy do czegoś innego — reguły wyboru, protokół orzeczeń negatywnych i sonda katalogowa żyją w `.claude/skills/shopping-research/references/web-research-protocol.md` (jedyne źródło prawdy; `travel-planning` ma skróconą adaptację u siebie).
+
+| Silnik | Do czego |
+|--------|----------|
+| **Exa** (`mcp__exa__*`, bez klucza) | **domyślne szukanie**: semantyczne, trafia w długi ogon polskich sklepów i konkretne kody wariantów |
+| `WebSearch` | operatory (`site:`, `filetype:`, cudzysłów), świeże newsy |
+| **Playwright** (`mcp__playwright__*`) | strony blokujące wszystko inne (**Allegro**, Häfele, Amazon) i żywe ceny |
+| `Bash` + `curl` / `r.jina.ai` | sitemapy, XML, PDF-y producentów (`WebFetch` zwraca z nich binarny śmieć) |
+
+**Zasada nadrzędna: „nie znalazłem" ≠ „nie istnieje".** Braku nie podajemy jako faktu, dopóki nie dotknęliśmy źródła pierwotnego (katalog/sitemap/cennik producenta). Powód jest zapisany w historii: agent orzekł, że prowadnica `PK-L-H53-550` nie istnieje, opierając się na uwadze jednego sklepu — produkt był w katalogu producenta i w polskich sklepach.
 
 ## Poranna rutyna na harmonogramie
 
