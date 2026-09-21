@@ -103,8 +103,14 @@ Kolejność jest twarda, bo właśnie ona chroni autonomię (pytasz dopiero, gdy
    - **Personal** (kedrzu@gmail.com): **najpierw sprawdź, czy to nowa sprawa** (rejestr: `scripts/ledger.py`) — nowa → **twórz zadanie Todoist** (opis + Gmail-link + priorytet) i rekord sprawy; znana → **żadnego nowego zadania**, tylko aktualizacja istniejącego (`todoist.py reschedule`/`update`/`comment`) i dopięcie wątku do rekordu.
    - **Work** (kedrzu@sigma.clinic): **NIE twórz żadnego taska** (ani Todoist, ani Linear) — nadaj tylko marker `Wymaga działania`/`Wymaga odpowiedzi` (+ `IMPORTANT`) i `AI/Done`; mail zostaje w INBOX do ręcznej obsługi i wraca do pipeline'u, gdy dojdzie nowa wiadomość.
    Potrzebuję agenta autonomicznego, nie proszącego o akceptację każdej akcji. Zadania **tworzymy i aktualizujemy**, ale **nigdy nie ukańczamy ani nie kasujemy** — to robi użytkownik, a agent zauważa to przy porannym uzgodnieniu z Todoistem. (Zmiany **reguł rulebooka** pozostają na podwójnym opt-in — to inna kategoria niż akcja na mailu/tasku.)
-6. **ALWAYS ask before**:
-   - Creating calendar events
+6. **Twarde terminy z maili → kalendarz, autonomicznie** (stała zgoda użytkownika z 2026-09-02): gdy mail
+   niesie **konkretny, narzucony termin** — przegląd/prace w budynku, wizyta, odbiór, zebranie, twarda data
+   graniczna — agent **od razu tworzy wydarzenie** w kalendarzu **`Przypomnienia`** (konto personal), z datą,
+   godzinami, miejscem i linkiem do maila. Bez pytania. Termin **sam w sobie nie jest zadaniem** — zadanie
+   powstaje tylko wtedy, gdy mail wymaga ode mnie realnego ruchu (zapłata, dopłata, załatwienie sprawy).
+   Zgoda dotyczy **tworzenia**; aktualizowanie i kasowanie wydarzeń nadal zabronione (pkt 3). Miękkie
+   propozycje bez narzuconego terminu (zaproszenia, „wpadnij kiedyś") → nadal sekcja „Do decyzji" w dashboardzie.
+7. **ALWAYS ask before**:
    - Applying labels to important emails
    - Unsubscribing from newsletters
 
@@ -379,6 +385,26 @@ Twoje robocze notatki należą do `Asystent/`. Modyfikuj notatki użytkownika ty
 - `./obsidian/Asystent/Memory/Work.md`
 - `./obsidian/Kontakty/Jan-Kowalski.md`
 - `./obsidian/Inbox/Dashboard-2025-02-04.md`
+
+## Publikowanie dokumentów
+
+Gdy trzeba komuś **wysłać link** do dokumentu (raport, zestawienie, dokumentacja, mała statyczna apka), robi to skill **`/publish`** przez `scripts/publish.py` — kontrakt w `docs/publishing.md`. Jeden projekt Cloudflare Pages = jedna subdomena = wiele niezależnych podfolderów. **Użytkownik nie robi tego ręcznie — agent publikuje sam.**
+
+```bash
+python3 scripts/publish.py find garderoba                    # NAJPIERW: czy to już wisi
+python3 scripts/publish.py add ./dokumentacja/ --slug garderoba --title "..."
+python3 scripts/publish.py update garderoba                  # odśwież pod TYM SAMYM adresem
+python3 scripts/publish.py list
+python3 scripts/publish.py unpublish <slug>                  # treść -> published/trash/
+```
+
+- **Adres (`--slug`) to decyzja agenta, nie skryptu.** Czytelny (`/garderoba/`) dla rzeczy, które ktoś przepisze z kartki albo poda przez telefon; z **samodzielnie dolosowanym** sufiksem (`/wyniki-7f3a91c4/`) dla treści, która nie powinna być do zgadnięcia. Gdy nie ma pewności, a użytkownik jest obecny — jedno krótkie pytanie; w trybie autonomicznym wybieramy nieodgadywalny.
+- **Nigdy dwa linki do jednej rzeczy.** `add` tego samego źródła aktualizuje istniejącą publikację; slug pamiętają `published/manifest.json` i marker `.publish.json` przy samym źródle.
+- **Nie publikujemy bez wyraźnej prośby**, a danych pacjentów (`sigma.clinic`), dokumentów tożsamości, danych finansowych ani danych osób trzecich z `Kontakty/` — w ogóle. Ochroną jest tylko nieodgadywalność linku, nie autoryzacja.
+- **Nic nie kasujemy**: `unpublish` przenosi do `published/trash/`, podkomendy `delete` nie ma.
+- `published/` jest w `.gitignore` — repo `kedrzu/umbra` jest **publiczne**, publikowane treści nigdy nie wchodzą do gita.
+
+Instalacja/diagnostyka: `./setup-publishing.sh` (`--status`, `--dry-run`, `--uninstall`), konfiguracja w `scripts/publish.env`, token w `.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
 
 ## Skills Available
 

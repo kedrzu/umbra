@@ -37,3 +37,9 @@ npm-debug.log*
 # Python bytecode (scripts/)
 __pycache__/
 *.pyc
+
+# Lustro publikowanych dokumentow (repo jest publiczne!)
+published/
+
+# Lokalny stan wranglera (deploy Cloudflare Pages)
+.wrangler/
