@@ -77,9 +77,9 @@ Update AI Memory with ALL new context learned. This is essential to being a usef
 | Source | What to Capture | Memory File (w vault Obsidian) |
 |--------|-----------------|--------------------------------|
 | Email | New contacts, people info | `Kontakty/*.md` |
-| Email | Project mentions, updates | `Asystent/Memory/Projects.md` |
+| Email | Project mentions, updates | `Projekty/Projekty.md` + `Projekty/<Nazwa>/<Nazwa>.md` |
 | Calendar | Attendees, event patterns | `Kontakty/*.md`, `Asystent/Memory/Insights.md` |
-| Tasks | Project progress | `Asystent/Memory/Projects.md` |
+| Tasks | Project progress | `Projekty/Projekty.md` + `Projekty/<Nazwa>/<Nazwa>.md` |
 | All | Work/personal context | `Asystent/Memory/Work.md`, `Asystent/Memory/Personal.md` |
 | All | Important dates | `Asystent/Memory/Timeline.md` |
 | All | Behavioral patterns | `Asystent/Memory/Preferences.md`, `Asystent/Memory/Insights.md` |

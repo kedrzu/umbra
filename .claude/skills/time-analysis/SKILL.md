@@ -12,7 +12,11 @@ Z surowych, głosowych notatek w Dzienniku odtwarzasz **na co realnie schodzi cz
 **WAŻNE**: Wszystkie pliki są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu! `./obsidian/` to **symlink** — Glob może nie działać, używaj `Bash(ls ...)`.
 
 - **Źródło**: `./obsidian/Dziennik/YYYY-MM-DD.md` — jeden plik na dzień, wpisy w formacie `## HH:MM` + tekst.
-- **Wynik**: `./obsidian/Asystent/AnalizaCzasu/` — tu zapisujesz artefakty (folder utwórz przy pierwszym przebiegu).
+- **Wynik — dwa miejsca, bo dwie różne rzeczy:**
+  - **Raporty `.md`** (to czyta użytkownik) → `./obsidian/AnalizaCzasu/` w roocie vault.
+  - **Surowe dane `.json`** (log modelu, liczby ze skryptu — Twoje dane robocze) → `./obsidian/Asystent/AnalizaCzasu/`.
+  - Parowanie po wspólnym prefiksie nazwy `Analiza-<zakres>--run-<timestamp>`, więc raport zawsze da się
+    zestawić ze swoim `.json`. Foldery utwórz przy pierwszym przebiegu.
 
 ## Uwaga o skrypcie (świadome odstępstwo)
 
@@ -27,7 +31,7 @@ Nigdy nie licz sum/procentów ręcznie. Zawsze przepuść log przez skrypt i rap
 
 | Operacja | Narzędzie |
 |----------|-----------|
-| Lista dni w Dzienniku / poprzednich analiz | `Bash(ls ./obsidian/Dziennik/)`, `Bash(ls ./obsidian/Asystent/AnalizaCzasu/)` — NIE Glob! |
+| Lista dni w Dzienniku / poprzednich analiz | `Bash(ls ./obsidian/Dziennik/)`, `Bash(ls ./obsidian/AnalizaCzasu/)` — NIE Glob! |
 | Czytanie wpisów dnia | `Read` |
 | Zapis logu modelu (JSON) i raportów (MD) | `Write` |
 | Agregacja + walidacja (arytmetyka) | `Bash(python3 .claude/skills/time-analysis/scripts/time_aggregate.py ...)` |
@@ -124,7 +128,7 @@ Reguły pól (skrypt je egzekwuje):
 
 1. **Ustal zakres.** Pobierz najpierw „dzisiaj": `Bash(date "+%Y-%m-%d")` oraz timestamp uruchomienia: `Bash(date "+%Y%m%d-%H%M")` i `Bash(date "+%Y-%m-%dT%H:%M:%S")`.
    - **Analizuj wyłącznie pełne (zakończone) dni — koniec zakresu to najpóźniej WCZORAJ.** Dzień `>= dzisiaj` jest poza zakresem: dzień się jeszcze nie skończył, Dziennik ma wpisy tylko do bieżącej chwili, więc alokacja luk czasowych (serce Etapu 1) nie miałaby pełnego budżetu doby. Co gorsza — gdybyś policzył dziś niepełny dzień, **kursor przyrostowy przesunie się za niego i pełna wersja nigdy nie zostanie doanalizowana**. Dlatego dzisiaj zawsze czeka na jutro. Nie komentuj „dzień X niepełny" — po prostu go nie bierz.
-   - **Domyślnie — przyrostowo:** `ls ./obsidian/Asystent/AnalizaCzasu/`. Kursor wyznacz po analizie o **najpóźniejszym `zakres` (end)** w frontmatterze (NIE po najnowszym `run` — backfill o starszym/równym zakresie nie może cofać kursora). Start = dzień po tym `end`. Koniec = **min(najnowszy dzień w Dzienniku, wczoraj)**.
+   - **Domyślnie — przyrostowo:** `ls ./obsidian/AnalizaCzasu/` (raporty `.md` — tam żyją frontmattery z zakresem; `.json` siedzą osobno w `./obsidian/Asystent/AnalizaCzasu/`). Kursor wyznacz po analizie o **najpóźniejszym `zakres` (end)** w frontmatterze (NIE po najnowszym `run` — backfill o starszym/równym zakresie nie może cofać kursora). Start = dzień po tym `end`. Koniec = **min(najnowszy dzień w Dzienniku, wczoraj)**.
    - **Self-heal starych analiz:** jeśli wybrana analiza ma `zakres.end >= data(run)` (czyli liczyła własny, wtedy-niepełny dzień), **włącz ten `end` ponownie** do nowego zakresu (start = `end`, nie `end + 1`) — był niepełny, gdy go policzono, więc należy mu się uczciwa, całodniowa analiza.
    - **Brak nowych pełnych dni** (start > koniec — wszystko do wczoraj już przeliczone): zakończ grzecznie komunikatem „brak nowych pełnych dni — najnowszy pełny dzień (`<data>`) już przeanalizowany". Nie analizuj dzisiaj „na zapas".
    - **Jawny zakres od użytkownika wygrywa** nad regułą „do wczoraj". Jeśli obejmuje dzisiaj — wykonaj, ale dopisz w raporcie notkę, że ostatni dzień jest niepełny (świadomy wybór użytkownika).
@@ -152,15 +156,23 @@ Reguły pól (skrypt je egzekwuje):
 
 ## Artefakty (folder + nazewnictwo)
 
-Folder: `./obsidian/Asystent/AnalizaCzasu/`. Per przebieg, zachowywane na stałe (timestamp w nazwie pozwala trzymać kilka analiz tego samego zakresu obok siebie):
+**Dwa foldery, wspólny prefiks nazwy.** Raporty czyta użytkownik, więc idą do roota vault; surowe dane
+są Twoje, więc zostają w `Asystent/`. Per przebieg, zachowywane na stałe (timestamp w nazwie pozwala
+trzymać kilka analiz tego samego zakresu obok siebie):
 
 ```
+./obsidian/AnalizaCzasu/                                   # raporty - przestrzeń użytkownika
 Analiza-<start>_<end>--run-<YYYYMMDD-HHMM>-1-log.md
 Analiza-<start>_<end>--run-<YYYYMMDD-HHMM>-2-kategorie.md
 Analiza-<start>_<end>--run-<YYYYMMDD-HHMM>-3-analiza.md
+
+./obsidian/Asystent/AnalizaCzasu/                          # dane surowe - Twój workspace
 Analiza-<start>_<end>--run-<YYYYMMDD-HHMM>.log.json       # dane modelu (reprodukowalność)
 Analiza-<start>_<end>--run-<YYYYMMDD-HHMM>.results.json   # liczby ze skryptu
 ```
+
+Prefiks `Analiza-<start>_<end>--run-<timestamp>` jest wspólny dla obu folderów — po nim zawsze
+zestawisz raport z jego danymi źródłowymi.
 
 Każdy plik `.md` zaczyna się frontmatterem (pozwala odczytać zakres przy następnym przyrostowym przebiegu i indeksować w Dataview/Bases):
 
@@ -268,4 +280,4 @@ Tracked łącznie: **X h** · Untracked: **Y min** · Pokrycie: **Z%**
 - **Każdy wiersz** ma `evidence` (cytat) i `confidence`.
 - Jeśli skrypt zwróci kod ≠ 0 lub poważne flagi — popraw log i odpal ponownie, zanim napiszesz raport.
 - **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznana czynność / osoba / miejsce / kryptonim we wpisie, której nie umiesz skategoryzować → najpierw `grep` po Dzienniku i `qmd` po vault. Jeśli dalej ślepo i to realnie utrudnia kategoryzację — **zbierz niejasności i zapytaj zbiorczo** (na końcu, nie przerywaj rekonstrukcji per wpis), potem **utrwal** (osoba → `Kontakty/`, reszta → `Insights.md`). Read-only Dziennika to nie zmienia — piszesz tylko do pamięci i `AnalizaCzasu/`.
-- To analiza **read-only** Dziennika — nie edytujesz wpisów użytkownika, piszesz wyłącznie do `Asystent/AnalizaCzasu/`.
+- To analiza **read-only** Dziennika — nie edytujesz wpisów użytkownika, piszesz wyłącznie do `AnalizaCzasu/` (raporty) i `Asystent/AnalizaCzasu/` (dane surowe).

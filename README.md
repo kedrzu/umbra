@@ -256,7 +256,7 @@ This:
 | Volume         | Container       | Access         | Purpose                      |
 | -------------- | --------------- | -------------- | ---------------------------- |
 | Obsidian vault | claude          | read-only      | qmd search                   |
-| Obsidian vault | obsidian  | read-write     | Note operations (Asystent/ folder) |
+| Obsidian vault | obsidian  | read-write     | Notatki: `Asystent/` (workspace agenta) + przestrzeń użytkownika (`Projekty/`, `Kontakty/`, `Inbox/`, `Research/`…) |
 | `/`   | claude          | **read-write** | Self-modifying instructions  |
 | qmd-index      | claude          | read-write     | Search index                 |
 | OAuth tokens   | gmail, calendar | read-write     | Auth tokens                  |

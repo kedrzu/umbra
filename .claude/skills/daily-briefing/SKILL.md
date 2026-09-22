@@ -13,7 +13,8 @@ Codzienny briefing - wszystko czego potrzebujesz na start dnia.
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, Work.md, etc.)
+- `./obsidian/Projekty/` - projekty: `Projekty/<Nazwa>/<Nazwa>.md` + indeks `Projekty/Projekty.md`
+- `./obsidian/Asystent/Memory/` - pamięć systemowa, Twój workspace (Work.md, Insights.md, etc.)
 - `./obsidian/Asystent/Memory/Ledger/` - rejestr otwartych spraw; **wyłącznie przez `scripts/ledger.py`** (`docs/ledger.md`), nigdy Read/Edit na plikach
 - `./obsidian/Inbox/` - dashboardy (np. `./obsidian/Inbox/Dashboard-YYYY-MM-DD.md`)
 
@@ -37,7 +38,7 @@ Foldery w vault:
 1. **Pobierz aktualną datę i czas**
 
 2. **Przeczytaj AI Memory**
-   - `./obsidian/Asystent/Memory/Projects.md` - aktywne projekty
+   - `./obsidian/Projekty/Projekty.md` - aktywne projekty
    - `python3 scripts/ledger.py due` - dojrzałe sprawy i przypomnienia do przeglądu
    - `./obsidian/Asystent/Memory/Insights.md` - wzorce i preferencje
 
@@ -80,7 +81,7 @@ Foldery w vault:
     - Nowe osoby z kalendarza → utwórz `./obsidian/Kontakty/Imie-Nazwisko.md` (użyj `qmd` żeby sprawdzić czy już istnieje)
     - Uczestnicy spotkań → użyj `qmd` do znalezienia kontaktu, aktualizuj `ostatni_kontakt`
     - Po spotkaniach → dodaj wpis do `## Historia kontaktów` uczestników
-    - Kontekst projektowy → `./obsidian/Asystent/Memory/Projects.md`
+    - Kontekst projektowy → `./obsidian/Projekty/Projekty.md` + `./obsidian/Projekty/<Nazwa>/<Nazwa>.md`
     - Wzorce → `./obsidian/Asystent/Memory/Insights.md`
 
     **WAŻNE**: NIE ładuj całej listy kontaktów - wyszukuj przez `qmd`!

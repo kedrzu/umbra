@@ -14,9 +14,9 @@ This skill explicitly updates the **Digital Twin** - the comprehensive model of 
 **WAŻNE**: Wszystkie pliki pamięci i kontaktów są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu!
 
 Foldery w vault:
-- `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, Work.md, Personal.md, etc.)
-- `./obsidian/Projects/` - szczegółowe pliki projektów
+- `./obsidian/Asystent/Memory/` - **Twój workspace**: pamięć systemowa (Work.md, Personal.md, Insights.md, Timeline.md, Preferences.md). Użytkownik tu nie zagląda.
+- `./obsidian/Projekty/` - **przestrzeń użytkownika**: folder na projekt, `Projekty/<Nazwa>/<Nazwa>.md` + indeks `Projekty/Projekty.md`
+- `./obsidian/Kontakty/` - **przestrzeń użytkownika**: profile osób (frontmatter YAML dla Obsidian Bases)
 
 ## MCP Tools Used
 
@@ -32,18 +32,21 @@ Foldery w vault:
 ## Memory Structure
 
 ```
-Asystent/Memory/
-├── Projects.md         # Index of all projects (brief list with links)
-├── Projects/           # Individual project files (detailed profiles)
-│   ├── _TEMPLATE.md    # Template for new project files
-│   └── Project-Alpha.md
-├── Work.md             # Professional context
-├── Personal.md         # Personal life context
-├── Preferences.md      # Behavioral patterns
-├── Insights.md         # Observations and patterns
-└── Timeline.md         # Life events and milestones
+Asystent/                       # TWÓJ workspace - użytkownik tu nie zagląda
+├── SzablonProjektu.md          # Szablon pliku projektu
+└── Memory/
+    ├── Work.md             # Professional context
+    ├── Personal.md         # Personal life context
+    ├── Preferences.md      # Behavioral patterns
+    ├── Insights.md         # Observations and patterns
+    └── Timeline.md         # Life events and milestones
 
-Kontakty/               # Osobny folder w vault (Obsidian Bases)
+Projekty/               # PRZESTRZEŃ UŻYTKOWNIKA - folder na projekt
+├── Projekty.md         # Indeks wszystkich projektów (lista z linkami)
+└── Sigma Health/       # materiały projektu leżą obok notatki
+    └── Sigma Health.md
+
+Kontakty/               # PRZESTRZEŃ UŻYTKOWNIKA (Obsidian Bases)
 ├── Kontakty.base       # Widok tabeli wszystkich kontaktów
 ├── _TEMPLATE-Osoba.md  # Szablon dla nowych osób
 └── Imie-Nazwisko.md    # Profile osób (dane w frontmatter YAML)
@@ -54,7 +57,7 @@ Kontakty/               # Osobny folder w vault (Obsidian Bases)
 1. **Analyze the Information**
    - What category does this fit?
      - Person info → `Kontakty/Imie-Nazwisko.md` (frontmatter YAML + sekcje)
-     - Project context → `Projects.md` (index) + `Projects/Nazwa-Projektu.md` (details)
+     - Project context → `Projekty/Projekty.md` (index) + `Projekty/<Nazwa>/<Nazwa>.md` (details)
      - Work context → `Work.md`
      - Personal context → `Personal.md`
      - User preference → `Preferences.md`
@@ -63,7 +66,7 @@ Kontakty/               # Osobny folder w vault (Obsidian Bases)
      - Email workflow strategy → `EmailWorkflow-Personal.md` or `EmailWorkflow-Work.md`
    - Is this new or an update to existing?
    - Does this connect to other information? (cross-reference!)
-   - **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): jeśli zapisywana informacja odwołuje się do czegoś niejasnego (osoba, kryptonim, skrót, dokument), którego nie rozumiesz — **najpierw research** (`qmd`/`Read` digital twina), a gdy vault milczy i to blokuje sensowny zapis — **dopytaj użytkownika**. Lokalizację docelową i tak wybierasz wg routingu wyżej (osoba → `Kontakty/`, projekt → `Projects/`, reszta → `Work.md`/`Personal.md`/`Insights.md`).
+   - **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): jeśli zapisywana informacja odwołuje się do czegoś niejasnego (osoba, kryptonim, skrót, dokument), którego nie rozumiesz — **najpierw research** (`qmd`/`Read` digital twina), a gdy vault milczy i to blokuje sensowny zapis — **dopytaj użytkownika**. Lokalizację docelową i tak wybierasz wg routingu wyżej (osoba → `Kontakty/`, projekt → `Projekty/`, reszta → `Work.md`/`Personal.md`/`Insights.md`).
 
 2. **For People (Kontakty)**
 
@@ -87,9 +90,10 @@ Kontakty/               # Osobny folder w vault (Obsidian Bases)
 3. **For Projects**
 
    **If new project:**
-   - Create individual file in `Projects/` using template
-   - Add entry to `Projects.md` index
-   - Use kebab-case for filenames: `Project-Alpha.md`
+   - Create folder `Projekty/<Nazwa>/` and note `<Nazwa>.md` inside it, using `Asystent/SzablonProjektu.md`
+   - Add entry to `Projekty/Projekty.md` index
+   - Nazwy projektów: normalne polskie nazwy ze spacjami i diakrytykami (`Stół Owalny`, `12 Kroków`);
+     folder i notatka nazywają się tak samo. Materiały projektu (rysunki, dokumentacja) leżą w tym samym folderze.
 
    **If updating existing:**
    - Find and update the individual file
@@ -136,7 +140,7 @@ ostatni_kontakt: 2025-02-01
 nastepny_kontakt: 2025-02-15
 preferowany_kanal: email   # email | telefon | slack | spotkanie
 projekty:
-  - "[[Projects/Project-Alpha]]"
+  - "[[Projekty/Projekt Alpha/Projekt Alpha|Projekt Alpha]]"
 powiazania:
   - "[[Kontakty/Anna-Nowak]]"
 ---
@@ -160,7 +164,7 @@ Kolega z pracy od 2022, prowadzi projekt X. Ekspert od Kubernetes.
 - **Najlepszy czas**: Rano
 
 ## Projekty wspólne
-- [[Projects/Project-Alpha|Project Alpha]] - Tech Lead
+- [[Projekty/Projekt Alpha/Projekt Alpha|Projekt Alpha]] - Tech Lead
 
 ## Powiązania
 - [[Kontakty/Anna-Nowak|Anna Nowak]] - jego manager
@@ -193,14 +197,14 @@ Awansował na tech leada.
 1. Aktualizuj `ostatni_kontakt` w frontmatter!
 2. Dodaj wpis do `## Historia kontaktów` z datą i źródłem
 
-### Project Index Entry (in `Projects.md`)
+### Project Index Entry (in `Projekty/Projekty.md`)
 ```markdown
-- [[Projects/Project-Alpha|Project Alpha]] - Migracja legacy, deadline 2025-03-15
+- [[Projekty/Projekt Alpha/Projekt Alpha|Projekt Alpha]] - Migracja legacy, deadline 2025-03-15
 ```
 
-### Project Detail File (`Projects/Project-Alpha.md`)
+### Project Detail File (`Projekty/Projekt Alpha/Projekt Alpha.md`)
 ```markdown
-# Project Alpha
+# Projekt Alpha
 
 - **Typ**: Praca / kluczowy projekt
 - **Status**: Aktywny, faza 2
@@ -236,7 +240,7 @@ Migracja systemu legacy do nowej architektury, budżet 500k.
 
 ### Memory Updated
 
-**Category**: [Kontakty/Projects/Work/Personal/Preferences/Insights/Timeline]
+**Category**: [Kontakty/Projekty/Work/Personal/Preferences/Insights/Timeline]
 **Files updated**:
 - `Kontakty/[Imie-Nazwisko].md` lub `Asystent/Memory/[path]`
 
@@ -254,9 +258,9 @@ Migracja systemu legacy do nowej architektury, budżet 500k.
 ## Important Rules
 
 - **People (Kontakty)**: Bez indeksu - bezpośrednio `Kontakty/Imie-Nazwisko.md` z frontmatter YAML
-- **Projects**: Index (`Projects.md`) + individual files (`Projects/Nazwa.md`)
-- **Naming**: Use kebab-case for filenames (e.g., `Jan-Kowalski.md`)
-- **Cross-reference**: Link between people and projects: `[[Kontakty/...]]`, `[[Projects/...]]`
+- **Projects**: Index (`Projekty/Projekty.md`) + folder na projekt (`Projekty/<Nazwa>/<Nazwa>.md`)
+- **Naming**: kontakty kebab-case (`Jan-Kowalski.md`); projekty normalnymi nazwami ze spacjami i diakrytykami (`Stół Owalny`)
+- **Cross-reference**: Link between people and projects: `[[Kontakty/...]]`, `[[Projekty/<Nazwa>/<Nazwa>|<Nazwa>]]` (pełna ścieżka + alias)
 - **Templates**: Use `_TEMPLATE-Osoba.md` for new contacts
 - **ostatni_kontakt**: Zawsze aktualizuj to pole przy każdym kontakcie!
 - Always read the file first before updating

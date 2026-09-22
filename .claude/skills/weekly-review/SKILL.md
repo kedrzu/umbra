@@ -13,7 +13,8 @@ Comprehensive review of the past week and planning for the next.
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób (frontmatter YAML dla Obsidian Bases)
-- `./obsidian/Asystent/Memory/` - pamięć systemowa (Projects.md, Insights.md, etc.)
+- `./obsidian/Projekty/` - projekty: `Projekty/<Nazwa>/<Nazwa>.md` + indeks `Projekty/Projekty.md`
+- `./obsidian/Asystent/Memory/` - pamięć systemowa, Twój workspace (Insights.md, Work.md, etc.)
 
 ## Process
 
@@ -35,7 +36,7 @@ Foldery w vault:
    - Important conversations that happened
 
 4. **Project Progress**
-   - Check `Asystent/Memory/Projects.md`
+   - Check `Projekty/Projekty.md`
    - What moved forward?
    - What's stalled?
 
@@ -66,7 +67,7 @@ Foldery w vault:
 
    | What to Update | Memory File (w vault Obsidian) | What to Capture |
    |----------------|--------------------------------|-----------------|
-   | Project statuses | `Asystent/Memory/Projects.md` | Progress, blockers, timeline changes |
+   | Project statuses | `Projekty/Projekty.md` + `Projekty/<Nazwa>/<Nazwa>.md` | Progress, blockers, timeline changes |
    | People updates | `Kontakty/*.md` | New contacts, relationship developments |
    | Work context | `Asystent/Memory/Work.md` | Team changes, goals, challenges |
    | Personal context | `Asystent/Memory/Personal.md` | Life updates, goal progress |
@@ -134,4 +135,4 @@ Items that need attention:
 - Ask about stalled projects
 - Help identify what to drop or delegate
 - Be honest about overcommitment if observed
-- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznany projekt / osoba / zobowiązanie wyłonione z tygodnia → najpierw research w vault (`qmd`/`Read`). Jeśli dalej niejasne i blokuje przegląd — dopytaj w interaktywnej rozmowie i **utrwal w kroku „Digital Twin Memory Update"** (osoba → `Kontakty/`, projekt → `Projects.md`, reszta → `Insights.md`/`Work.md`).
+- **Luka kontekstowa** (protokół CLAUDE.md „Luki kontekstowe"): nieznany projekt / osoba / zobowiązanie wyłonione z tygodnia → najpierw research w vault (`qmd`/`Read`). Jeśli dalej niejasne i blokuje przegląd — dopytaj w interaktywnej rozmowie i **utrwal w kroku „Digital Twin Memory Update"** (osoba → `Kontakty/`, projekt → `Projekty/Projekty.md` + plik projektu, reszta → `Insights.md`/`Work.md`).

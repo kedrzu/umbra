@@ -12,7 +12,7 @@ Prowadzisz użytkownikowi **prawdziwą sesję coachingową** — nie kolejną an
 **WAŻNE**: Wszystkie pliki są w vault Obsidian (`./obsidian/`), NIE w lokalnym folderze projektu. `./obsidian/` to **symlink** — Glob bywa zawodny, do listowania używaj `Bash(ls ...)`.
 
 - **Dziennik** (źródło surowca): `./obsidian/Dziennik/YYYY-MM-DD.md` — wpisy głosowe w formacie `## HH:MM` + tekst. **Read-only** — nigdy nie edytujesz wpisów użytkownika.
-- **Analizy czasu** (jak spędzasz czas — grube podsumowania): `./obsidian/Asystent/AnalizaCzasu/` — per przebieg: `*-3-analiza.md` (wnioski/wzorce behawioralne), `*-2-kategorie.md` (na co realnie schodzi czas: sumy per kategoria, pory dnia), `*-1-log.md` (szczegóły), czasem `*-4-*.md` (tematyczne pogłębienia). To Twoje główne okno na alokację czasu.
+- **Analizy czasu** (jak spędzasz czas — grube podsumowania): `./obsidian/AnalizaCzasu/` — per przebieg: `*-3-analiza.md` (wnioski/wzorce behawioralne), `*-2-kategorie.md` (na co realnie schodzi czas: sumy per kategoria, pory dnia), `*-1-log.md` (szczegóły), czasem `*-4-*.md` (tematyczne pogłębienia). To Twoje główne okno na alokację czasu.
 - **Pamięć / digital twin**: `./obsidian/Asystent/Memory/` (Work, Personal, Insights, Preferences, Timeline).
 - **Sesje coachingowe** (ciągłość + zapis): `./obsidian/Coaching/` — folder na poziomie głównym vault, utwórz przy pierwszym przebiegu.
 
@@ -40,7 +40,7 @@ W trakcie sesji rozróżniaj dwa rodzaje pytań:
 
 | Operacja | Narzędzie |
 |----------|-----------|
-| Lista dni Dziennika / poprzednich sesji / analiz | `Bash(ls ./obsidian/Dziennik/)`, `Bash(ls ./obsidian/Coaching/)`, `Bash(ls ./obsidian/Asystent/AnalizaCzasu/)` — NIE Glob |
+| Lista dni Dziennika / poprzednich sesji / analiz | `Bash(ls ./obsidian/Dziennik/)`, `Bash(ls ./obsidian/Coaching/)`, `Bash(ls ./obsidian/AnalizaCzasu/)` — NIE Glob |
 | Czytanie wpisów, analiz, poprzedniej sesji, pamięci | `Read` |
 | Trendy / czy temat wraca w Dzienniku | `Bash(grep -ri "hasło" ./obsidian/Dziennik/)` — **Dziennik bywa poza indeksem qmd**, grep jest pewniejszy |
 | Szukanie w reszcie vault (pamięć, kontakty, analizy) | `qmd` (MCP) |
@@ -53,7 +53,7 @@ Zbierasz kontekst **pod maską**. Użytkownik nie widzi tego etapu jako ściany 
 
 1. **Znajdź ostatnią sesję.** `ls ./obsidian/Coaching/` → najnowszy plik `YYYY-MM-DD.md`. `Read` jej: zapamiętaj **datę**, **temat** i **zobowiązania** (rozliczysz je na otwarciu) oraz „wątki do wrócenia". Brak folderu/sesji → to pierwsza sesja, potraktuj łagodniej (bez rozliczania).
 2. **Zakres inkrementalny + margines.** Wczytaj wpisy Dziennika **od daty ostatniej sesji minus ~2 dni** do dziś. Brak poprzedniej sesji → ostatnie ~7 dni. Czytaj pod kątem: co się działo, jaką ma energię, co go zajmuje/uwiera, jakie emocje wracają.
-3. **Analiza czasu — jak spędzasz czas (grube podsumowanie).** `ls ./obsidian/Asystent/AnalizaCzasu/` i wczytaj **najnowszy przebieg**: `*-3-analiza.md` (wnioski/wzorce) **oraz** `*-2-kategorie.md` (na co realnie schodzi czas — sumy per kategoria, rozbicie na pory dnia), plus ewentualne `*-4-*.md`. To gruboziarnisty obraz ostatniego okresu: gdzie idą godziny, co rośnie/maleje, gdzie jest rozjazd między tym, na co chcesz dawać czas, a na co realnie go dajesz — to pierwszorzędny materiał coachingowy.
+3. **Analiza czasu — jak spędzasz czas (grube podsumowanie).** `ls ./obsidian/AnalizaCzasu/` i wczytaj **najnowszy przebieg**: `*-3-analiza.md` (wnioski/wzorce) **oraz** `*-2-kategorie.md` (na co realnie schodzi czas — sumy per kategoria, rozbicie na pory dnia), plus ewentualne `*-4-*.md`. To gruboziarnisty obraz ostatniego okresu: gdzie idą godziny, co rośnie/maleje, gdzie jest rozjazd między tym, na co chcesz dawać czas, a na co realnie go dajesz — to pierwszorzędny materiał coachingowy.
 4. **Trend — porównaj z poprzednim przebiegiem.** Migawka kłamie; coaching żyje z trendów. Zerknij na **wcześniejszy** raport `*-2-kategorie.md`/`*-3-analiza.md`, żeby zobaczyć, jak alokacja czasu **ewoluuje** (np. praca rośnie, rozrywka klastruje się rano). Dla kandydujących tematów sprawdź też, czy wątek nie jest **powracający** w samym Dzienniku (asertywność, poranny telefon, lęk o finanse firmy, regularność medytacji) — do przeszukania Dziennika użyj `grep` (Dziennik bywa poza indeksem qmd — qmd potrafi zwrócić pusto), do reszty vault `qmd`.
 5. **Pamięć.** `Read` `Work.md`, `Personal.md`, `Insights.md`, `Preferences.md`, `Timeline.md` dla tła (część bywa szablonami — bierz to, co wypełnione).
 6. **Zsyntetyzuj 2–3 kandydujące tematy** sesji, każdy z **dowodem** (cytat z dziennika / liczba z analizy czasu / „to wraca od X dni"). To one zasilą otwarcie — ale wybór należy do użytkownika.

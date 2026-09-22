@@ -7,7 +7,7 @@ Wcześniej ten stan siedział w etykietach Gmaila (`AI/Defer/<data>`, `TODO/<tas
 ## Zasady
 
 - **Rozmawiasz z CLI, nie z plikami.** `scripts/ledger.py` to stabilny kontrakt; format pod spodem (dziś JSONL) może się zmienić bez ruszania skilli. Nigdy nie edytuj `.jsonl` ręcznie ani nie parsuj go `grep`em.
-- **Rejestr trzyma pętle, nie prozę.** Do środka trafia tylko to, co musi być deterministycznie filtrowalne: daty, status, powiązania. Opis osoby, kontekst projektu, historia sprawy → notatki w vault (`Kontakty/`, `Projects/`, `Dziennik/`), a rekord wskazuje je polem `note` i przez `refs`. Do przeszukiwania prozy jest `qmd`.
+- **Rejestr trzyma pętle, nie prozę.** Do środka trafia tylko to, co musi być deterministycznie filtrowalne: daty, status, powiązania. Opis osoby, kontekst projektu, historia sprawy → notatki w vault (`Kontakty/`, `Projekty/`, `Dziennik/`), a rekord wskazuje je polem `note` i przez `refs`. Do przeszukiwania prozy jest `qmd`.
 - **Zapisuje główny agent.** Subagenci w batchach zwracają propozycje rekordów i zadań w raporcie; `upsert` i tworzenie zadań robi **jeden** proces — nie tylko po to, żeby dwa batche nie deptały sobie pliku, ale przede wszystkim dlatego, że tylko ten proces widzi wszystkie sprawy naraz i potrafi rozpoznać, że dwa maile dotyczą jednej sprawy.
 - **`Otwarte.md` jest generowany** — to widok do czytania z telefonu, nie źródło prawdy. Nie edytuj.
 

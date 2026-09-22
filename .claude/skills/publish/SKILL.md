@@ -76,7 +76,7 @@ python3 scripts/publish.py unpublish <slug>          # zdjęcie z sieci; treść
 
 ## Po publikacji: zapisz to, co jutro będzie potrzebne
 
-Marker `.publish.json` i manifest zapisują się same, ale **notatka projektu w vaulcie o tym nie wie**. Dopisz link tam, gdzie żyje projekt (`obsidian/Asystent/Memory/Projects/<Nazwa>.md`, profil osoby w `Kontakty/`, jeśli to jej wysłałeś) — jednym wierszem: co, pod jakim adresem, od kiedy. Dzięki temu za miesiąc, gdy padnie „zaktualizuj stolarzowi dokumentację", nie szukasz po omacku.
+Marker `.publish.json` i manifest zapisują się same, ale **notatka projektu w vaulcie o tym nie wie**. Dopisz link tam, gdzie żyje projekt (`obsidian/Projekty/<Nazwa>/<Nazwa>.md`, profil osoby w `Kontakty/`, jeśli to jej wysłałeś) — jednym wierszem: co, pod jakim adresem, od kiedy. Dzięki temu za miesiąc, gdy padnie „zaktualizuj stolarzowi dokumentację", nie szukasz po omacku.
 
 W odpowiedzi do użytkownika podaj **sam link i jedno zdanie** o tym, co pod nim jest. Dorzuć, jak to zdjąć (`unpublish <slug>`), gdy publikujesz coś jednorazowego.
 

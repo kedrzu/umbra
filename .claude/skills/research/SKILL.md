@@ -17,8 +17,9 @@ Przeszukujesz vault Obsidian używając:
 
 Foldery w vault:
 - `./obsidian/Kontakty/` - profile osób
-- `./obsidian/Asystent/Memory/` - pamięć systemowa
-- `./obsidian/Asystent/Research/` - zapisane raporty badawcze
+- `./obsidian/Projekty/` - pliki projektów (`Projekty/<Nazwa>/<Nazwa>.md`) + indeks `Projekty/Projekty.md`
+- `./obsidian/Asystent/Memory/` - pamięć systemowa (Twój workspace)
+- `./obsidian/Research/` - zapisane raporty badawcze (przestrzeń użytkownika, obok `Research/Zakupy/` i `Research/Podróże/`)
 
 ## Process
 
@@ -42,7 +43,7 @@ Foldery w vault:
 
 4. **Check AI Memory** (wszystkie pliki w vault Obsidian)
    - `Kontakty/*.md` - relevant people
-   - `Asystent/Memory/Projects.md` - related projects
+   - `Projekty/Projekty.md` + `Projekty/<Nazwa>/<Nazwa>.md` - related projects
    - `Asystent/Memory/Insights.md` - past observations
 
 5. **Synthesize Findings**
@@ -51,7 +52,7 @@ Foldery w vault:
    - Note contradictions or gaps
 
 6. **Create Research Summary** (optional)
-   - If substantial findings, create `Asystent/Research/[topic]-[date].md`
+   - If substantial findings, create `Research/[topic]-[date].md` (root vault — to notatka dla użytkownika, nie do `Asystent/`)
    - Preserves research for future reference
 
 ## Output Format

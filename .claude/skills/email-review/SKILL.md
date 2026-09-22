@@ -73,7 +73,7 @@ Filtrowanie działa per-wiadomość: gdy do przetworzonego wątku przyjdzie NOWA
 
 **Wątku NIE klasyfikujemy, jeśli jego najnowsza wiadomość jest od użytkownika** (`kedrzu@gmail.com` lub `kedrzu@sigma.clinic`). Dotyczy to zarówno wątków w pełni wychodzących (np. zadane pytanie), jak i odpowiedzi użytkownika w wątkach przychodzących. Takie wątki idą **lekką ścieżką**:
 
-1. **Wiedza / digital twin** — wyłuskaj kandydatów do pamięci (kontakty: `ostatni_kontakt` + wpis w `## Historia kontaktów`; oraz `Projects.md`/`Work.md`/`Personal.md`/`Timeline.md`/`Insights.md`, gdy mail coś ujawnia). Zapisuje główny agent w Fazie 3 — jak zwykle.
+1. **Wiedza / digital twin** — wyłuskaj kandydatów do pamięci (kontakty: `ostatni_kontakt` + wpis w `## Historia kontaktów`; oraz `Projekty/`/`Work.md`/`Personal.md`/`Timeline.md`/`Insights.md`, gdy mail coś ujawnia). Zapisuje główny agent w Fazie 3 — jak zwykle.
 2. **Przypomnienie (warunkowo)** — utwórz kandydata na reminder **tylko** gdy treść wskazuje, że użytkownik czeka na odpowiedź lub ma sam wykonać follow-up („czekam na odpowiedź", „dam znać", „prześlę do…", zadane pytanie bez odpowiedzi). Daty jak w Fazie 3.
 3. **Status + priorytet** — oznacz jako done **z priorytetem** (`update_thread(status:"done", priority: …)`; MCP nakłada `AI/Done`, zdejmuje ew. `AI/Triage` i wymaga priorytetu). Priorytet z heurystyki: czekam na odpowiedź / mam zrobić follow-up → **P1**; zwykła konwersacja → **P2**; potwierdzenia / „do wiadomości" / wysłane FYI → **P3**. **Nie** nakładaj labeli kategorii, **nie** twórz draftów, **nigdy** triaż.
 4. **Zdejmij `Wymaga odpowiedzi` (warunkowo)** — jeśli wątek ma labelkę `Wymaga odpowiedzi` i **nie czeka już na moją odpowiedź** (odpisałem merytorycznie / sprawa domknięta) → dodaj `removeLabels:["Wymaga odpowiedzi"]` do tego samego `update_thread`. Ocena **semantyczna**, nie „ostatnia wiadomość moja" — autoresponder („odpiszemy wkrótce", potwierdzenie wpłynięcia) **nie** zdejmuje wymogu. `Wymaga działania` zostaje.
@@ -207,7 +207,7 @@ To jest moment, w którym system się uczy. Komentarz przy zadaniu bywa cenniejs
 | Rodzaj notatki | Rozpoznanie | Gdzie ląduje |
 |---|---|---|
 | **Instrukcja na przyszłość** | tryb rozkazujący do agenta albo deklaracja trwałej decyzji: „ignoruj te maile", „nie twórz już zadań na X", „od teraz zawsze…", „nie płacimy już za…" | **reguła w rulebooku** `EmailWorkflow-{konto}.md` + fakt w pamięci |
-| **Notatka o wykonaniu / fakt o świecie** | „zrobione przez telefon", „konto zamknięte", „nie mogę tego zrobić, bo…" | pamięć: `Personal.md`/`Work.md`/`Projects/`, zdarzenie z datą → `Timeline.md` |
+| **Notatka o wykonaniu / fakt o świecie** | „zrobione przez telefon", „konto zamknięte", „nie mogę tego zrobić, bo…" | pamięć: `Personal.md`/`Work.md`/`Projekty/`, zdarzenie z datą → `Timeline.md` |
 | **Instrukcja o niejasnym zakresie** | nie wiadomo, czy dotyczy tego nadawcy, całej kategorii, czy jednorazowo | fakt do pamięci + **propozycja reguły do „Do decyzji"** (nie zgaduj zakresu) |
 
 `changes` (gdy jest) czytaj jako sygnał o **jakości Twojej własnej pracy**, nie o sprawie: `postponed: 8` → termin był źle oszacowany; `edited_by_user: true` → źle sformułowałeś treść zadania; `moved: true` → zła sekcja/kategoria. Powtarzalne wzorce dopisuj do `Insights.md`.
@@ -241,7 +241,7 @@ Dla każdego batcha:
 3. **Faktury → Rachunki** — dla kandydatów z raportów subagentów (faktura trwałego dobra >100 zł): `save_attachment(account, messageId, attachmentId)` → zwraca `path` w `.context/attachments/<messageId>/<plik>` (plik na dysku, bez base64) → `Bash: mv "<path>" "./obsidian/Rachunki/<data ISO> <opis>.pdf"`; potem `Write` notatkę `.md` (szablon w rulebooku, sekcja „Faktury → folder Rachunki"). **Dedup** przed zapisem: `Bash: ls ./obsidian/Rachunki/` — plik o tej nazwie już jest → pomiń.
 4. **Pamięć / digital twin** — skomituj zakolejkowane aktualizacje:
    - **Kontakty**: `qmd` po emailu nadawcy; dla znanych zaktualizuj `ostatni_kontakt` + dopisz wpis do `## Historia kontaktów` (data, typ Email, link Gmail). Dla nowych ważnych — utwórz profil w `./obsidian/Kontakty/`.
-   - Inne: `Projects.md`, `Work.md`/`Personal.md`, `Timeline.md`, `Insights.md` — gdy maile coś ujawniły.
+   - Inne: `Projekty/Projekty.md` + `Projekty/<Nazwa>/<Nazwa>.md`, `Work.md`/`Personal.md`, `Timeline.md`, `Insights.md` — gdy maile coś ujawniły.
 5. **Sfinalizuj stan**: status `completed`, wyczyść "Processed Thread IDs", zachowaj findings.
 6. **Kontrola rejestru**: `Bash: python3 scripts/ledger.py validate`. Ostrzeżenia o tym samym wątku/zadaniu w kilku sprawach = duplikat, który powstał w tej sesji — scal rekordy (`upsert` + `close --outcome obsolete` na zdublowanym) i odnotuj w podsumowaniu.
 7. **Raport sterty triażu**: policz aktualną stertę `search_threads(query:"in:inbox", filter:"triage")` na obu kontach. Jeśli duża (≈>10), poleć: "Masz N wątków w AI/Triage — odpal `/email-triage`, żeby je rozkminić razem i poprawić reguły."

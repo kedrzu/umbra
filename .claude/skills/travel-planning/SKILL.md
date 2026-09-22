@@ -34,13 +34,12 @@ Ceny i dostępność zdobywasz **dwutorowo**, z jasną kolejnością:
 
 ### Higiena zapytań i orzeczenia negatywne
 
-*(skrócona adaptacja `shopping-research/references/web-research-protocol.md` — pełna wersja, z sondą katalogową, jest tam; zmieniając jedno, sprawdź drugie)*
+**Ogólny protokół researchu to osobny skill — załaduj go, zanim zaczniesz szukać:** `Skill` z `skill: "web-search:web-search"`. Masz tam higienę zapytań (2–5 słów i `site:` w `WebSearch`, pełne zdanie + `objective` w Exie), regułę „zmień silnik, nie sformułowanie", trzy stopnie orzeczeń negatywnych (N1/N2/N3), budżet z regułą anty-wiszenia, sondę katalogową, tabelę blokad i sposób na PDF-y. **Nie duplikujemy tego tutaj** — niżej tylko to, co jest specyficzne dla podróży. To samo polecenie załadowania skilla wstaw w brief **każdego** subagenta researchowego: subagent nie dziedziczy Twojego kontekstu.
 
-- **Gdy coś nie wychodzi — zmień silnik, nie sformułowanie.** Dwa zapytania pod rząd z tymi samymi domenami → przejdź na Exę, na `site:` strony przewoźnika/hotelu/atrakcji, na `filetype:pdf` (rozkłady, cenniki), na oficjalną stronę lotniska, albo na inny język. Trzecie przeformułowanie tego samego zapytania to zmarnowany budżet.
-- **W `WebSearch`: 2–5 słów kluczowych, nie zdania.** Serwis przez `site:` (`site:ryanair.com WAW BCN rozkład`), nie jako słowo. Nazwa własna (hotel, lotnisko, atrakcja) w cudzysłowie. **W Exie odwrotnie** — tam opisujesz idealną stronę pełnym zdaniem.
-- **Szukaj w języku rynku.** Rozkłady, godziny otwarcia i remonty są po lokalnemu, nie po polsku ani angielsku.
-- **„Nie znalazłem" ≠ „nie istnieje".** Tak samo asymetryczne jak w researchu zakupowym: „nie znalazłem połączenia" jest odwracalne i tanie, „nie ma bezpośredniego połączenia" jest nieodwracalne i drogie — użytkownik na tej podstawie kupi gorszy wariant albo zmieni kierunek. Zanim orzekniesz brak, **dotknij źródła pierwotnego**: lista tras na stronie przewoźnika lub lotniska, oficjalny rozkład, strona obiektu/atrakcji. Pustka w Skyscannerze czy Bookingu mówi o **agregatorze**, nie o świecie. Bez źródła pierwotnego piszesz „nie znalazłem w [gdzie], stan na [data]".
-- **PDF-y (rozkłady, cenniki) przez `WebFetch` zwracają binarny śmieć** — użyj `curl -s https://r.jina.ai/<url>` albo `curl -o "$TMPDIR/x.pdf"` + `pdftotext -layout`. `Bash` chodzi przez proxy z allowlistą domen: podaj `allowed_domains`, a gdy połączenie i tak zostaje odrzucone, zapisz to jako lukę zamiast szukać obejścia.
+- **Kolejność silników jest tu celowo odwrócona** względem protokołu: w skillu domyślnym startem jest Exa, w podróżach **przeglądarka** (patrz wyżej) — bo cena lotu i noclegu nie istnieje jako treść strony, tylko jako wynik żywego wyszukiwania z datami. Reszta protokołu obowiązuje bez zmian.
+- **Źródłem pierwotnym jest przewoźnik, lotnisko albo obiekt** — lista tras na stronie przewoźnika lub lotniska, oficjalny rozkład, strona atrakcji. Pustka w Skyscannerze czy Bookingu mówi o **agregatorze**, nie o świecie: bez dotknięcia źródła pierwotnego piszesz „nie znalazłem w [gdzie], stan na [data]" (N1), nigdy „nie ma bezpośredniego połączenia". Ta asymetria kosztuje w podróżach najwięcej — na fałszywy brak użytkownik zmienia kierunek albo kupuje gorszy wariant.
+- **Wizy i wymogi wjazdowe orzekasz wyłącznie ze źródła rządowego** (gov.pl/MSZ, ambasada, oficjalny portal wizowy) — nigdy z bloga, forum ani agregatora. Tu nawet N2 („żaden ze sprawdzonych serwisów nie wspomina") jest bezwartościowy.
+- **Szukaj w języku rynku** — rozkłady, godziny otwarcia, remonty i komunikaty o strajkach są po lokalnemu. Reguła jest w protokole, ale w podróżach rozstrzyga najczęściej.
 
 ### Szablony pre-filled linków (wstaw kody lotnisk/miasto/daty/pax)
 
@@ -265,7 +264,7 @@ Przedstaw plan wg szablonu poniżej. Bądź konkretny, uczciwy co do ryzyk, **ka
 - Po akceptacji specyfikacji **utwórz notatkę** `./obsidian/Research/Podróże/YYYY-MM-DD-<kierunek>.md` z treścią specyfikacji; po zakończeniu researchu **dopisz do niej finalny plan**. Buduje to historię wyjazdów i pozwala wracać do wcześniejszych planów.
 - Jeśli research ujawnił **trwałą preferencję podróżniczą** (np. zawsze apartament z kuchnią, unika tanich linii, woli spokojne rejony) → dopisz do `Asystent/Memory/Preferences.md` lub `Personal.md`.
 - Nowi współtowarzysze/kontakty (gospodarz, biuro, znajomi na miejscu) → `Kontakty/`. Zaplanowany wyjazd → `Timeline.md`.
-- Zapis do `Asystent/`/`Kontakty/`/`Research/` jest **autonomiczny** (zgodnie z filozofią digital twina z CLAUDE.md). Notatek użytkownika poza tymi folderami nie modyfikujesz.
+- Zapis do `Asystent/`/`Kontakty/`/`Projekty/`/`Research/` jest **autonomiczny** (zgodnie z filozofią digital twina z CLAUDE.md). Notatek użytkownika poza tymi folderami nie modyfikujesz.
 
 ## Zasady przewodnie (przypomnienie)
 
