@@ -1,4 +1,52 @@
 {
+  "permissions": {
+    "allow": [
+      "mcp__gmail__list_accounts",
+      "mcp__gmail__search_threads",
+      "mcp__gmail__get_thread",
+      "mcp__gmail__get_message",
+      "mcp__gmail__create_draft",
+      "mcp__gmail__list_labels",
+      "mcp__gmail__update_thread",
+      "mcp__gmail__create_label",
+      "mcp__gmail__cleanup_labels",
+      "mcp__gmail__save_attachment",
+      "mcp__calendar__list-calendars",
+      "mcp__calendar__list-events",
+      "mcp__calendar__get-event",
+      "mcp__calendar__search-events",
+      "mcp__calendar__list-colors",
+      "mcp__calendar__get-freebusy",
+      "mcp__calendar__get-current-time",
+      "mcp__calendar__manage-accounts",
+      "mcp__qmd__*",
+      "mcp__obsidian-search__*",
+      "mcp__playwright__*",
+      "mcp__exa__*",
+      "Read(./obsidian/*)",
+      "Edit(./obsidian/*)",
+      "Write(./obsidian/*)",
+      "Write(/tmp/umbra-invoice-*)",
+      "Bash(ls ./obsidian/*)",
+      "Bash(cd ./obsidian/*)",
+      "Bash(base64 *)",
+      "Bash(rm /tmp/umbra-invoice-*)",
+      "Bash(python3 scripts/ledger.py:*)",
+      "Bash(python3 scripts/todoist.py:*)"
+    ],
+    "deny": [
+      "mcp__gmail__send*",
+      "mcp__gmail__delete*",
+      "mcp__gmail__trash*",
+      "mcp__calendar__update-event",
+      "mcp__calendar__delete-event",
+      "mcp__calendar__respond-to-event"
+    ],
+    "ask": [
+      "mcp__calendar__create-event",
+      "mcp__gmail__unsubscribe"
+    ]
+  },
   "model": "sonnet",
   "hooks": {
     "UserPromptSubmit": [
@@ -13,10 +61,22 @@
       }
     ]
   },
+  "enabledPlugins": {
+    "web-search@kedrzu-skills": true,
+    "playwright@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "kedrzu-skills": {
+      "source": {
+        "source": "github",
+        "repo": "kedrzu/skills"
+      },
+      "autoUpdate": true
+    }
+  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
-    "excludedCommands": ["qmd"],
     "network": {
       "allowedDomains": [
         "localhost",
@@ -39,54 +99,9 @@
         "*.pepper.pl"
       ],
       "allowLocalBinding": false
-    }
-  },
-  "permissions": {
-    "allow": [
-      "mcp__gmail__list_accounts",
-      "mcp__gmail__search_threads",
-      "mcp__gmail__get_thread",
-      "mcp__gmail__get_message",
-      "mcp__gmail__create_draft",
-      "mcp__gmail__list_labels",
-      "mcp__gmail__update_thread",
-      "mcp__gmail__create_label",
-      "mcp__gmail__cleanup_labels",
-      "mcp__gmail__save_attachment",
-
-      "mcp__calendar__list-calendars",
-      "mcp__calendar__list-events",
-      "mcp__calendar__get-event",
-      "mcp__calendar__search-events",
-      "mcp__calendar__list-colors",
-      "mcp__calendar__get-freebusy",
-      "mcp__calendar__get-current-time",
-      "mcp__calendar__manage-accounts",
-
-      "mcp__qmd__*",
-      "mcp__obsidian-search__*",
-      "mcp__playwright__*",
-      "mcp__exa__*",
-      "Read(./obsidian/*)",
-      "Edit(./obsidian/*)",
-      "Write(./obsidian/*)",
-      "Write(/tmp/umbra-invoice-*)",
-      "Bash(ls ./obsidian/*)",
-      "Bash(cd ./obsidian/*)",
-      "Bash(base64 *)",
-      "Bash(rm /tmp/umbra-invoice-*)",
-      "Bash(python3 scripts/ledger.py:*)",
-      "Bash(python3 scripts/todoist.py:*)"
-    ],
-    "ask": ["mcp__calendar__create-event", "mcp__gmail__unsubscribe"],
-    "deny": [
-      "mcp__gmail__send*",
-      "mcp__gmail__delete*",
-      "mcp__gmail__trash*",
-
-      "mcp__calendar__update-event",
-      "mcp__calendar__delete-event",
-      "mcp__calendar__respond-to-event"
+    },
+    "excludedCommands": [
+      "qmd"
     ]
   }
 }

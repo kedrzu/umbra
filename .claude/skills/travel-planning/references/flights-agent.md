@@ -18,6 +18,7 @@ Sens: znaleźć **realnie najlepsze** połączenie — nie pierwsze z brzegu —
 > **Jak pracować (kolejność narzędzi):**
 > - **Najpierw przeglądarka — Playwright MCP** (`mcp__playwright__browser_navigate` + `browser_snapshot`; załaduj przez `ToolSearch` `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot`). Otwieraj pre-filled URL-e Google Flights / Skyscanner / Kayak, poczekaj na wyniki (`browser_wait_for` jeśli trzeba) i **odczytaj żywe ceny ze snapshotu** — nie zgaduj.
 > - **Gdy blokada / CAPTCHA / 403 / strona się wiesza / brak serwera** → `WebSearch`/`WebFetch` (`ToolSearch` `select:WebSearch,WebFetch`): cena **orientacyjna** z widełek/artykułów, wyraźnie oznaczona jako niezweryfikowana bezpośrednio.
+> - **Załaduj skill `web-search`** (`Skill` z `skill: "web-search:web-search"`) — protokół researchu w sieci: higiena zapytań, trzy stopnie orzeczeń negatywnych, budżet i reguła anty-wiszenia, tabela blokad. Obowiązuje w całości; reguły niżej to jego dopełnienie dla lotów.
 > - **Budżet ~20 akcji (sufit ~35); kryterium końca to pokrycie, nie licznik:** ≥2 warianty lotnisk, ≥1 odczyt żywej ceny, ≥1 sprawdzenie bagażu/przesiadki. **Reguła anty-wiszenia:** pobranie > ~15 s albo 403/CAPTCHA → pomijasz natychmiast, bez ponawiania (to ona chroni przed watchdogiem, nie oszczędzanie zapytań). Pola nieustalone → „b.d.".
 > - **Braku połączenia nie orzekasz z pustki w agregatorze.** Albo potwierdzasz to listą tras na stronie przewoźnika/lotniska, albo piszesz „nie znalazłem w [gdzie], stan na [data]".
 >

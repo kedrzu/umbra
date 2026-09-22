@@ -13,6 +13,16 @@
       }
     ]
   },
+  "extraKnownMarketplaces": {
+    "kedrzu-skills": {
+      "source": { "source": "github", "repo": "kedrzu/skills" },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "web-search@kedrzu-skills": true,
+    "playwright@claude-plugins-official": true
+  },
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
