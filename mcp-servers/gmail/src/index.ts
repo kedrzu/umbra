@@ -13,9 +13,25 @@ import { google, gmail_v1 } from "googleapis";
 import { OAuth2Client } from "google-auth-library";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { Readable } from "stream";
 import TurndownService from "turndown";
+import { strikethrough, tables } from "@joplin/turndown-plugin-gfm";
 import EmailReplyParser from "email-reply-parser";
 import EmailForwardParser from "email-forward-parser";
+import {
+  buildDraftBody,
+  buildMime,
+  buildReferences,
+  replySubject,
+  type BodyFormat,
+  type QuotedMessage,
+  type RawAttachment,
+} from "./compose.js";
+import {
+  assertTotalSize,
+  fileAccessFromEnv,
+  loadLocalFile,
+} from "./files.js";
 
 // Configuration from environment
 const CREDENTIALS_PATH = process.env.GMAIL_CREDENTIALS_PATH || "";
@@ -497,7 +513,14 @@ const tools: Tool[] = [
   },
   {
     name: "create_draft",
-    description: "Create a draft email (does NOT send)",
+    description:
+      "Create a draft email (does NOT send). Write the body in Markdown - the server renders Gmail-looking HTML plus a plain-text part, " +
+      "appends the account's Gmail signature and, for replies (threadId), a Gmail-style quote of the last message. " +
+      "With threadId, 'to', 'subject', In-Reply-To and References are derived from the thread when omitted. " +
+      "Files: put images in the body as Markdown ![alt](path) - the server embeds them inline; attach other files via 'attachments'. " +
+      "Paths are absolute or relative to the umbra repo root and must live in the repo or the Obsidian vault (e.g. obsidian/..., " +
+      ".context/attachments/... from save_attachment; put scratch files in .context/outbox/). " +
+      "Before drafting a reply, check list_drafts(threadId) - fix an existing draft with update_draft instead of creating a second one.",
     inputSchema: {
       type: "object",
       properties: {
@@ -507,15 +530,24 @@ const tools: Tool[] = [
         },
         to: {
           type: "string",
-          description: "Recipient email address(es), comma-separated",
+          description:
+            "Recipient email address(es), comma-separated. Optional with threadId (defaults to Reply-To/From of the last message)",
         },
         subject: {
           type: "string",
-          description: "Email subject",
+          description: "Email subject. Optional with threadId (defaults to 'Re: <thread subject>')",
         },
         body: {
           type: "string",
-          description: "Email body (plain text or HTML)",
+          description:
+            "Email body in Markdown (GFM: headings, lists, tables, **bold**, links; single newline = line break). " +
+            "Images: ![alt](/abs/path.png) or ![alt](<path with spaces.png>) - local files are embedded inline, http(s) URLs stay links. " +
+            "Do not add a signature - it is appended automatically",
+        },
+        bodyFormat: {
+          type: "string",
+          enum: ["markdown", "html"],
+          description: "Format of body (default: markdown). Use html only for ready-made HTML",
         },
         cc: {
           type: "string",
@@ -531,10 +563,156 @@ const tools: Tool[] = [
         },
         inReplyTo: {
           type: "string",
-          description: "Message-ID to reply to (optional)",
+          description: "Message-ID to reply to (optional; derived from threadId when omitted)",
+        },
+        signature: {
+          type: "boolean",
+          description: "Append the account's Gmail signature (default: true)",
+        },
+        quote: {
+          type: "boolean",
+          description: "Quote the last thread message below the reply (default: true when threadId is set)",
+        },
+        attachments: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Files to attach: absolute paths or paths relative to the repo root, inside the repo or the Obsidian vault. Max 25 MB in total",
         },
       },
-      required: ["account", "to", "subject", "body"],
+      required: ["account", "body"],
+    },
+  },
+  {
+    name: "list_drafts",
+    description: "List drafts in an account (newest first). Use threadId to find an existing reply draft in a thread",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: {
+          type: "string",
+          description: "Email account",
+        },
+        query: {
+          type: "string",
+          description: "Gmail search query to narrow drafts (e.g. 'to:jan@x.pl', 'subject:faktura')",
+        },
+        threadId: {
+          type: "string",
+          description: "Only drafts in this thread",
+        },
+        maxResults: {
+          type: "number",
+          description: "Maximum drafts to return (default: 20)",
+        },
+      },
+      required: ["account"],
+    },
+  },
+  {
+    name: "get_draft",
+    description:
+      "Get a draft: headers and the body as Markdown (without the signature and quoted reply, which update_draft regenerates)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: {
+          type: "string",
+          description: "Email account",
+        },
+        draftId: {
+          type: "string",
+          description: "Draft ID (from create_draft or list_drafts)",
+        },
+      },
+      required: ["account", "draftId"],
+    },
+  },
+  {
+    name: "update_draft",
+    description:
+      "Edit an existing draft in place (same draftId; never sends). Only the given fields change. " +
+      "A new body (Markdown) replaces the whole content; signature and reply quote are regenerated. " +
+      "Inline images: new local ![alt](path) are embedded; existing ones appear in get_draft as ![alt](cid:...) - keep that reference to keep the image. " +
+      "Attachments survive every update; 'attachments' adds files, 'removeAttachments' drops them by filename. " +
+      "Without body the existing content stays untouched",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: {
+          type: "string",
+          description: "Email account",
+        },
+        draftId: {
+          type: "string",
+          description: "Draft ID (from create_draft or list_drafts)",
+        },
+        to: {
+          type: "string",
+          description: "New recipients, comma-separated",
+        },
+        cc: {
+          type: "string",
+          description: "New CC recipients, comma-separated (empty string clears)",
+        },
+        bcc: {
+          type: "string",
+          description: "New BCC recipients, comma-separated (empty string clears)",
+        },
+        subject: {
+          type: "string",
+          description: "New subject",
+        },
+        body: {
+          type: "string",
+          description: "New full body in Markdown (without signature/quote - they are appended automatically)",
+        },
+        bodyFormat: {
+          type: "string",
+          enum: ["markdown", "html"],
+          description: "Format of body (default: markdown)",
+        },
+        signature: {
+          type: "boolean",
+          description: "Append the account's Gmail signature when body is given (default: true)",
+        },
+        quote: {
+          type: "boolean",
+          description: "Quote the last thread message when body is given (default: true for reply drafts)",
+        },
+        attachments: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Files to ADD (existing attachments stay): absolute paths or paths relative to the repo root, inside the repo or the Obsidian vault",
+        },
+        removeAttachments: {
+          type: "array",
+          items: { type: "string" },
+          description: "Filenames of existing attachments to remove (as listed by get_draft)",
+        },
+      },
+      required: ["account", "draftId"],
+    },
+  },
+  {
+    name: "discard_draft",
+    description:
+      "Discard a draft (Gmail's 'Discard draft'). The draft moves to Trash, recoverable there for 30 days - never a permanent delete. " +
+      "Only drafts: sent or received messages are refused",
+    inputSchema: {
+      type: "object",
+      properties: {
+        account: {
+          type: "string",
+          description: "Email account",
+        },
+        draftId: {
+          type: "string",
+          description: "Draft ID (from create_draft or list_drafts)",
+        },
+      },
+      required: ["account", "draftId"],
     },
   },
   {
@@ -667,29 +845,6 @@ function decodeBase64Url(data: string): string {
   return Buffer.from(base64, "base64").toString("utf-8");
 }
 
-// Helper to encode message for sending
-function encodeMessage(
-  to: string,
-  subject: string,
-  body: string,
-  cc?: string,
-  bcc?: string,
-  inReplyTo?: string
-): string {
-  const lines = [`To: ${to}`, `Subject: ${subject}`];
-
-  if (cc) lines.push(`Cc: ${cc}`);
-  if (bcc) lines.push(`Bcc: ${bcc}`);
-  if (inReplyTo) lines.push(`In-Reply-To: ${inReplyTo}`);
-
-  lines.push("Content-Type: text/html; charset=utf-8");
-  lines.push("");
-  lines.push(body);
-
-  const message = lines.join("\r\n");
-  return Buffer.from(message).toString("base64url");
-}
-
 // Extract message parts
 function extractMessageBody(payload: gmail_v1.Schema$MessagePart): string {
   if (payload.body?.data) {
@@ -740,6 +895,7 @@ interface AttachmentInfo {
   filename: string;
   mimeType: string;
   size: number;
+  inline: boolean;
 }
 
 interface ProcessedEmail {
@@ -752,7 +908,42 @@ let turndownInstance: TurndownService | null = null;
 
 function getTurndownService(): TurndownService {
   if (!turndownInstance) {
-    turndownInstance = new TurndownService({
+    turndownInstance = createTurndownService();
+  }
+  return turndownInstance;
+}
+
+// Drafts are read back for editing: drop the Gmail signature too (update_draft
+// regenerates it), so the caller only sees the content it wrote. Tables stay
+// Markdown tables here (not in mail reading, where layout tables would be noise).
+let draftTurndownInstance: TurndownService | null = null;
+
+function getDraftTurndownService(): TurndownService {
+  if (!draftTurndownInstance) {
+    draftTurndownInstance = createTurndownService();
+    // Our own Markdown must survive a get_draft -> update_draft round trip.
+    draftTurndownInstance.use([tables, strikethrough]);
+    // Images stay images (inline ones as ![alt](cid:...)), so update_draft keeps them.
+    draftTurndownInstance.addRule("draft-image", {
+      filter: "img",
+      replacement: (_content, node) => {
+        const el = node as Element;
+        return `![${el.getAttribute("alt") || ""}](${el.getAttribute("src")})`;
+      },
+    });
+    draftTurndownInstance.addRule("gmail-signature", {
+      filter: (node) => {
+        const className = (node as Element).getAttribute?.("class") || "";
+        return /\bgmail_signature(_prefix)?\b/.test(className);
+      },
+      replacement: () => "",
+    });
+  }
+  return draftTurndownInstance;
+}
+
+function createTurndownService(): TurndownService {
+  const turndownInstance = new TurndownService({
       headingStyle: "atx",
       hr: "---",
       bulletListMarker: "-",
@@ -803,7 +994,6 @@ function getTurndownService(): TurndownService {
         return `[${alt}]`;
       },
     });
-  }
   return turndownInstance;
 }
 
@@ -917,11 +1107,23 @@ function processTextContent(text: string, subject: string): string {
   }
 }
 
+// Content-ID of an image embedded in the HTML, null for a regular attachment.
+// Neither header decides: Gmail gives every attachment a Content-ID and writes
+// "attachment" disposition for pasted images too - only a cid: reference does.
+function inlineCid(
+  part: gmail_v1.Schema$MessagePart,
+  html: string | null
+): string | null {
+  const cid = getHeader(part.headers, "Content-ID").replace(/^<|>$/g, "");
+  return cid && html?.includes(`cid:${cid}`) ? cid : null;
+}
+
 // Extract attachments from message payload
 function extractAttachments(
   payload: gmail_v1.Schema$MessagePart
 ): AttachmentInfo[] {
   const attachments: AttachmentInfo[] = [];
+  const { html } = extractRawBody(payload);
 
   function scanParts(part: gmail_v1.Schema$MessagePart) {
     // Check if this part is an attachment (has filename and attachmentId)
@@ -931,6 +1133,7 @@ function extractAttachments(
         filename: part.filename,
         mimeType: part.mimeType || "application/octet-stream",
         size: part.body?.size || 0,
+        inline: inlineCid(part, html) !== null,
       });
     }
 
@@ -1014,6 +1217,186 @@ function processEmailContent(
     body: processedBody,
     attachments,
   };
+}
+
+// ============================================================================
+// Drafts
+// ============================================================================
+
+function jsonResult(data: unknown) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+  };
+}
+
+// Gmail signature per account (sendAs settings), cached like labels but with a TTL
+// so an edited signature shows up without restarting the server.
+const SIGNATURE_TTL_MS = 10 * 60 * 1000;
+const signatureCache = new Map<string, { html: string; fetchedAt: number }>();
+
+async function getSignature(email: string): Promise<string> {
+  const cached = signatureCache.get(email);
+  if (cached && Date.now() - cached.fetchedAt < SIGNATURE_TTL_MS) {
+    return cached.html;
+  }
+
+  let html = "";
+  try {
+    const gmail = getGmailClient(email);
+    const response = await gmail.users.settings.sendAs.list({ userId: "me" });
+    const sendAs = response.data.sendAs || [];
+    // No From header is set, so Gmail sends as the default address - use its signature.
+    const entry =
+      sendAs.find((a) => a.isDefault) ||
+      sendAs.find((a) => a.sendAsEmail?.toLowerCase() === email.toLowerCase());
+    html = entry?.signature || "";
+  } catch (error) {
+    // A missing signature must never block a draft.
+    console.error(`Signature lookup failed for ${email}:`, error);
+  }
+
+  signatureCache.set(email, { html, fetchedAt: Date.now() });
+  return html;
+}
+
+interface ReplyContext {
+  to: string;
+  subject: string;
+  inReplyTo: string;
+  references: string;
+  quote: QuotedMessage;
+}
+
+// Reply headers and quote from the thread's last real (non-draft) message.
+async function resolveReplyContext(
+  email: string,
+  threadId: string
+): Promise<ReplyContext | null> {
+  const gmail = getGmailClient(email);
+  const thread = await gmail.users.threads.get({
+    userId: "me",
+    id: threadId,
+    format: "full",
+  });
+
+  const messages = (thread.data.messages || []).filter(
+    (m) => !(m.labelIds || []).includes("DRAFT")
+  );
+  const last = messages[messages.length - 1];
+  if (!last?.payload) return null;
+
+  const headers = last.payload.headers;
+  const messageId = getHeader(headers, "Message-ID");
+  // Following up on my own message goes to its recipients, not back to me.
+  const fromMe = (last.labelIds || []).includes("SENT");
+  const to = fromMe
+    ? getHeader(headers, "To")
+    : getHeader(headers, "Reply-To") || getHeader(headers, "From");
+  const { html, text } = extractRawBody(last.payload);
+
+  return {
+    to,
+    subject: replySubject(getHeader(headers, "Subject")),
+    inReplyTo: messageId,
+    references: buildReferences(getHeader(headers, "References"), messageId),
+    quote: {
+      from: getHeader(headers, "From"),
+      date: getHeader(headers, "Date"),
+      html,
+      text,
+    },
+  };
+}
+
+// Draft content as Markdown, without the quote and signature we regenerate.
+function draftBodyToMarkdown(payload: gmail_v1.Schema$MessagePart): string {
+  const { html, text } = extractRawBody(payload);
+  if (html) {
+    return getDraftTurndownService()
+      .turndown(html)
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+  return (text || "").trim();
+}
+
+// Draft attachments re-read as bytes, so rewriting the draft doesn't drop them.
+async function loadAttachments(
+  gmail: gmail_v1.Gmail,
+  messageId: string,
+  payload: gmail_v1.Schema$MessagePart
+): Promise<RawAttachment[]> {
+  const result: RawAttachment[] = [];
+  const { html } = extractRawBody(payload);
+
+  async function scan(part: gmail_v1.Schema$MessagePart) {
+    if (part.filename && part.body?.attachmentId) {
+      const data = await gmail.users.messages.attachments.get({
+        userId: "me",
+        messageId,
+        id: part.body.attachmentId,
+      });
+      result.push({
+        filename: part.filename,
+        contentType: part.mimeType || "application/octet-stream",
+        content: Buffer.from(data.data.data || "", "base64url"),
+        cid: inlineCid(part, html) ?? undefined,
+      });
+    }
+    for (const sub of part.parts || []) await scan(sub);
+  }
+
+  await scan(payload);
+  return result;
+}
+
+const fileAccess = fileAccessFromEnv();
+
+// A list of strings; clients with a stale tool schema send it JSON-encoded or as a single value.
+function stringList(value: unknown, name: string): string[] {
+  if (value === undefined || value === null) return [];
+  let list = value;
+  if (typeof list === "string") {
+    const s = list.trim();
+    try {
+      list = s.startsWith("[") ? JSON.parse(s) : [s];
+    } catch {
+      list = [s];
+    }
+  }
+  if (!Array.isArray(list)) throw new Error(`'${name}' must be an array of strings`);
+  return list.map(String);
+}
+
+async function loadLocalFiles(paths: unknown): Promise<RawAttachment[]> {
+  return Promise.all(
+    stringList(paths, "attachments").map((p) => loadLocalFile(p, fileAccess))
+  );
+}
+
+async function loadInlineImages(
+  images: { path: string; cid: string }[]
+): Promise<RawAttachment[]> {
+  return Promise.all(
+    images.map(async (img) => ({
+      ...(await loadLocalFile(img.path, fileAccess)),
+      cid: img.cid,
+    }))
+  );
+}
+
+function fileSummary(a: RawAttachment) {
+  return {
+    filename: a.filename,
+    mimeType: a.contentType,
+    size: formatFileSize(a.content.length),
+  };
+}
+
+// The whole RFC 822 message goes as a media upload, so multi-MB attachments
+// don't hit the size limit of a plain JSON request.
+function draftMedia(message: Buffer) {
+  return { mimeType: "message/rfc822", body: Readable.from([message]) };
 }
 
 // Create server
@@ -1165,6 +1548,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   id: message.data.id,
                   threadId: message.data.threadId,
+                  messageId: getHeader(headers, "Message-ID"),
                   subject,
                   from: getHeader(headers, "From"),
                   to: getHeader(headers, "To"),
@@ -1220,6 +1604,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
           return {
             id: msg.id,
+            messageId: getHeader(headers, "Message-ID"),
             labels: (msg.labelIds || []).map(
               (id) => threadIdToName.get(id) || id
             ),
@@ -1262,43 +1647,304 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "create_draft": {
-        const gmail = getGmailClient(args?.account as string);
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+        const threadId = args?.threadId as string | undefined;
 
-        const raw = encodeMessage(
-          args?.to as string,
-          args?.subject as string,
-          args?.body as string,
-          args?.cc as string,
-          args?.bcc as string,
-          args?.inReplyTo as string
-        );
+        const reply = threadId
+          ? await resolveReplyContext(account, threadId)
+          : null;
+
+        const to = (args?.to as string) || reply?.to;
+        if (!to) {
+          throw new Error("'to' is required (or pass threadId to reply)");
+        }
+        const subject = (args?.subject as string) ?? reply?.subject ?? "";
+        const inReplyTo = (args?.inReplyTo as string) || reply?.inReplyTo;
+        const references = reply
+          ? buildReferences(reply.references, inReplyTo || "")
+          : inReplyTo;
+
+        const wantQuote = (args?.quote as boolean | undefined) ?? true;
+        const { html, text, images } = buildDraftBody({
+          body: args?.body as string,
+          bodyFormat: args?.bodyFormat as BodyFormat | undefined,
+          signatureHtml:
+            args?.signature === false ? null : await getSignature(account),
+          quote: wantQuote && reply ? reply.quote : null,
+        });
+
+        // All files are read before any API call: a bad path means no draft at all.
+        const inline = await loadInlineImages(images);
+        const files = await loadLocalFiles(args?.attachments);
+        assertTotalSize([...inline, ...files]);
+
+        const message = await buildMime({
+          to,
+          cc: args?.cc as string,
+          bcc: args?.bcc as string,
+          subject,
+          html,
+          text,
+          inReplyTo,
+          references,
+          attachments: [...inline, ...files],
+        });
 
         const draft = await gmail.users.drafts.create({
           userId: "me",
-          requestBody: {
-            message: {
-              raw,
-              threadId: args?.threadId as string,
-            },
-          },
+          requestBody: { message: { threadId } },
+          media: draftMedia(message),
         });
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  status: "Draft created",
-                  draftId: draft.data.id,
-                  messageId: draft.data.message?.id,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResult({
+          status: "Draft created",
+          draftId: draft.data.id,
+          messageId: draft.data.message?.id,
+          threadId: draft.data.message?.threadId,
+          to,
+          subject,
+          inlineImages: inline.length ? inline.map(fileSummary) : undefined,
+          attachments: files.length ? files.map(fileSummary) : undefined,
+        });
+      }
+
+      case "list_drafts": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+        const threadId = args?.threadId as string | undefined;
+        const maxResults = (args?.maxResults as number) || 20;
+
+        const response = await gmail.users.drafts.list({
+          userId: "me",
+          q: args?.query as string | undefined,
+          // Thread filtering happens client-side, so look further back.
+          maxResults: threadId ? 100 : maxResults,
+        });
+
+        const drafts = (response.data.drafts || [])
+          .filter((d) => !threadId || d.message?.threadId === threadId)
+          .slice(0, maxResults);
+
+        const items = await Promise.all(
+          drafts.map(async (d) => {
+            const full = await gmail.users.drafts.get({
+              userId: "me",
+              id: d.id!,
+              format: "metadata",
+            });
+            const msg = full.data.message;
+            const headers = msg?.payload?.headers;
+            return {
+              draftId: d.id,
+              messageId: msg?.id,
+              threadId: msg?.threadId,
+              to: getHeader(headers, "To"),
+              cc: getHeader(headers, "Cc") || undefined,
+              subject: getHeader(headers, "Subject"),
+              date: getHeader(headers, "Date"),
+              isReply: !!getHeader(headers, "In-Reply-To"),
+              snippet: msg?.snippet,
+            };
+          })
+        );
+
+        return jsonResult({ count: items.length, drafts: items });
+      }
+
+      case "get_draft": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+
+        const draft = await gmail.users.drafts.get({
+          userId: "me",
+          id: args?.draftId as string,
+          format: "full",
+        });
+        const msg = draft.data.message;
+        if (!msg?.payload) {
+          throw new Error(`Draft ${args?.draftId} has no message`);
+        }
+        const headers = msg.payload.headers;
+        const attachments = extractAttachments(msg.payload);
+
+        return jsonResult({
+          draftId: draft.data.id,
+          messageId: msg.id,
+          threadId: msg.threadId,
+          from: getHeader(headers, "From"),
+          to: getHeader(headers, "To"),
+          cc: getHeader(headers, "Cc") || undefined,
+          bcc: getHeader(headers, "Bcc") || undefined,
+          subject: getHeader(headers, "Subject"),
+          inReplyTo: getHeader(headers, "In-Reply-To") || undefined,
+          body: draftBodyToMarkdown(msg.payload),
+          attachments:
+            attachments.length > 0
+              ? attachments.map((a) => ({
+                  filename: a.filename,
+                  mimeType: a.mimeType,
+                  size: formatFileSize(a.size),
+                  inline: a.inline || undefined,
+                }))
+              : undefined,
+        });
+      }
+
+      case "update_draft": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+        const draftId = args?.draftId as string;
+
+        const draft = await gmail.users.drafts.get({
+          userId: "me",
+          id: draftId,
+          format: "full",
+        });
+        const msg = draft.data.message;
+        if (!msg?.payload || !msg.id) {
+          throw new Error(`Draft ${draftId} has no message`);
+        }
+        const headers = msg.payload.headers;
+
+        // Unspecified fields keep the draft's current values.
+        const pick = (key: string, header: string): string =>
+          args?.[key] !== undefined
+            ? (args[key] as string)
+            : getHeader(headers, header);
+        const to = pick("to", "To");
+        const cc = pick("cc", "Cc");
+        const bcc = pick("bcc", "Bcc");
+        const subject = pick("subject", "Subject");
+        let inReplyTo = getHeader(headers, "In-Reply-To");
+        let references = getHeader(headers, "References");
+
+        const existingAttachments = await loadAttachments(
+          gmail,
+          msg.id,
+          msg.payload
+        );
+
+        let html: string | undefined;
+        let text: string | undefined;
+        let inline: RawAttachment[];
+        let files = existingAttachments.filter((a) => !a.cid);
+
+        const toRemove = stringList(args?.removeAttachments, "removeAttachments");
+        const missing = toRemove.filter((n) => !files.some((a) => a.filename === n));
+        if (missing.length) {
+          throw new Error(
+            `No attachment named ${missing.map((n) => `'${n}'`).join(", ")} ` +
+              `(draft has: ${files.map((a) => a.filename).join(", ") || "none"})`
+          );
+        }
+        files = files.filter((a) => !toRemove.includes(a.filename));
+        const added = await loadLocalFiles(args?.attachments);
+        files.push(...added);
+
+        if (args?.body !== undefined) {
+          // New content: re-render and re-attach signature + quote of the latest message.
+          const reply = msg.threadId
+            ? await resolveReplyContext(account, msg.threadId)
+            : null;
+          if (reply) {
+            inReplyTo = reply.inReplyTo;
+            references = reply.references;
+          }
+          const wantQuote = (args?.quote as boolean | undefined) ?? true;
+          const rendered = buildDraftBody({
+            body: args.body as string,
+            bodyFormat: args?.bodyFormat as BodyFormat | undefined,
+            signatureHtml:
+              args?.signature === false ? null : await getSignature(account),
+            quote: wantQuote && reply ? reply.quote : null,
+          });
+          ({ html, text } = rendered);
+          // Old inline images survive only while the new body still points at their cid.
+          const kept = existingAttachments.filter(
+            (a) => a.cid && rendered.html.includes(`cid:${a.cid}`)
+          );
+          const fresh = await loadInlineImages(
+            rendered.images.filter((img) => !kept.some((a) => a.cid === img.cid))
+          );
+          inline = [...kept, ...fresh];
+        } else {
+          const existing = extractRawBody(msg.payload);
+          html = existing.html ?? undefined;
+          text = existing.text ?? undefined;
+          inline = existingAttachments.filter((a) => a.cid);
+        }
+        assertTotalSize([...inline, ...files]);
+
+        const message = await buildMime({
+          from: getHeader(headers, "From"),
+          to,
+          cc,
+          bcc,
+          subject,
+          html,
+          text,
+          inReplyTo,
+          references,
+          attachments: [...inline, ...files],
+        });
+
+        const updated = await gmail.users.drafts.update({
+          userId: "me",
+          id: draftId,
+          requestBody: {
+            id: draftId,
+            message: { threadId: msg.threadId },
+          },
+          media: draftMedia(message),
+        });
+
+        const changed = [
+          "to",
+          "cc",
+          "bcc",
+          "subject",
+          "body",
+          "attachments",
+          "removeAttachments",
+        ].filter((k) => args?.[k] !== undefined);
+
+        return jsonResult({
+          status: "Draft updated",
+          draftId: updated.data.id,
+          messageId: updated.data.message?.id,
+          threadId: updated.data.message?.threadId,
+          changed,
+          inlineImages: inline.length ? inline.map(fileSummary) : undefined,
+          attachments: files.length ? files.map(fileSummary) : undefined,
+        });
+      }
+
+      case "discard_draft": {
+        const account = args?.account as string;
+        const gmail = getGmailClient(account);
+        const draftId = args?.draftId as string;
+
+        const draft = await gmail.users.drafts.get({
+          userId: "me",
+          id: draftId,
+          format: "metadata",
+        });
+        const msg = draft.data.message;
+        if (!msg?.id || !(msg.labelIds || []).includes("DRAFT")) {
+          throw new Error(`${draftId} is not a draft - refusing to discard`);
+        }
+
+        // Trash, not drafts.delete: the latter is permanent and skips the Trash.
+        await gmail.users.messages.trash({ userId: "me", id: msg.id });
+
+        return jsonResult({
+          status: "Draft discarded (moved to Trash, recoverable for 30 days)",
+          draftId,
+          messageId: msg.id,
+          threadId: msg.threadId,
+          subject: getHeader(msg.payload?.headers, "Subject"),
+        });
       }
 
       case "list_labels": {

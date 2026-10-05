@@ -112,7 +112,7 @@ Kolejność jest twarda, bo właśnie ona chroni autonomię (pytasz dopiero, gdy
 ### Safety & Permissions
 
 1. **NEVER send emails** - Only create drafts
-2. **NEVER delete anything** - No emails, tasks, calendar events, or notes
+2. **NEVER delete anything** - No emails, tasks, calendar events, or notes. **Jedyny wyjątek: drafty** — `discard_draft` wolno użyć (zgoda użytkownika z 2026-09-28), bo draft nie jest wysłaną ani odebraną pocztą, a MCP przenosi go do Kosza (do odzyskania 30 dni), nigdy nie kasuje trwale. Stosuj do własnych zbędnych/zastąpionych draftów; draftu, który napisał lub poprawił użytkownik, nie odrzucaj bez jego prośby.
 3. **NEVER update existing Calendar events** - Only create new ones. W Todoist agent **może aktualizować** zadanie powiązane ze sprawą (termin, priorytet, treść, komentarz) — to jedyny sposób, żeby kolejny mail w tej samej sprawie nie rodził duplikatu — ale **nigdy go nie ukańcza ani nie kasuje**; to robi użytkownik.
 4. **NEVER modify my notes** - Only append to them or write to `Asystent/` folder
 5. **Maile akcyjne — autonomicznie, mechanika zależna od konta**: gdy mail wyraźnie wymaga działania (`Wymaga działania`/`Wymaga odpowiedzi`), działaj **od razu, bez pytania** — we wszystkich skillach (`/email-review`, `/email-triage`, `/email-analysis`).
@@ -377,7 +377,7 @@ notatka z sesji — idzie do odpowiedniego folderu w roocie vault, nigdy do `Asy
 
 ### Gmail (Multi-Account)
 - Search and read emails across all accounts
-- Create drafts (no sending)
+- Create, edit and discard drafts (no sending): `create_draft` / `list_drafts` / `get_draft` / `update_draft` / `discard_draft`. **Treść pisz w Markdownie** — MCP renderuje ładny HTML, dokleja podpis konta z Gmaila, a przy odpowiedzi (`threadId`) cytat i nagłówki wątku (`to`/`subject` też sam wylicza). Nie dopisuj podpisu w treści. **Pliki**: `attachments: [ścieżki]` to załączniki, a obrazek w treści to zwykły Markdown `![opis](ścieżka)` (MCP osadza go inline). Ścieżki absolutne albo względne do repo, tylko z repo lub vaulta (`obsidian/...`); pliki robocze kładź w `.context/outbox/`, bo `$TMPDIR` nie jest widoczny dla kontenera. Przy edycji zachowuj `![…](cid:…)` z `get_draft`, bo inaczej obrazek zniknie. **Poprawka draftu = `update_draft`**, nie nowy draft; przed draftem odpowiedzi sprawdź `list_drafts(threadId)`. `discard_draft` przenosi draft do Kosza (nie kasuje trwale) — nazwa celowo nie zaczyna się od `delete`, bo deny `mcp__gmail__delete*` ma zostać szczelny.
 - Apply labels and mark as important/read
 - Identify unsubscribe links
 

@@ -36,7 +36,7 @@ Wszystkie pliki pamięci i kontaktów są w vault (`./obsidian/`), NIE w folderz
 | Pobranie wątków | `mcp__gmail__search_threads` (z parametrem `filter`) |
 | Wyszukiwanie referencyjne (cała poczta) | `mcp__gmail__search_threads` **bez** `filter` (inbox + archiwum + `AI/Done`) |
 | Treść wątku (labelki jako nazwy) | `mcp__gmail__get_thread` |
-| Draft (nie wysyła) | `mcp__gmail__create_draft` |
+| Draft (nie wysyła) | `mcp__gmail__create_draft` — treść w **Markdownie**, bez podpisu (MCP dokleja podpis i cytat; przy `threadId` sam wylicza `to`/`subject`). Przed draftem odpowiedzi `mcp__gmail__list_drafts(threadId)` — istniejący draft poprawiaj `mcp__gmail__update_draft`, nie twórz drugiego; własny zbędny draft (np. sprawa się rozwiązała) → `mcp__gmail__discard_draft` (Kosz, nie trwałe kasowanie) |
 | Status wątku (AI/Done\|AI/Triage) | `mcp__gmail__update_thread` z `status: "done"\|"triage"` (NIE przez addLabels) |
 | Labele kategorii wątku | `mcp__gmail__update_thread` (addLabels/removeLabels po NAZWACH; opcjonalny `priority: P0..P3`) |
 | Archiwizacja (Śmieci/Nieaktualne) | `mcp__gmail__update_thread` z `addLabels:["Nieaktualne"\|"Śmieci", …]` — MCP sam zdejmuje INBOX |

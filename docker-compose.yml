@@ -23,11 +23,24 @@ services:
       - type: bind
         source: ./.context/attachments
         target: /attachments
+      # Files for drafts (attachments, inline images): repo + vault, read-only,
+      # at their host paths - so /Users/... paths and the obsidian/ symlink resolve
+      # unchanged. The server additionally refuses anything outside GMAIL_FILE_ROOTS.
+      - type: bind
+        source: .
+        target: ${UMBRA_ROOT:-/workspace/umbra}
+        read_only: true
+      - type: bind
+        source: ${OBSIDIAN_VAULT_PATH}
+        target: ${OBSIDIAN_VAULT_PATH}
+        read_only: true
     environment:
       - GMAIL_CREDENTIALS_PATH=/config/credentials.json
       - GMAIL_TOKENS_PATH=/config/tokens
       - GMAIL_ATTACHMENTS_DIR=/attachments
       - GMAIL_ATTACHMENTS_RETURN_BASE=.context/attachments
+      - UMBRA_ROOT=${UMBRA_ROOT:-/workspace/umbra}
+      - GMAIL_FILE_ROOTS=${UMBRA_ROOT:-/workspace/umbra}|${OBSIDIAN_VAULT_PATH}
       - MCP_PORT=4002
       - MCP_TRANSPORT=http
     healthcheck:

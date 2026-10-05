@@ -35,7 +35,7 @@ Gwarancja: zmiana **reguły** = "powiedziałeś X → zapisuję dokładnie X (po
 | Dojrzałe sprawy (opcjonalnie) | `Bash(python3 scripts/ledger.py due …)` |
 | Treść wątku (labelki jako nazwy) | `mcp__gmail__get_thread` |
 | Wyszukiwanie referencyjne (cała poczta) | `mcp__gmail__search_threads` **bez** `filter` (inbox + archiwum + `AI/Done`) |
-| Status (AI/Done\|AI/Triage) / labele / draft | `mcp__gmail__update_thread` (status: "done"\|"triage" dla statusu; addLabels/removeLabels dla kategorii), `mcp__gmail__create_draft` |
+| Status (AI/Done\|AI/Triage) / labele / draft | `mcp__gmail__update_thread` (status: "done"\|"triage" dla statusu; addLabels/removeLabels dla kategorii), `mcp__gmail__create_draft` (treść w Markdownie, bez podpisu); poprawka istniejącego draftu → `mcp__gmail__list_drafts(threadId)` + `mcp__gmail__update_draft`; zbędny draft → `mcp__gmail__discard_draft` (Kosz) |
 | Odłożenie z datą | `update_thread(status:"done", priority)` + rekord w rejestrze (`ledger upsert`) |
 | Archiwizacja (Śmieci/Nieaktualne) | `mcp__gmail__update_thread` z `addLabels:["Nieaktualne"\|"Śmieci", …]` — MCP zdejmuje INBOX |
 | Pytania do użytkownika | `AskUserQuestion` |

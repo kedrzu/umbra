@@ -34,7 +34,7 @@ Opt-in dotyczy **wyłącznie zapisu/edycji reguły** rulebooka (i w trybie proje
 | Dojrzałe sprawy | `Bash(python3 scripts/ledger.py due …)` — rejestr, kontrakt w `docs/ledger.md` |
 | Treść wątku (labelki jako nazwy) | `mcp__gmail__get_thread` |
 | Wyszukiwanie referencyjne (cała poczta) | `mcp__gmail__search_threads` **bez** `filter` (inbox + archiwum + `AI/Done`) |
-| Status (AI/Done\|AI/Triage) / labele / draft | `mcp__gmail__update_thread` (`status: "done"\|"triage"` dla statusu; addLabels/removeLabels dla kategorii; opcjonalny `priority: P0..P3`), `mcp__gmail__create_draft` |
+| Status (AI/Done\|AI/Triage) / labele / draft | `mcp__gmail__update_thread` (`status: "done"\|"triage"` dla statusu; addLabels/removeLabels dla kategorii; opcjonalny `priority: P0..P3`), `mcp__gmail__create_draft` (treść w Markdownie, bez podpisu); poprawka istniejącego draftu → `mcp__gmail__list_drafts(threadId)` + `mcp__gmail__update_draft`; zbędny draft → `mcp__gmail__discard_draft` (Kosz) |
 | Tworzenie etykiety-kubełka | `mcp__gmail__create_label` |
 | Odłożenie z datą / archiwizacja | `mcp__gmail__update_thread` (`status:"done"`, `priority`; addLabels `Nieaktualne`/`Śmieci` → MCP zdejmuje INBOX) + rekord w rejestrze (`ledger upsert`/`close`) |
 | Pytania do użytkownika | `AskUserQuestion` |
