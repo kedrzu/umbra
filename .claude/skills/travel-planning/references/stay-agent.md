@@ -17,7 +17,7 @@ Sens: **najpierw rejon, potem obiekt.** Zły rejon psuje najlepszy hotel (hałas
 > **Kontekst planu:** [co użytkownik chce robić — żeby rejon pasował do atrakcji/tempa]
 >
 > **Jak pracować (kolejność narzędzi):**
-> - **Najpierw przeglądarka — Playwright MCP** (`browser_navigate` + `browser_snapshot`; `ToolSearch` `select:mcp__playwright__browser_navigate,mcp__playwright__browser_snapshot`). Otwieraj pre-filled URL-e **Booking, Airbnb, Google Hotels** z wpisanymi datami/składem, poczekaj na wyniki i **odczytaj żywe ceny i oceny ze snapshotu**.
+> - **Najpierw przeglądarka — Playwright MCP** (`browser_navigate` + `browser_snapshot`; `ToolSearch` `select:mcp__plugin_playwright_playwright__browser_navigate,mcp__plugin_playwright_playwright__browser_snapshot`). Otwieraj pre-filled URL-e **Booking, Airbnb, Google Hotels** z wpisanymi datami/składem, poczekaj na wyniki i **odczytaj żywe ceny i oceny ze snapshotu**.
 > - **Gdy blokada / CAPTCHA / 403 / brak serwera** → `WebSearch`/`WebFetch`: ceny/oceny orientacyjne, artykuły „gdzie się zatrzymać w [miasto]", „best area to stay", fora/Reddit. Oznacz jako niezweryfikowane bezpośrednio.
 > - **Załaduj skill `web-search`** (`Skill` z `skill: "web-search:web-search"`) — protokół researchu w sieci: higiena zapytań, trzy stopnie orzeczeń negatywnych, budżet i reguła anty-wiszenia, tabela blokad. Obowiązuje w całości; reguły niżej to jego dopełnienie dla noclegów.
 > - **Budżet ~20 akcji (sufit ~35); kryterium końca to pokrycie, nie licznik:** ≥2 rejony, ≥3 obiekty, ≥1 odczyt żywej ceny. **Reguła anty-wiszenia:** pobranie > ~15 s albo 403/CAPTCHA → pomijasz natychmiast, bez ponawiania. Pola nieustalone → „b.d.".
