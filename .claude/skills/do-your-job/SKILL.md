@@ -86,6 +86,24 @@ Update AI Memory with ALL new context learned. This is essential to being a usef
 
 **Goal**: After each routine, the digital twin should know more than before.
 
+### 6. Powiadomienie na telefon (tylko `unattended`)
+
+Na sam koniec - gdy wszystko jest już zrobione i zapisane - wyślij podsumowanie dnia przez `mcp__telegram-notify__send_message`.
+
+**Tylko w trybie `unattended`** (czyli gdy rutynę odpalił harmonogram). Odpalona ręcznie - **nie wysyłaj**: użytkownik siedzi przed odpowiedzią, a ping na telefon byłby hałasem; zamiast tego jedno zdanie w raporcie, że wysyłki nie było.
+
+Co ma zawierać (w tej kolejności):
+1. linia podsumowania - ta sama, co pierwsza linia ostatniej wiadomości,
+2. najbliższe wydarzenia z kalendarza,
+3. zadania pilne i zaległe,
+4. stan skrzynki: ile przetworzone, co P0, jak duża sterta `AI/Triage`,
+5. **„Do decyzji"** - to jest to, co użytkownik naprawdę musi zobaczyć na telefonie,
+6. na końcu ścieżka do dzisiejszego dashboardu.
+
+Jak ma być napisane - **reguł nie powtarzamy tutaj**, obowiązuje skill `telegram` (pierwsza linia samodzielna, do ~1500 znaków, bez pytań, szczegóły zostają w dashboardzie).
+
+**Błąd wysyłki nie wywraca rutyny**: złap go, odnotuj w raporcie i w „Do decyzji", leć dalej. Push z Paseo (patrz „Kontrakt ostatniej wiadomości") działa niezależnie i jest siatką bezpieczeństwa na wypadek, gdyby Telegram padł.
+
 ## Arguments
 
 Pass arguments to focus on specific areas:

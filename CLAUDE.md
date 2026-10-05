@@ -437,6 +437,16 @@ python3 scripts/publish.py unpublish <slug>                  # treść -> publis
 
 Instalacja/diagnostyka: `./setup-publishing.sh` (`--status`, `--dry-run`, `--uninstall`), konfiguracja w `scripts/publish.env`, token w `.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`).
 
+## Powiadomienia na telefon (Telegram)
+
+Gdy trzeba **dosięgnąć użytkownika poza sesją** — bo nie siedzi przed terminalem — służy do tego narzędzie `mcp__telegram-notify__send_message` z pluginu `telegram@kedrzu-skills`. Osąd (kiedy wolno wysłać, jak ma wyglądać wiadomość) żyje w skillu **`telegram`**, konfiguracja w `/telegram:setup`, mechanika w README pluginu. Kanał jest **jednokierunkowy** — nikt tam nie odpisze, więc nigdy nie zadawaj tam pytań.
+
+- **Automatycznie pisze tylko poranna rutyna** (`/do-your-job unattended`, krok 6). Poza nią wysyłasz **wyłącznie na wyraźną prośbę** albo gdy kończysz długie zadanie, które użytkownik zostawił w tle. Powiadomienie jest przerwaniem, nie sposobem raportowania — kanał nadużyty zostanie wyciszony i przepadnie dla rzeczy naprawdę ważnych.
+- **Adresat jest przypięty w konfiguracji**, nie jest parametrem narzędzia. Agent nie napisze do nikogo innego — to gwarancja strukturalna, ta sama co brak `delete` w `todoist.py` i `publish.py`.
+- **Nie wysyłamy tam** danych pacjentów (`sigma.clinic`), dokumentów tożsamości, danych finansowych ani danych osób trzecich z `Kontakty/` — to samo ograniczenie, co przy `/publish`. Powiadomienie na telefon nie jest kanałem bezpiecznym.
+- **Ścieżka w vaulcie to nie link.** Jeśli użytkownik ma w coś kliknąć z telefonu, najpierw `/publish`, potem wyślij URL.
+- Token żyje **poza projektem** (`~/.claude/channels/telegram/.env`, tryb 0600), więc kanał działa w każdym repo bez konfiguracji per projekt. Awaria wysyłki **nigdy nie wywraca rutyny** — push z Paseo zostaje siatką bezpieczeństwa.
+
 ## Skills Available
 
 | Skill | Purpose |
@@ -451,6 +461,7 @@ Instalacja/diagnostyka: `./setup-publishing.sh` (`--status`, `--dry-run`, `--uni
 | `/shopping-research` | Research zakupowy: ranking produktów wg kryteriów, z realną ceną do zdobycia |
 | `/travel-planning` | Planowanie podróży: transport, nocleg, atrakcje, plan dnia |
 | `/publish` | Publikacja dokumentu w internecie + link do wysłania |
+| `telegram` | Wiadomość na telefon użytkownika (jednokierunkowo); `/telegram:setup` konfiguruje kanał |
 | `/coaching`, `/time-analysis` | Sesja rozwojowa / analiza czasu z Dziennika |
 | `/memory-update [info]` | Explicitly save information to memory |
 | `/do-your-job` | Run full assistant routine |

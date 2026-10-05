@@ -36,7 +36,9 @@
       "Bash(base64 *)",
       "Bash(rm /tmp/umbra-invoice-*)",
       "Bash(python3 scripts/ledger.py:*)",
-      "Bash(python3 scripts/todoist.py:*)"
+      "Bash(python3 scripts/todoist.py:*)",
+      "mcp__telegram-notify__send_message",
+      "mcp__telegram-notify__check"
     ],
     "deny": [
       "mcp__gmail__send*",
@@ -67,7 +69,10 @@
   },
   "enabledPlugins": {
     "web-search@kedrzu-skills": true,
-    "playwright@claude-plugins-official": true
+    "telegram@kedrzu-skills": true,
+    "playwright@claude-plugins-official": true,
+    "skill-improve@kedrzu-skills": true,
+    "skill-creator@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "kedrzu-skills": {
