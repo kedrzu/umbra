@@ -470,13 +470,13 @@ Gdy trzeba **dosięgnąć użytkownika poza sesją** — bo nie siedzi przed ter
 
 ## Research w internecie
 
-Cztery silniki, każdy do czegoś innego — reguły wyboru, protokół orzeczeń negatywnych i sonda katalogowa żyją w skillu **`web-search`** (`Skill` z `skill: "web-search:web-search"`), jedynym źródle prawdy. To plugin `web-search@kedrzu-skills` (repo [kedrzu/skills](https://github.com/kedrzu/skills), zainstalowany w tym projekcie z autoupdate, wiezie własny serwer Exa i ciąga Playwrighta jako zależność) — nie ma go już w `.claude/skills/`. `shopping-research` i `travel-planning` tylko go ładują i dokładają swoje specyfiki.
+Cztery silniki, każdy do czegoś innego — reguły wyboru, protokół orzeczeń negatywnych i sonda katalogowa żyją w skillu **`web-search`** (`Skill` z `skill: "web-search:web-search"`), jedynym źródle prawdy. To plugin `web-search@kedrzu-skills` (repo [kedrzu/skills](https://github.com/kedrzu/skills), zainstalowany w tym projekcie z autoupdate, wiezie własny serwer Exa i ciąga Playwrighta jako zależność — plugin `playwright@kedrzu-skills`, jedyne źródło przeglądarki w projekcie) — nie ma go już w `.claude/skills/`. `shopping-research` i `travel-planning` tylko go ładują i dokładają swoje specyfiki.
 
 | Silnik | Do czego |
 |--------|----------|
 | **Exa** (`mcp__exa__*`, bez klucza) | **domyślne szukanie**: semantyczne, trafia w długi ogon polskich sklepów i konkretne kody wariantów |
 | `WebSearch` | operatory (`site:`, `filetype:`, cudzysłów), świeże newsy |
-| **Playwright** (`mcp__playwright__*`) | strony blokujące wszystko inne (**Allegro**, Häfele, Amazon) i żywe ceny |
+| **Playwright** (`mcp__plugin_playwright_playwright__*`) | strony blokujące wszystko inne (**Allegro**, Häfele, Amazon) i żywe ceny |
 | `Bash` + `curl` / `r.jina.ai` | sitemapy, XML, PDF-y producentów (`WebFetch` zwraca z nich binarny śmieć) |
 
 **Zasada nadrzędna: „nie znalazłem" ≠ „nie istnieje".** Braku nie podajemy jako faktu, dopóki nie dotknęliśmy źródła pierwotnego (katalog/sitemap/cennik producenta). Powód jest zapisany w historii: agent orzekł, że prowadnica `PK-L-H53-550` nie istnieje, opierając się na uwadze jednego sklepu — produkt był w katalogu producenta i w polskich sklepach.
