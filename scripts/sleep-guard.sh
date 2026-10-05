@@ -12,7 +12,8 @@
 #
 #   użytkownik JEST      -> przywróć aplikacje z RELAUNCH_APPS, które sami ubiliśmy
 #   użytkownika NIE MA   -> ubij aplikacje z QUIT_APPS (poza tymi realnie zajętymi),
-#                           ale TYLKO w oknie sprzątania (wieczór/noc)
+#                           ale TYLKO w oknie sprzątania (wieczór/noc), a potem
+#                           ostrzeż o każdym innym procesie, który dalej trzyma sen
 #
 # Okno czasowe jest tu kluczowe: w ciągu dnia 15-minutowa przerwa w pracy to norma
 # i nie może kosztować użytkownika ubitego Spotify. Przywracanie działa poza oknem.
@@ -109,6 +110,79 @@ pid_holds_audio_assertion() {  # $1 = pid
         }
         END { exit !found }
     '
+}
+
+# Asercje blokujące sen, trzymane dłużej niż UNKNOWN_BLOCKER_MINUTES, których
+# właściciel nie jest na żadnej z naszych list. Wypisuje "pid|nazwa|typ|czas|opis".
+# Asercje coreaudiod przypisujemy procesowi, dla którego je wystawiono
+# ("Created for PID: N.") - to on trzyma strumień, nie coreaudiod.
+list_unknown_blockers() {
+    local limit=$(( UNKNOWN_BLOCKER_MINUTES * 60 ))
+    local pid forpid owner typ dur desc h m s real name cmd known p pattern
+
+    pmset -g assertions 2>/dev/null | awk '
+        function flush() { if (pid != "") print pid "|" forpid "|" owner "|" typ "|" dur "|" desc; pid = "" }
+        /^Listed by owning process/ { on = 1; next }
+        /^Kernel Assertions/        { flush(); on = 0 }
+        !on { next }
+        match($0, /^[[:space:]]+pid [0-9]+\(/) {
+            flush()
+            line = $0
+            sub(/^[[:space:]]+pid /, "", line)
+            pid = substr(line, 1, index(line, "(") - 1)
+            line = substr(line, index(line, "(") + 1)
+            owner = substr(line, 1, index(line, "): [") - 1)
+            line = substr(line, index(line, "] ") + 2)
+            split(line, f, " "); dur = f[1]; typ = f[2]
+            desc = substr(line, index(line, "named: \"") + 8)
+            sub(/"[[:space:]]*$/, "", desc)
+            forpid = ""
+            next
+        }
+        /Created for PID:/ { forpid = $0; gsub(/[^0-9]/, "", forpid) }
+        END { flush() }
+    ' | while IFS='|' read -r pid forpid owner typ dur desc; do
+        case "$typ" in
+            PreventUserIdleSystemSleep|PreventSystemSleep|NoIdleSleepAssertion|PreventUserIdleDisplaySleep|NoDisplaySleepAssertion) ;;
+            *) continue ;;
+        esac
+
+        IFS=: read -r h m s <<< "$dur"
+        [[ -z "$s" ]] && continue
+        (( 10#$h * 3600 + 10#$m * 60 + 10#$s >= limit )) || continue
+
+        real="${forpid:-$pid}"
+        cmd=$(ps -p "$real" -o command= 2>/dev/null)
+        name=$(ps -p "$real" -o comm= 2>/dev/null)
+        name="${${name:t}:-$owner}"
+
+        known=0
+        for p in ${(f)"$(print -r -- "$QUIT_APPS" | cut -d'|' -f1)"} ${(f)KNOWN_BLOCKERS}; do
+            [[ -n "$p" && "$name" == "$p"* ]] && { known=1; break; }
+        done
+        for pattern in ${(f)"$(print -r -- "$QUIT_HELPERS" | cut -d'|' -f2-)"}; do
+            [[ -n "$pattern" && -n "$cmd" ]] && print -r -- "$cmd" | grep -qE "$pattern" && { known=1; break; }
+        done
+        [[ "$known" == "1" ]] && continue
+
+        print -r -- "$real|$name|$typ|$dur|$desc"
+    done
+}
+
+# Ostrzeżenie o nieznanym blokerze: raz na proces (marker po PID), log + powiadomienie
+# macOS, które rano czeka w Centrum powiadomień.
+warn_unknown_blockers() {
+    local f pid name typ dur desc
+    for f in "$STATE_DIR"/warned-*(N); do
+        kill -0 "${f##*-}" 2>/dev/null || rm -f "$f"     # proces już nie żyje
+    done
+
+    list_unknown_blockers | while IFS='|' read -r pid name typ dur desc; do
+        [[ -f "$STATE_DIR/warned-$pid" ]] && { say "  $name (pid $pid): już zgłoszony"; continue; }
+        log "OSTRZEŻENIE: nieznany bloker snu - $name (pid $pid) trzyma $typ od $dur: \"$desc\". Dopisz go do QUIT_APPS albo KNOWN_BLOCKERS w sleep-guard.env."
+        osa 5 -e "display notification \"$name blokuje sen od $dur (${typ}). Nie ma go na liście strażnika.\" with title \"Strażnik snu\"" > /dev/null 2>&1
+        touch "$STATE_DIR/warned-$pid"
+    done
 }
 
 app_running() {  # $1 = nazwa procesu
@@ -304,6 +378,7 @@ do_tick() {
     say "Bezczynność ${idle}s, ekran zgaszony - sprzątam blokery snu."
     for_each_app "$QUIT_APPS" quit_one
     for_each_app "$QUIT_HELPERS" quit_helper
+    warn_unknown_blockers
 }
 
 # ==========================================
@@ -380,6 +455,18 @@ do_status() {
             fi
         fi
     done
+    print -r --
+
+    print -r -- "=== Nieznane blokery (spoza list, > ${UNKNOWN_BLOCKER_MINUTES} min) ==="
+    local unknown
+    unknown=$(list_unknown_blockers)
+    if [[ -z "$unknown" ]]; then
+        print -r -- "  brak"
+    else
+        print -r -- "$unknown" | while IFS='|' read -r upid uname utyp udur udesc; do
+            print -r -- "  $uname (pid $upid): $utyp od $udur - \"$udesc\""
+        done
+    fi
     print -r --
 
     print -r -- "=== Ostatnie przejścia zasilania ==="
