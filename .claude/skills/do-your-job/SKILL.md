@@ -22,6 +22,7 @@ Ta rutyna **nigdy nie zadaje pytań i nigdy nie czeka na odpowiedź** - także g
 
 Zasady:
 - **Zero pytań w trakcie i na końcu.** Wszystko, co wymagałoby decyzji użytkownika, ląduje w sekcji **„Do decyzji"** dzisiejszego Dashboardu (i w podsumowaniu).
+- **Jedna tura od startu do raportu.** Koniec tury = koniec runu: Paseo uznaje go za skończony, a wszystko, co działało w tle, ginie. Subagentów odpalaj z `run_in_background: false`, nie kończ tury „czekając na subagentów" i nie używaj `ScheduleWakeup`.
 - **Argument `unattended`** jest akceptowany (tak odpala harmonogram) i nic nie zmienia - to zachowanie domyślne.
 - **Luka kontekstowa nie blokuje**: mail → `AI/Triage` z zapisanym powodem (rozstrzygnie `/email-triage`); wszystko inne → „Do decyzji" + zapis tego, co już wiadomo, do pamięci.
 - **Co robisz autonomicznie**: zadania Todoist wg reguł CLAUDE.md/rulebooków — **tworzenie nowych oraz aktualizowanie istniejących** (termin, priorytet, treść, komentarz), gdy przychodzi kolejny mail w tej samej sprawie; labelki i statusy maili wg rulebooka; drafty; zapisy do vault (`Asystent/`, `Kontakty/`, `Inbox/`, `Rachunki/`); prowadzenie rejestru spraw (`scripts/ledger.py`) i zamykanie spraw przy jednoznacznym dowodzie.

@@ -86,6 +86,8 @@ Wątki, w których najnowsza wiadomość jest **przychodząca**, idą normalną 
 
 Główny agent (ten) **orkiestruje**; ciężką pracę per batch zlecaj **subagentom na Sonnecie** (`Agent`, `model: "sonnet"`, `subagent_type: "general-purpose"`). Każdy batch dostaje świeży kontekst i tańszy model.
 
+**Subagenci zawsze na pierwszym planie: `run_in_background: false` w każdym wywołaniu `Agent`.** Równoległość daje kilka wywołań w jednej wiadomości, nie tło. Nigdy nie kończ tury, czekając na subagentów („Czekam na raporty…"), i nie planuj `ScheduleWakeup`. Powód: w rutynie z harmonogramu koniec tury głównego agenta = koniec runu. Paseo uznaje run za zakończony, subagenci w tle giną w połowie batcha, a powiadomienie o ich zakończeniu nie ma już kogo obudzić. Tak padły wszystkie rutyny od 2026-09-24 do 2026-10-05: Claude Code 2.1.280 domyślnie puszcza `Agent` w tle.
+
 **Podział odpowiedzialności:**
 - **Subagent (Sonnet)** dla batcha (lista threadId + konto + adresy użytkownika + treść rulebooka): czyta wątki (`get_thread`) i dla każdego **najpierw sprawdza, czy najnowsza wiadomość jest od użytkownika** (`kedrzu@gmail.com` / `kedrzu@sigma.clinic`):
   - **Tak → lekka ścieżka** (sekcja „Maile wysłane"): bez klasyfikacji, bez labeli kategorii, bez draftów; `update_thread(status:"done", priority: …)` **z priorytetem z heurystyki** (czekam na odpowiedź/follow-up → P1; konwersacja → P2; FYI → P3) — MCP sam zdejmuje ew. `AI/Triage`; w raporcie zwraca tylko kandydatów do pamięci/kontaktów i ew. przypomnienia. **Jeśli wątek ma `Wymaga odpowiedzi` i nie czeka już na moją odpowiedź** (odpisałem merytorycznie; autoresponder się nie liczy) → dorzuć `removeLabels:["Wymaga odpowiedzi"]` (ocena semantyczna; `Wymaga działania` zostaje).
