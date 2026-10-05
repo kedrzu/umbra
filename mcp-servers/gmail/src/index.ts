@@ -32,6 +32,12 @@ import {
   fileAccessFromEnv,
   loadLocalFile,
 } from "./files.js";
+import {
+  findAttachment,
+  isPartId,
+  savedFileName,
+  type MessageAttachment,
+} from "./attachments.js";
 
 // Configuration from environment
 const CREDENTIALS_PATH = process.env.GMAIL_CREDENTIALS_PATH || "";
@@ -831,7 +837,7 @@ const tools: Tool[] = [
         },
         attachmentId: {
           type: "string",
-          description: "Attachment ID from the message (from get_message response)",
+          description: "attachmentId from the get_message response (a stable MIME part id such as \"2\" or \"1.3\")",
         },
       },
       required: ["account", "messageId", "attachmentId"],
@@ -890,11 +896,7 @@ function getHeader(
 // Email Processing Functions
 // ============================================================================
 
-interface AttachmentInfo {
-  attachmentId: string;
-  filename: string;
-  mimeType: string;
-  size: number;
+interface AttachmentInfo extends MessageAttachment {
   inline: boolean;
 }
 
@@ -1129,7 +1131,8 @@ function extractAttachments(
     // Check if this part is an attachment (has filename and attachmentId)
     if (part.filename && part.filename.length > 0 && part.body?.attachmentId) {
       attachments.push({
-        attachmentId: part.body.attachmentId,
+        partId: part.partId || part.body.attachmentId,
+        gmailId: part.body.attachmentId,
         filename: part.filename,
         mimeType: part.mimeType || "application/octet-stream",
         size: part.body?.size || 0,
@@ -1562,7 +1565,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                   attachments:
                     attachments.length > 0
                       ? attachments.map((a) => ({
-                          attachmentId: a.attachmentId,
+                          attachmentId: a.partId,
                           filename: a.filename,
                           mimeType: a.mimeType,
                           size: formatFileSize(a.size),
@@ -1618,7 +1621,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             attachments:
               attachments.length > 0
                 ? attachments.map((a) => ({
-                    attachmentId: a.attachmentId,
+                    attachmentId: a.partId,
                     filename: a.filename,
                     mimeType: a.mimeType,
                     size: formatFileSize(a.size),
@@ -2247,66 +2250,50 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "save_attachment": {
         const gmail = getGmailClient(args?.account as string);
         const messageId = args?.messageId as string;
-        const attachmentId = args?.attachmentId as string;
+        const ref = args?.attachmentId as string;
 
-        // Fetch the attachment data
-        const attachment = await gmail.users.messages.attachments.get({
-          userId: "me",
-          messageId: messageId,
-          id: attachmentId,
-        });
-
-        // Get the message to find the attachment metadata
         const message = await gmail.users.messages.get({
           userId: "me",
           id: messageId,
           format: "full",
         });
-
-        // Find the attachment info
         const attachments = extractAttachments(message.data.payload!);
-        const attachmentInfo = attachments.find(
-          (a) => a.attachmentId === attachmentId
-        );
 
-        // Convert from base64url to standard base64
-        const base64Data = attachment.data.data
-          ? attachment.data.data.replace(/-/g, "+").replace(/_/g, "/")
-          : "";
+        let target = findAttachment(attachments, ref);
+        const attachment = await gmail.users.messages.attachments.get({
+          userId: "me",
+          messageId,
+          id: target?.gmailId ?? ref,
+        });
+        // An old-style Gmail id that changed since: recognise the part by size.
+        if (!target && !isPartId(ref)) {
+          target = findAttachment(attachments, ref, attachment.data.size ?? undefined);
+        }
+        if (!target) {
+          throw new Error(
+            `Attachment '${ref}' not found in message ${messageId}; available: ` +
+              (attachments.map((a) => `${a.partId} (${a.filename})`).join(", ") || "none")
+          );
+        }
 
         // Save the decoded file to disk and return its path - the binary
         // never goes through the model context (avoids huge base64 blobs).
         const ATT_DIR = process.env.GMAIL_ATTACHMENTS_DIR || "/attachments";
         const RET_BASE =
           process.env.GMAIL_ATTACHMENTS_RETURN_BASE || ".context/attachments";
-        const rawName = attachmentInfo?.filename || "attachment";
-        // Gmail filenames can contain slashes/illegal chars (e.g. "2025-FP/I/27707.pdf")
-        const safeName = rawName.replace(/[\/\\:*?"<>|]/g, "_");
+        const fileName = savedFileName(target, attachments);
         const destDir = path.join(ATT_DIR, messageId);
         await fs.mkdir(destDir, { recursive: true });
-        const buffer = Buffer.from(base64Data, "base64");
-        await fs.writeFile(path.join(destDir, safeName), buffer);
-        const returnedPath = path.join(RET_BASE, messageId, safeName);
+        const buffer = Buffer.from(attachment.data.data || "", "base64url");
+        await fs.writeFile(path.join(destDir, fileName), buffer);
 
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                {
-                  filename: safeName,
-                  originalFilename: rawName,
-                  mimeType:
-                    attachmentInfo?.mimeType || "application/octet-stream",
-                  size: attachment.data.size,
-                  path: returnedPath,
-                },
-                null,
-                2
-              ),
-            },
-          ],
-        };
+        return jsonResult({
+          filename: fileName,
+          originalFilename: target.filename,
+          mimeType: target.mimeType,
+          size: buffer.length,
+          path: path.join(RET_BASE, messageId, fileName),
+        });
       }
 
       default:
