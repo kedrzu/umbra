@@ -9,7 +9,9 @@ set -e
 # bo AppleClamshellCausesSleep = No, a o śnie decydują wyłącznie asercje IOKit.
 # Spotify trzyma otwarty strumień CoreAudio nawet gdy nic nie gra i blokuje sen
 # godzinami. Strażnik zdejmuje ten bloker, gdy nikogo nie ma przy biurku,
-# i przywraca Wispr Flow, gdy użytkownik wróci.
+# i przywraca Wispr Flow, gdy użytkownik wróci. Instalator ustawia też pmset
+# (PMSET_BATTERY / PMSET_AC) i sleepwatchera, który gasi Wi-Fi na czas snu
+# (scripts/sleep-wifi.sh) - dopiero to odcina wybudzenia pakietami z sieci.
 #
 # Użycie:
 #   ./setup-sleep-guard.sh            # instalacja / aktualizacja
@@ -103,6 +105,94 @@ write_plist() {
     echo -e "  ${GREEN}✓${NC} $PLIST_PATH (tick co ${POLL_SECONDS}s)"
 }
 
+# Pary "klucz wartość" z PMSET_*, które różnią się od bieżących (pmset -g custom).
+# $1 = b|c (bateria/zasilacz), $2 = oczekiwane ustawienia.
+pmset_drift() {
+    local section="$1" wanted="$2"
+    local header
+    [ "$section" = "b" ] && header="Battery Power" || header="AC Power"
+    # shellcheck disable=SC2086
+    set -- $wanted
+    while [ "$#" -ge 2 ]; do
+        local current
+        current=$(pmset -g custom | awk -v h="$header" -v k="$1" '
+            /Power:$/ { on = ($0 ~ h) } on && $1 == k { print $2; exit }')
+        [ "$current" != "$2" ] && printf '%s %s ' "$1" "$2"
+        shift 2
+    done
+}
+
+apply_pmset() {
+    local section label wanted drift
+    for section in b c; do
+        if [ "$section" = "b" ]; then label="bateria"; wanted="$PMSET_BATTERY"
+        else label="zasilacz"; wanted="$PMSET_AC"; fi
+        [ -z "$wanted" ] && { echo -e "  ${YELLOW}-${NC} $label: nie ruszam (pusta konfiguracja)"; continue; }
+
+        drift=$(pmset_drift "$section" "$wanted")
+        if [ -z "$drift" ]; then
+            echo -e "  ${GREEN}✓${NC} $label: $wanted"
+            continue
+        fi
+        # shellcheck disable=SC2086
+        run sudo pmset -"$section" $drift
+        [ "$DRY_RUN" = "1" ] || echo -e "  ${GREEN}✓${NC} $label: ustawiono $drift"
+    done
+}
+
+WIFI_SCRIPT="$PROJECT_ROOT/scripts/sleep-wifi.sh"
+WIFI_PLIST_PATH="$HOME/Library/LaunchAgents/$SLEEPWATCHER_LABEL.plist"
+
+sleepwatcher_bin() {
+    command -v sleepwatcher 2>/dev/null || ls /opt/homebrew/sbin/sleepwatcher /usr/local/sbin/sleepwatcher 2>/dev/null | head -1
+}
+
+# sleepwatcher: -s przed snem (Wi-Fi off), -w po każdym wybudzeniu: strażnik czeka
+# w tle na człowieka i dopiero wtedy włącza Wi-Fi i aplikacje z RELAUNCH_APPS.
+# Nie -W (wybudzenie ekranu): na Apple Silicon ten sygnał nie przychodzi (2026-10-09).
+install_sleep_wifi() {
+    local bin
+    bin=$(sleepwatcher_bin)
+    if [ -z "$bin" ]; then
+        run brew install sleepwatcher
+        bin=$(sleepwatcher_bin)
+        [ -n "$bin" ] || [ "$DRY_RUN" = "1" ] || { echo -e "  ${RED}✗${NC} sleepwatcher się nie zainstalował"; exit 1; }
+    fi
+    echo -e "  ${GREEN}✓${NC} sleepwatcher: ${bin:-/opt/homebrew/sbin/sleepwatcher}"
+
+    local content
+    content="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+    <key>Label</key>
+    <string>$SLEEPWATCHER_LABEL</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${bin:-/opt/homebrew/sbin/sleepwatcher}</string>
+        <string>-V</string>
+        <string>-s</string>
+        <string>/bin/zsh $WIFI_SCRIPT sleep</string>
+        <string>-w</string>
+        <string>/bin/zsh $GUARD_SCRIPT --wake</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+</dict>
+</plist>"
+
+    if [ "$DRY_RUN" = "1" ]; then
+        echo -e "  ${YELLOW}[dry-run]${NC} zapis $WIFI_PLIST_PATH + launchctl bootstrap"
+        return 0
+    fi
+    printf '%s\n' "$content" > "$WIFI_PLIST_PATH"
+    launchctl bootout "gui/$(id -u)/$SLEEPWATCHER_LABEL" 2>/dev/null || true
+    launchctl bootstrap "gui/$(id -u)" "$WIFI_PLIST_PATH"
+    echo -e "  ${GREEN}✓${NC} $SLEEPWATCHER_LABEL załadowany (Wi-Fi off przed snem: $([ "$WIFI_OFF_DURING_SLEEP" = "1" ] && echo tak || echo NIE))"
+}
+
 reload_launchagent() {
     run launchctl bootout "gui/$(id -u)/$LAUNCHD_LABEL" 2>/dev/null || true
     if [ "$DRY_RUN" = "1" ]; then
@@ -138,6 +228,25 @@ do_status() {
     echo "  Log: $LOG_FILE"
     echo
 
+    echo -e "${YELLOW}Budzenie przez sieć (pmset)${NC}"
+    local drift
+    drift=$(pmset_drift b "$PMSET_BATTERY")
+    if [ -z "$drift" ]; then echo -e "  ${GREEN}✓${NC} bateria : $PMSET_BATTERY"
+    else echo -e "  ${RED}✗${NC} bateria : do zmiany -> $drift(odpal ./setup-sleep-guard.sh)"; fi
+    drift=$(pmset_drift c "$PMSET_AC")
+    if [ -z "$drift" ]; then echo -e "  ${GREEN}✓${NC} zasilacz: $PMSET_AC"
+    else echo -e "  ${RED}✗${NC} zasilacz: do zmiany -> $drift(odpal ./setup-sleep-guard.sh)"; fi
+    echo
+
+    echo -e "${YELLOW}Wi-Fi na czas snu (sleepwatcher)${NC}"
+    if launchctl print "gui/$(id -u)/$SLEEPWATCHER_LABEL" &> /dev/null; then
+        echo -e "  ${GREEN}✓${NC} $SLEEPWATCHER_LABEL załadowany"
+    else
+        echo -e "  ${RED}✗${NC} $SLEEPWATCHER_LABEL niezaładowany (odpal ./setup-sleep-guard.sh)"
+    fi
+    /bin/zsh "$WIFI_SCRIPT" status | sed 's/^/  /'
+    echo
+
     echo -e "${YELLOW}Stan bieżący${NC}"
     /bin/zsh "$GUARD_SCRIPT" --status | sed 's/^/  /'
 }
@@ -152,8 +261,15 @@ do_uninstall() {
     else
         echo -e "  ${GREEN}✓${NC} plist już nie istnieje"
     fi
+    run launchctl bootout "gui/$(id -u)/$SLEEPWATCHER_LABEL" 2>/dev/null || true
+    [ -f "$WIFI_PLIST_PATH" ] && run rm -f "$WIFI_PLIST_PATH"
+    /bin/zsh "$WIFI_SCRIPT" wake    # gdyby radio zostało zgaszone przez nas
+    echo -e "  ${GREEN}✓${NC} $SLEEPWATCHER_LABEL usunięty"
     echo
     echo -e "${GREEN}Gotowe.${NC} Skryptu ani logów nie ruszam."
+    echo "Ustawień pmset też nie cofam. Domyślne wartości macOS przywrócisz tak:"
+    echo "  sudo pmset -b powernap 1 tcpkeepalive 1"
+    echo "  sudo pmset -c powernap 1 tcpkeepalive 1 womp 1"
 }
 
 do_install() {
@@ -175,6 +291,15 @@ do_install() {
     echo -e "${YELLOW}LaunchAgent...${NC}"
     write_plist
     reload_launchagent
+    echo
+
+    echo -e "${YELLOW}Budzenie przez sieć (pmset, może zapytać o hasło)...${NC}"
+    apply_pmset
+    echo
+
+    echo -e "${YELLOW}Wi-Fi wyłączone na czas snu (sleepwatcher)...${NC}"
+    chmod +x "$WIFI_SCRIPT" 2>/dev/null || true
+    install_sleep_wifi
     echo
 
     echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"

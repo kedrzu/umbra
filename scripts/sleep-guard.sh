@@ -28,6 +28,8 @@
 #   --once      jeden tick, gadatliwie (do testów z ręki)
 #   --sleep     ubij wszystko z QUIT_APPS i uśpij natychmiast ("idę spać")
 #   --status    diagnostyka: kto trzyma asercje, kiedy ostatnio spał
+#   --wake      ekran właśnie się włączył (sleepwatcher -W): od razu Wi-Fi i
+#               aplikacje z RELAUNCH_APPS, bez czekania do ticku (do 5 min)
 #
 # Instalacja: ./setup-sleep-guard.sh
 
@@ -47,6 +49,7 @@ case "${1:---watch}" in
     --once)   MODE="once" ;;
     --sleep)  MODE="sleep" ;;
     --status) MODE="status" ;;
+    --wake)   MODE="wake" ;;
     -h|--help)
         sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
         exit 0
@@ -339,7 +342,7 @@ relaunch_one() {
 # Czy jest cokolwiek do przywrócenia (marker po naszym wieczornym sprzątaniu)?
 has_pending_relaunch() {
     local f
-    for f in "$STATE_DIR"/quit-*(N); do
+    for f in "$STATE_DIR"/quit-*(N) "$STATE_DIR"/wifi-off-by-sleep(N); do
         return 0
     done
     return 1
@@ -360,6 +363,8 @@ do_tick() {
     if display_is_on || [[ "$idle" -lt "$PRESENCE_SECONDS" ]]; then
         say "Użytkownik obecny (bezczynność ${idle}s) - przywracam co trzeba."
         for_each_app "$RELAUNCH_APPS" relaunch_one
+        # Siatka bezpieczeństwa: gdyby sleepwatcher przegapił wybudzenie ekranu.
+        /bin/zsh "$SCRIPT_DIR/sleep-wifi.sh" wake
         return 0
     fi
 
@@ -399,6 +404,34 @@ do_sleep() {
     for_each_app "$QUIT_HELPERS" quit_helper
     log "pmset sleepnow"
     pmset sleepnow
+}
+
+# sleepwatcher -w: system się wybudził - ale to może być DarkWake, a człowieka może
+# nie być. (-W, "ekran się włączył", na Apple Silicon w ogóle nie strzela.) Czekamy
+# więc w tle do WAKE_WAIT_SECONDS na obecność: ekran włączony albo świeży ruch
+# myszy/klawiatury. Dopiero wtedy Wi-Fi (najpierw - Wispr Flow i slapss chcą sieci)
+# i aplikacje z RELAUNCH_APPS. Gdy Mac w tym czasie znów zaśnie, pętla zamarza
+# razem z nim i rusza przy kolejnym wybudzeniu; jedna instancja naraz (lock).
+WAKE_WAIT_SECONDS=180
+do_wake() {
+    local lock="$STATE_DIR/wake-waiter.pid"
+    if [[ -f "$lock" ]] && kill -0 "$(<"$lock")" 2>/dev/null; then
+        return 0
+    fi
+    {
+        print -r -- $$ > "$lock"
+        local waited=0
+        while (( waited < WAKE_WAIT_SECONDS )); do
+            if display_is_on || [[ $(hid_idle_seconds) -lt 5 ]]; then
+                /bin/zsh "$SCRIPT_DIR/sleep-wifi.sh" wake
+                for_each_app "$RELAUNCH_APPS" relaunch_one
+                break
+            fi
+            sleep 2
+            (( waited += 2 ))
+        done
+        rm -f "$lock"
+    } &!
 }
 
 do_status() {
@@ -477,4 +510,6 @@ case "$MODE" in
     watch|once) do_tick ;;
     sleep)      do_sleep ;;
     status)     do_status ;;
+    wake)       exec >> "$LOG_FILE" 2>> "$ERR_FILE"    # sleepwatcher nie zbiera stdout
+                do_wake ;;
 esac
