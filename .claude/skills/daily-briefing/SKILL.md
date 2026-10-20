@@ -45,8 +45,8 @@ Foldery w vault:
    **NIE ładuj listy kontaktów** - jeśli potrzebujesz info o uczestniku spotkania, użyj `qmd` do wyszukania po imieniu
 
 3. **Zbierz wydarzenia z kalendarza** na dziś
-   - Użyj `list-events` dla wszystkich kont (Personal, Work, Shared)
-   - Grupuj: Praca / Osobiste / Wspólne
+   - Użyj `list-events` dla **śledzonych kalendarzy** z CLAUDE.md (sekcja Google Calendar) — nie samo `primary`, bo wspólne wydarzenia są w M&M
+   - Grupuj: Praca (konto work) / Osobiste (Prywatny + Przypomnienia) / Wspólne (M&M). To samo wydarzenie w dwóch kalendarzach pokazuj raz
    - Wykryj konflikty i ciasne przejścia między spotkaniami
 
 4. **Pobierz zadania** z Todoist — `Bash: python3 scripts/todoist.py tasks --today --overdue --select id,title,due,data.priority`

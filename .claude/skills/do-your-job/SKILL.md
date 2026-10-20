@@ -26,7 +26,7 @@ Zasady:
 - **Argument `unattended`** jest akceptowany (tak odpala harmonogram) i nic nie zmienia - to zachowanie domyślne.
 - **Luka kontekstowa nie blokuje**: mail → `AI/Triage` z zapisanym powodem (rozstrzygnie `/email-triage`); wszystko inne → „Do decyzji" + zapis tego, co już wiadomo, do pamięci.
 - **Co robisz autonomicznie**: zadania Todoist wg reguł CLAUDE.md/rulebooków — **tworzenie nowych oraz aktualizowanie istniejących** (termin, priorytet, treść, komentarz), gdy przychodzi kolejny mail w tej samej sprawie; labelki i statusy maili wg rulebooka; drafty; zapisy do vault (`Asystent/`, `Kontakty/`, `Inbox/`, `Rachunki/`); prowadzenie rejestru spraw (`scripts/ledger.py`) i zamykanie spraw przy jednoznacznym dowodzie.
-- **Czego NIE robisz nigdy**: nie tworzysz wydarzeń kalendarza (CLAUDE.md #6) - propozycja terminu idzie do „Do decyzji"; nie wysyłasz maili; **nie ukańczasz i nie kasujesz** zadań (to robi użytkownik, a rejestr to zauważa); nie labelujesz „na czuja" maili ważnych/`IMPORTANT` - takie idą do `AI/Triage`.
+- **Czego NIE robisz nigdy**: nie aktualizujesz i nie kasujesz wydarzeń kalendarza; tworzysz je tylko dla twardych terminów z maili, w `Przypomnieniach`, po sprawdzeniu duplikatów (CLAUDE.md #6, rulebook „Twarde terminy") - miękka propozycja terminu idzie do „Do decyzji"; nie wysyłasz maili; **nie ukańczasz i nie kasujesz** zadań (to robi użytkownik, a rejestr to zauważa); nie labelujesz „na czuja" maili ważnych/`IMPORTANT` - takie idą do `AI/Triage`.
 
 ### Kontrakt ostatniej wiadomości (powiadomienie push)
 

@@ -384,6 +384,14 @@ notatka z sesji — idzie do odpowiedniego folderu w roocie vault, nigdy do `Asy
 ### Google Calendar (Multi-Account)
 - **Transport: stdio przez `docker exec`** (`.mcp.json`), nie HTTP — kontener `umbra-calendar` musi działać, inaczej narzędzia `mcp__calendar__*` w ogóle się nie pojawią. Powód: HTTP w `@cocal/google-calendar-mcp` 2.6.2 obsługuje tylko pierwszy request procesu (regresja z SDK 1.27.1). Port 4003 służy już tylko do webowego UI zarządzania kontami (`http://localhost:4003/`).
 - Konta: `personal` + `work` (kalendarz wspólny z żoną widoczny z konta personal)
+- **Śledzone kalendarze** — jedyna lista, z której czytają briefing, rutyna i sprawdzanie duplikatów przed `create-event`. Samo `primary` nie wystarcza: wspólne spotkania lądują w M&M, a agent, który tam nie zajrzał, zdublował je w `Przypomnieniach` (2026-10). Pozostałych kalendarzy konta personal (żony, Krąg 2 Bemowo, Kancelarie Parafialne, Todoist, Songkick, święta) **nie śledzimy** — decyzja użytkownika z 2026-10-10.
+
+  | Konto | Kalendarz | ID |
+  |-------|-----------|----|
+  | `personal` | Prywatny (główny) | `kedrzu@gmail.com` |
+  | `personal` | M&M (wspólny z żoną) | `fe92cbc25d69f63272463661de3b1cfde649659ccff7574a479de9bdf7b9be86@group.calendar.google.com` |
+  | `personal` | Przypomnienia (tu agent tworzy wydarzenia) | `ee7429e7ee36212354ab72908721fad6b78f7920acf49ce7d837edcc712f9ead@group.calendar.google.com` |
+  | `work` | główny | `primary` |
 - View all calendars across all accounts
 - Create new events (with permission)
 - Check free/busy times
