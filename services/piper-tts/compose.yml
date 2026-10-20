@@ -1,0 +1,23 @@
+# Piper TTS for Paseo - osobny projekt compose, bo to nie jest serwer MCP.
+# Stawia go i aktualizuje ./setup-piper-tts.sh (wartości z scripts/piper-tts.env);
+# `restart: unless-stopped` podnosi go razem z Dockerem, bez udziału strażnika rutyny.
+name: umbra-piper
+
+services:
+  piper-tts:
+    build:
+      context: .
+      args:
+        PIPER_VOICE: ${PIPER_VOICE:?ustaw w scripts/piper-tts.env}
+        PIPER_VOICE_URL: ${PIPER_VOICE_URL:?ustaw w scripts/piper-tts.env}
+    image: umbra-piper-tts:${PIPER_VOICE}
+    container_name: umbra-piper-tts
+    restart: unless-stopped
+    # Tylko localhost: demon Paseo działa na tym samym Macu, telefon dostaje
+    # już gotowe audio od demona.
+    ports:
+      - "127.0.0.1:${PIPER_TTS_PORT:?ustaw w scripts/piper-tts.env}:8000"
+    environment:
+      - PIPER_LENGTH_SCALE=${PIPER_LENGTH_SCALE:-1.0}
+      - PIPER_IDLE_UNLOAD_SECONDS=${PIPER_IDLE_UNLOAD_SECONDS:-300}
+    mem_limit: 512m

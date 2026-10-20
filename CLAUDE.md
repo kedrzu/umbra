@@ -520,6 +520,16 @@ Apka łączy się przez Tailscale: `./setup-paseo-remote.sh` (idempotentny, usta
 
 `--restart` ubija demona **razem ze wszystkimi działającymi agentami** (w tym tym, który go odpala), więc nie jest domyślny. Hasło żyje w `~/.paseo/.env` (`PASEO_PASSWORD`).
 
+## Głos w Paseo (polski TTS)
+
+Dyktowanie to lokalny Parakeet v3 w samym Paseo (zna polski). **Czytanie odpowiedzi** w trybie głosowym robi Piper (`pl_PL-mc_speech-medium`) w Dockerze: `./setup-piper-tts.sh` (idempotentny, ustawienia w `scripts/piper-tts.env`, flagi `--status` / `--dry-run` / `--restart` / `--uninstall`), serwer w `services/piper-tts/`.
+
+- **Czemu tak**: lokalny TTS Paseo ma wpisany na sztywno tylko angielski Kokoro, a pluginy nie mają punktu rozszerzeń dla mowy. Zostaje dostawca `openai` z podmienionym `providers.openai.tts.baseUrl` → `127.0.0.1:4010`. Paseo przyjmuje tylko nazwy OpenAI (`tts-1`/`alloy`), serwer je ignoruje.
+- **Kontrakt `pcm`**: surowe 24 kHz/16 bit/mono, bo Paseo tak odtwarza gołe `pcm`; Piper mówi w 22,05 kHz, więc serwer resampluje.
+- **RAM**: głos ładuje się przy pierwszym użyciu i zwalnia po 5 min ciszy (~35 MB na biegu jałowym, ~165 MB w trakcie), tak jak lokalny worker mowy Paseo.
+- **Ustawienia mowy demon czyta tylko przy starcie** — `paseo daemon reload` ich nie łapie, potrzebny restart (ubija agenty).
+- Docelowo: PR do Paseo z natywną obsługą Piper/VITS w katalogu sherpa-onnx; po wejściu wracamy na `provider: local` i ten kontener znika (`--uninstall`).
+
 ## Email Workflow
 
 Reguły klasyfikacji i zbiór labelek żyją w **rulebookach** (jedyne źródło prawdy), osobno per konto:
