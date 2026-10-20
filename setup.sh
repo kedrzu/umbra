@@ -183,17 +183,8 @@ export OBSIDIAN_VAULT_PATH MCP_GMAIL_PORT MCP_CALENDAR_PORT QMD_PATH
 envsubst < "$PROJECT_ROOT/.mcp.template.json" > "$PROJECT_ROOT/.mcp.json"
 echo -e "  ${GREEN}✓${NC} Generated .mcp.json"
 
-# Generate .claude/settings.json from template
-# First make it writable if it exists and is read-only
-if [ -f "$PROJECT_ROOT/.claude/settings.json" ]; then
-    chmod 644 "$PROJECT_ROOT/.claude/settings.json" 2>/dev/null || true
-fi
-
-envsubst < "$PROJECT_ROOT/.claude/settings.template.json" > "$PROJECT_ROOT/.claude/settings.json"
-
-# Make settings read-only to prevent agent from modifying its own restrictions
-chmod 444 "$PROJECT_ROOT/.claude/settings.json"
-echo -e "  ${GREEN}✓${NC} Generated .claude/settings.json (read-only)"
+# .claude/settings.json is committed as-is (no template): it has no per-machine values,
+# and the Claude Code sandbox already denies the agent writes to it.
 
 # ==========================================
 # Build Docker images
