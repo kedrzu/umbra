@@ -466,7 +466,7 @@ Gdy trzeba **dosięgnąć użytkownika poza sesją** — bo nie siedzi przed ter
 | `/daily-briefing` | Poranny briefing - kalendarz, zadania, emaile, przypomnienia |
 | `/weekly-review` | Weekly review and planning |
 | `/research [topic]` | Deep research using vault knowledge (tylko vault — **nie** internet) |
-| `/shopping-research` | Research zakupowy: ranking produktów wg kryteriów, z realną ceną do zdobycia |
+| `/shopping-research` | Research zakupowy: ranking produktów wg kryteriów, z realną ceną do zdobycia i linkiem do oferty (plugin `shopping-research@kedrzu-skills`) |
 | `/travel-planning` | Planowanie podróży: transport, nocleg, atrakcje, plan dnia |
 | `/publish` | Publikacja dokumentu w internecie + link do wysłania |
 | `telegram` | Wiadomość na telefon użytkownika (jednokierunkowo); `/telegram:setup` konfiguruje kanał |
@@ -475,6 +475,8 @@ Gdy trzeba **dosięgnąć użytkownika poza sesją** — bo nie siedzi przed ter
 | `/do-your-job` | Run full assistant routine |
 
 `/shopping-research` i `/travel-planning` są **interaktywne** — mają twardą bramkę akceptacji specyfikacji przed startem kosztownego researchu.
+
+`shopping-research` żyje w repo [kedrzu/skills](https://github.com/kedrzu/skills) (poprawki tam, nie w `.claude/skills/`) i o zapisie pyta `CLAUDE.md` projektu. Tutaj: po akceptacji specyfikacji notatka `Research/Zakupy/YYYY-MM-DD-<kategoria>.md` ze specyfikacją, po researchu dopisany do niej raport; trwałe preferencje zakupowe (wykluczone marki, priorytet ciszy/wagi, wymagana gwarancja) → `Asystent/Memory/Preferences.md` lub `Personal.md`.
 
 ## Research w internecie
 

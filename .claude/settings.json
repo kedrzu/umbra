@@ -73,7 +73,8 @@
     "playwright@kedrzu-skills": true,
     "skill-improve@kedrzu-skills": true,
     "skill-creator@claude-plugins-official": true,
-    "secrets@kedrzu-skills": true
+    "secrets@kedrzu-skills": true,
+    "shopping-research@kedrzu-skills": true
   },
   "extraKnownMarketplaces": {
     "kedrzu-skills": {
