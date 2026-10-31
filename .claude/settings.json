@@ -23,6 +23,7 @@
       "mcp__calendar__get-freebusy",
       "mcp__calendar__get-current-time",
       "mcp__calendar__manage-accounts",
+      "mcp__calendar__create-event",
       "mcp__qmd__*",
       "mcp__obsidian-search__*",
       "mcp__plugin_playwright_playwright__*",
@@ -49,7 +50,6 @@
       "mcp__calendar__respond-to-event"
     ],
     "ask": [
-      "mcp__calendar__create-event",
       "mcp__gmail__unsubscribe"
     ]
   },
