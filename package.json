@@ -1,0 +1,7 @@
+{
+  "name": "umbra",
+  "private": true,
+  "scripts": {
+    "claude": "scripts/claude-account.sh"
+  }
+}
