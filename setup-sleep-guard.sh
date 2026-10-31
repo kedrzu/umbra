@@ -189,6 +189,12 @@ install_sleep_wifi() {
     fi
     printf '%s\n' "$content" > "$WIFI_PLIST_PATH"
     launchctl bootout "gui/$(id -u)/$SLEEPWATCHER_LABEL" 2>/dev/null || true
+    # bootout jest asynchroniczny: sleepwatcher to żywy proces, a bootstrap
+    # przed jego zejściem kończy się "Bootstrap failed: 5: Input/output error".
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        launchctl print "gui/$(id -u)/$SLEEPWATCHER_LABEL" &> /dev/null || break
+        sleep 0.5
+    done
     launchctl bootstrap "gui/$(id -u)" "$WIFI_PLIST_PATH"
     echo -e "  ${GREEN}✓${NC} $SLEEPWATCHER_LABEL załadowany (Wi-Fi off przed snem: $([ "$WIFI_OFF_DURING_SLEEP" = "1" ] && echo tak || echo NIE))"
 }
