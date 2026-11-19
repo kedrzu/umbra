@@ -23,8 +23,8 @@ Modele językowe planujące podróż mają kilka silnych, kosztownych odruchów.
 
 Ceny i dostępność zdobywasz **dwutorowo**, z jasną kolejnością:
 
-1. **Najpierw przeglądarka — Playwright MCP** (`mcp__plugin_playwright_playwright__*`, z pluginu `playwright@kedrzu-skills`). Otwórz pre-filled URL (Google Flights / Skyscanner / Booking / Airbnb / Google Hotels), poczekaj na załadowanie wyników i **odczytaj żywą cenę** przez `browser_snapshot` (drzewo dostępności) — nie zgaduj z pamięci. Narzędzia załaduj przez `ToolSearch` zapytaniem `select:mcp__plugin_playwright_playwright__browser_navigate,mcp__plugin_playwright_playwright__browser_snapshot` (i w razie potrzeby `browser_click`, `browser_type`, `browser_wait_for`).
-2. **Gdy przeglądarka zawodzi** — blokada/CAPTCHA/403, strona się wiesza, albo serwer Playwright niedostępny → **najpierw Exa** (`ToolSearch` `select:mcp__exa__web_search_exa,mcp__exa__web_fetch_exa`): semantyczna, zwraca treść strony, a nie sam link, więc wyciąga rozkłady, warunki taryf i opisy obiektów z miejsc, których `WebSearch` nie znajduje. Opisuj idealną stronę pełnym zdaniem, `objective` jest wymagany.
+1. **Najpierw przeglądarka — flaneur** (skill `flaneur:flaneur`, z pluginu `flaneur@kedrzu-skills`: stealth Chrome sterowany przez `agent-browser` po CDP). Załaduj skill i **uruchom przeglądarkę raz, zanim wyślesz subagentów** — endpoint ląduje w `/tmp/flaneur.endpoint`, subagenci go współdzielą. Otwórz pre-filled URL (Google Flights / Skyscanner / Booking / Airbnb / Google Hotels), poczekaj na załadowanie wyników i **odczytaj żywą cenę** przez `agent-browser snapshot` (drzewo dostępności) — nie zgaduj z pamięci. Ładowanie strony, które czeka (flaneur trzyma ludzkie tempo na każdą domenę), to nie błąd — nie ponawiaj.
+2. **Gdy przeglądarka zawodzi** — blokada/CAPTCHA/403, strona się wiesza, albo przeglądarka nie wstała → **najpierw Exa** (`ToolSearch` `select:mcp__exa__web_search_exa,mcp__exa__web_fetch_exa`): semantyczna, zwraca treść strony, a nie sam link, więc wyciąga rozkłady, warunki taryf i opisy obiektów z miejsc, których `WebSearch` nie znajduje. Opisuj idealną stronę pełnym zdaniem, `objective` jest wymagany.
 3. **Na końcu `WebSearch`/`WebFetch`** (`ToolSearch` `select:WebSearch,WebFetch`): cena **orientacyjna** z widełek/artykułów, wyraźnie oznaczona jako niezweryfikowana bezpośrednio, z datą.
 
 **Zasady warstwy danych:**
@@ -180,7 +180,7 @@ Odpal równolegle subagentów wg kontraktów w `references/` — **adaptacyjnie 
 - **Atrakcje / Plan dnia** → `references/activities-agent.md`
 - **Praktyczne** → `references/logistics-agent.md`
 
-Każdy subagent zwraca ustandaryzowane **dossier** (patrz kontrakt). **Obsłuż maruderów:** jeśli subagent padł albo zwrócił placeholder — odpal ponownie (z tropem, który zdążył znaleźć) lub, gdy powtarza problem, **zbadaj ten komponent sam** (Playwright/`WebSearch`/`WebFetch`). Nie zostawiaj dziury — plan jest tak dobry, jak najsłabsze dossier.
+Każdy subagent zwraca ustandaryzowane **dossier** (patrz kontrakt). **Obsłuż maruderów:** jeśli subagent padł albo zwrócił placeholder — odpal ponownie (z tropem, który zdążył znaleźć) lub, gdy powtarza problem, **zbadaj ten komponent sam** (flaneur/`WebSearch`/`WebFetch`). Nie zostawiaj dziury — plan jest tak dobry, jak najsłabsze dossier.
 
 ## Etap C — Synteza w plan dzień-po-dniu
 
