@@ -43,5 +43,3 @@ published/
 
 # Lokalny stan wranglera (deploy Cloudflare Pages)
 .wrangler/
-
-.playwright-mcp/
