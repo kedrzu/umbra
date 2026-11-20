@@ -28,23 +28,6 @@ services:
           cpus: '0.1'
           memory: 128M
 
-  gmail:
-    ports: []
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-
   calendar:
     ports: []
     restart: unless-stopped

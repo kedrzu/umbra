@@ -27,7 +27,7 @@ Foldery w vault:
 | List files in vault | `Bash(ls ./obsidian/...)` - NIE Glob! |
 | Calendar events | `list-events` |
 | Tasks | `Bash(python3 scripts/todoist.py tasks …)` - odczyt z lustra, **nie ma MCP Todoista** |
-| Email scan | `search_threads` |
+| Email scan | `bun umbra gmail search` (CLI, przez `Bash`) |
 | Create dashboard | `Write` |
 | Update memory | `Edit` |
 
@@ -61,7 +61,7 @@ Foldery w vault:
 6. **Przegląd dojrzałych spraw z rejestru** (rozstrzygasz sam, nie pytasz)
    - `Bash: python3 scripts/ledger.py due --select id,title,due,reason,refs` — sprawy z datą powrotu <= dziś (odłożone maile, przypomnienia o follow-upie, sprawy z zadaniami). Kontrakt: `docs/ledger.md`.
    - Dla zaległych (data < dziś):
-     - Sprawdź wątek (`get_thread`) - czy poszła odpowiedź, czy sprawa się domknęła
+     - Sprawdź wątek (`bun umbra gmail thread <threadId>`) - czy poszła odpowiedź, czy sprawa się domknęła
      - **Jednoznaczny dowód załatwienia** (moja odpowiedź w wątku / druga strona potwierdziła / zadanie ukończone wg `todoist.py sync`) → **sam** `ledger close --outcome completed --reason "…"`
      - **Niejednoznaczne** → zostaw otwarte, wypisz w "Do decyzji" z jednozdaniowym stanem wątku
    - Dla dzisiejszych:
