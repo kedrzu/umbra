@@ -12,8 +12,8 @@ Find and clean up unwanted email subscriptions across all accounts.
 | Operation | Tool |
 |-----------|------|
 | Read memory | `read_note` |
-| Search promotional emails | `search_threads` |
-| Get unsubscribe link | `get_unsubscribe_info` |
+| Search promotional emails | `bun umbra gmail search "category:promotions" --account <email>` (Bash) |
+| Get unsubscribe link | `bun umbra gmail message <messageId> --raw` (the link in the original body) |
 | Update memory | `create_ai_note` |
 
 ## Gmail Accounts

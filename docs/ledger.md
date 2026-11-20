@@ -136,4 +136,4 @@ Skrypt **czyta** Todoista tokenem z `.env` (`TODOIST_API_TOKEN`) i trzyma pełne
 
 ## Odłożenie maila (dawny defer)
 
-Wątek odkładany na później dostaje po prostu `update_thread(status:"done", priority)` — znika z `unprocessed`, **zostaje w INBOX** (archiwizują wyłącznie markery `Nieaktualne`/`Śmieci`). Data i powód powrotu idą do rejestru. Etykiety `AI/Defer/*` i `TODO/*` nie istnieją; MCP odrzuca próby ich nałożenia.
+Wątek odkładany na później dostaje po prostu `thread label --set status=AI/Done --set priority=P/<n>` — znika z `unprocessed`, **zostaje w INBOX** (archiwizują wyłącznie markery `Nieaktualne`/`Śmieci`). Data i powód powrotu idą do rejestru. Etykiet `AI/Defer/*` i `TODO/*` już nie ma — nie nakładaj ich.

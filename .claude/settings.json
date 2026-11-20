@@ -1,20 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "mcp__gmail__list_accounts",
-      "mcp__gmail__search_threads",
-      "mcp__gmail__get_thread",
-      "mcp__gmail__get_message",
-      "mcp__gmail__create_draft",
-      "mcp__gmail__list_drafts",
-      "mcp__gmail__get_draft",
-      "mcp__gmail__update_draft",
-      "mcp__gmail__discard_draft",
-      "mcp__gmail__list_labels",
-      "mcp__gmail__update_thread",
-      "mcp__gmail__create_label",
-      "mcp__gmail__cleanup_labels",
-      "mcp__gmail__save_attachment",
+      "Bash(bun umbra gmail:*)",
       "mcp__calendar__list-calendars",
       "mcp__calendar__list-events",
       "mcp__calendar__get-event",
@@ -43,15 +30,17 @@
       "mcp__telegram-notify__check"
     ],
     "deny": [
-      "mcp__gmail__send*",
-      "mcp__gmail__delete*",
-      "mcp__gmail__trash*",
+      "Bash(bun umbra gmail auth:*)",
+      "Bash(bun umbra secrets run:*)",
+      "Bash(bun umbra gmail thread label *TRASH*)",
+      "Bash(bun umbra gmail thread label *Trash*)",
+      "Bash(bun umbra gmail thread label *trash*)",
+      "Bash(bun umbra gmail thread label *SPAM*)",
+      "Bash(bun umbra gmail thread label *Spam*)",
+      "Bash(bun umbra gmail thread label *spam*)",
       "mcp__calendar__update-event",
       "mcp__calendar__delete-event",
       "mcp__calendar__respond-to-event"
-    ],
-    "ask": [
-      "mcp__gmail__unsubscribe"
     ]
   },
   "model": "sonnet",

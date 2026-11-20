@@ -19,10 +19,10 @@ This guide explains how to run the Umbra Personal Assistant in Docker containers
 │                                                                      │   │
 │         ┌────────────────────┬───────────────────┬──────────────────┘   │
 │         ▼                    ▼                   ▼                       │
-│  ┌─────────────┐      ┌─────────────┐     ┌─────────────┐              │
-│  │ obsidian    │      │   gmail     │     │  calendar   │              │
-│  │   :4001     │      │   :4002     │     │   :4003     │              │
-│  └─────────────┘      └─────────────┘     └─────────────┘              │
+│  ┌─────────────┐                          ┌─────────────┐              │
+│  │ obsidian    │                          │  calendar   │              │
+│  │   :4001     │                          │   :4003     │              │
+│  └─────────────┘                          └─────────────┘              │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -31,7 +31,7 @@ This guide explains how to run the Umbra Personal Assistant in Docker containers
 
 1. **Docker Desktop** or Docker Engine with Docker Compose
 2. **Anthropic account** with Claude Code subscription (or API key)
-3. **Google Cloud credentials** for Gmail and Calendar APIs
+3. **Google Cloud credentials** for Gmail and Calendar APIs, and [Bun](https://bun.sh) for the Gmail CLI
 4. **Obsidian vault** accessible on your filesystem
 
 ## Quick Start
@@ -112,12 +112,10 @@ CLAUDE_CONFIG_PATH=${HOME}/.claude
 OBSIDIAN_VAULT_PATH=/path/to/your/obsidian/vault
 
 # OAuth Credentials (from Google Cloud Console)
-GMAIL_CREDENTIALS_PATH=${HOME}/.config/umbra/gmail-credentials.json
 CALENDAR_CREDENTIALS_PATH=${HOME}/.config/umbra/calendar-credentials.json
 
 # Ports (optional, for debugging)
 MCP_OBSIDIAN_PORT=4001
-MCP_GMAIL_PORT=4002
 MCP_CALENDAR_PORT=4003
 ```
 
@@ -128,9 +126,8 @@ MCP_CALENDAR_PORT=4003
 3. Enable Gmail API and Google Calendar API
 4. Create OAuth 2.0 credentials (Desktop app type)
 5. Download credentials JSON files
-6. Save as:
-   - `~/.config/umbra/gmail-credentials.json`
-   - `~/.config/umbra/calendar-credentials.json`
+6. Save the Calendar one as `~/.config/umbra/calendar-credentials.json`; import the Gmail one into the
+   keychain ([Gmail](#gmail))
 
 ## Usage
 
@@ -159,7 +156,6 @@ docker compose logs -f
 
 # Specific service
 docker compose logs -f obsidian
-docker compose logs -f gmail
 ```
 
 ### Health Checks
@@ -170,18 +166,52 @@ docker compose ps
 
 # Individual health endpoints
 curl http://localhost:4001/health  # obsidian
-curl http://localhost:4002/health  # gmail
 curl http://localhost:4003/health  # calendar
 ```
 
+## Gmail
+
+Gmail is not a container: it is the `umbra` CLI (`cli/umbra.ts`, commands of
+[`@nzyme/gmail-cli`](https://www.npmjs.com/package/@nzyme/gmail-cli)), which agents call as
+`bun umbra gmail …`. It never sends mail or permanently deletes anything. The OAuth client and the
+refresh tokens live in the macOS keychain (scope `umbra`, `bun umbra secrets list`), nowhere on disk.
+
+### 1. Store the OAuth client
+
+The client is the Desktop-app JSON from Google Cloud Console (Gmail API enabled). Import its id and
+secret into the keychain; the values are piped, never printed:
+
+```bash
+bun install
+CLIENT_JSON=~/.config/umbra/gmail-credentials.json
+jq -r '(.installed // .web).client_id' "$CLIENT_JSON" | bun umbra secrets set GOOGLE_CLIENT_ID
+jq -r '(.installed // .web).client_secret' "$CLIENT_JSON" | bun umbra secrets set GOOGLE_CLIENT_SECRET
+```
+
+After that the JSON file is no longer read and can be deleted.
+
+### 2. Sign in each account
+
+Signing in opens a browser, so you run it, never the agent. Once per account:
+
+```bash
+bun umbra gmail auth --login-hint kedrzu@gmail.com
+bun umbra gmail auth --login-hint kedrzu@sigma.clinic
+bun umbra gmail accounts
+```
+
+Only the two accounts listed in `cli/umbra.ts` are usable; any other is shown as `not allowed`.
+`invalid_grant` on a later command means the token expired or was revoked: run `auth` again.
+
+### 3. Smoke test
+
+```bash
+bun umbra gmail --help
+bun umbra gmail search "in:inbox" --view unprocessed --limit 5 --account kedrzu@gmail.com
+bun umbra gmail labels list --account kedrzu@sigma.clinic
+```
+
 ## OAuth Management
-
-### Adding Gmail Accounts
-
-1. Start the Gmail service: `docker compose up -d gmail`
-2. Visit http://localhost:4002/auth
-3. Complete OAuth flow
-4. Repeat for additional accounts
 
 ### Adding Calendar Accounts
 
@@ -191,12 +221,13 @@ curl http://localhost:4003/health  # calendar
 
 ### Viewing Authenticated Accounts
 
-- Gmail: http://localhost:4002/accounts
+- Gmail: `bun umbra gmail accounts`
 - Calendar: http://localhost:4003/accounts
 
 ## Multi-Account Setup
 
-Both Gmail and Calendar support multiple Google accounts. Each service stores one token file per authenticated account.
+Both Gmail and Calendar support multiple Google accounts. Gmail keeps every account's token in one
+keychain secret (`GMAIL_TOKENS`); Calendar stores one token file per account.
 
 ### How Multi-Account Works
 
@@ -206,11 +237,7 @@ Both Gmail and Calendar support multiple Google accounts. Each service stores on
 
 ### Adding Gmail Accounts
 
-1. Start the Gmail service: `docker compose up -d gmail`
-2. Visit http://localhost:4002/auth
-3. Sign in with a Google account and authorize
-4. Repeat steps 2-3 for each additional account
-5. View all accounts: http://localhost:4002/accounts
+`bun umbra gmail auth --login-hint <email>` per account ([Gmail](#gmail)).
 
 ### Adding Calendar Accounts
 
@@ -221,10 +248,7 @@ Both Gmail and Calendar support multiple Google accounts. Each service stores on
 
 ### Using Multiple Accounts
 
-When using Gmail tools, specify which account:
-
-- `list_accounts` - shows all authenticated accounts
-- All other tools accept an `account` parameter (email address)
+Gmail commands take `--account <email>`; `bun umbra gmail accounts` lists the signed-in ones.
 
 Calendar automatically aggregates events from all authenticated accounts.
 
@@ -259,7 +283,7 @@ This:
 | Obsidian vault | obsidian  | read-write     | Notatki: `Asystent/` (workspace agenta) + przestrzeń użytkownika (`Projekty/`, `Kontakty/`, `Inbox/`, `Research/`…) |
 | `/`   | claude          | **read-write** | Self-modifying instructions  |
 | qmd-index      | claude          | read-write     | Search index                 |
-| OAuth tokens   | gmail, calendar | read-write     | Auth tokens                  |
+| OAuth tokens   | calendar        | read-write     | Auth tokens (Gmail: keychain) |
 | ~/.claude      | claude          | read-only      | Auth credentials only        |
 
 ### Self-Modifying Assistant

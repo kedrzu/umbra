@@ -170,9 +170,9 @@ fi
 # ==========================================
 # 3. Preflight: serwery MCP w Dockerze
 # ==========================================
-# gmail (4002) i calendar to kontenery z docker-compose.yml. Kalendarz klienci MCP
-# odpalają przez `docker exec` (patrz .mcp.json), więc kontener musi stać ZANIM
-# wystartuje agent - inaczej rutyna leci bez kalendarza i bez poczty.
+# calendar to kontener z docker-compose.yml. Klienci MCP odpalają go przez
+# `docker exec` (patrz .mcp.json), więc kontener musi stać ZANIM wystartuje agent -
+# inaczej rutyna leci bez kalendarza. Gmail to CLI (`bun umbra gmail`), bez kontenera.
 if ! docker info >/dev/null 2>&1; then
     log "Docker nie odpowiada - uruchamiam Docker Desktop..."
     open -ga Docker 2>/dev/null || log "OSTRZEŻENIE: nie udało się uruchomić Docker Desktop"
@@ -184,10 +184,10 @@ fi
 
 if docker info >/dev/null 2>&1; then
     docker compose -f "$PROJECT_ROOT/docker-compose.yml" up -d >/dev/null 2>&1 \
-        && log "Kontenery MCP gotowe (gmail, calendar)." \
+        && log "Kontener MCP gotowy (calendar)." \
         || log "OSTRZEŻENIE: docker compose up -d nie powiódł się."
 else
-    log "OSTRZEŻENIE: Docker nadal nie odpowiada - rutyna pojedzie bez Gmaila/Kalendarza."
+    log "OSTRZEŻENIE: Docker nadal nie odpowiada - rutyna pojedzie bez Kalendarza."
 fi
 
 # ==========================================

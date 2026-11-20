@@ -42,8 +42,8 @@ When run without arguments, with `all` or with `unattended`:
 
 ### 1. Email Review (NAJPIERW)
 Run `/email-review` (codzienny autopilot) across all accounts. Zaczyna od **uzgodnienia z Todoistem** (`python3 scripts/todoist.py sync` → diff): zadania, które ukończyłeś, domykają swoje maile, zanim cokolwiek innego się wydarzy. Dalej:
-- Classify/label/draft per the EmailWorkflow rulebook, mark processed via `update_thread(status:"done")`
-- Flag ambiguous threads via `update_thread(status:"triage")` without blocking
+- Classify/label/draft per the EmailWorkflow rulebook, mark processed via `thread label --set status=AI/Done`
+- Flag ambiguous threads via `thread label --set status=AI/Triage` without blocking
 - Save reminders for emails needing follow-up
 - Faktury trwałych dóbr >100 zł → `Rachunki/` w vault
 
