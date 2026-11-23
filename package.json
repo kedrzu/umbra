@@ -7,10 +7,10 @@
   },
   "type": "module",
   "dependencies": {
-    "@nzyme/cli-core": "^0.17.1",
-    "@nzyme/gmail-cli": "^0.17.1",
-    "@nzyme/google-auth": "^0.17.1",
-    "@nzyme/ioc": "^0.17.1",
-    "@nzyme/secrets": "^0.17.1"
+    "@nzyme/cli-core": "^0.19.0",
+    "@nzyme/gmail-cli": "^0.19.0",
+    "@nzyme/google-auth": "^0.19.0",
+    "@nzyme/ioc": "^0.19.0",
+    "@nzyme/secrets": "^0.19.0"
   }
 }

@@ -78,6 +78,11 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
+    "filesystem": {
+      "allowWrite": [
+        "~/.cache/gmail-cli"
+      ]
+    },
     "network": {
       "allowedDomains": [
         "localhost",
